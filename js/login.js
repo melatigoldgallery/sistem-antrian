@@ -12,7 +12,7 @@ document.querySelector('.form').addEventListener('submit', function(e) {
     if (username === "Admin Melati" && password === "admin") {
         console.log('Login successful');
         sessionStorage.setItem('isLoggedIn', 'true');
-        window.location.href = "sistemAntrian.html";
+        window.location.href = "admin.html";
     } else {
         alert("Username atau Password salah!");
     }

@@ -50,23 +50,7 @@ nav {
 .left-nav span {
   font-size: 0.9rem;
 }
-.dropdown-toggle::after {
-  display: none !important;
-}
-.dropdown-menu {
-  font-size: 0.9rem;
-}
 
-.dropdown-menu li 
- {
-margin-left: 15px;
-display: flex;
-justify-content: space-around;
-align-items: center;
-}
-.dropdown-menu li span {
-  text-align: right;
-}
 .akun {
   display: flex;
   justify-content: center;
@@ -111,58 +95,10 @@ align-items: center;
   font-size: 24px;
   padding: 10px;
 }
-.boxServis {
-  background-color: #fee440;
-}
-.boxPk {
-  background-color: #00bbf9;
-}
-.boxPj {
-  background-color: #f15bb5;
-}
-.report {
-  background-color: #6eeb83;
-}
-.buyback {
-  background-color: #e69e41;
-}
-.antrian {
-  background-color: #b35fe4
-}
-.boxServis, .boxPk, .boxPj, .report, .buyback, .antrian {
-  box-shadow: 1px 1px 7px rgba(0,0,0,9);
-}
-.bg-opacity {
-  background-color: rgba(128, 128, 128, 0.5); /* Abu-abu dengan opacity 50% */
-  transition: color 0.3s ease, background-color 0.3s ease;
-}
-
-.bg-opacity:hover {
-  color: #000; /* Teks menjadi lebih jelas */
-  background-color: rgba(128, 128, 128, 0.8); /* Latar belakang abu-abu menjadi lebih gelap */
-}
-.boxServis, .boxPk, .boxPj, .report, .buyback, .antrian {
-  position: relative; /* Menjadikan kotak sebagai referensi untuk posisi absolut */
-}
-
-.lihat-detail {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0;
-  margin: 0;
-  font-size: 0.85rem;
-}
-.lihat-detail a {
-  text-align: right;
-  display: block;
-  padding-right: 5px;
-}
-
 .queue-display {
-  font-size: 4rem;
+  font-size: 10rem;
   font-weight: bold;
+  width: 100%;
 }
 .action-buttons button {
   min-width: 150px;
@@ -181,96 +117,7 @@ main {
 .mainbar-atr {
   width: 100%;
 }
-.form-label, .dataBarang h6, .table th {
-  font-size: 0.85rem;
-}
-.d-flex i {
-  padding: 8px;
-}
 
-table tbody {
-  font-size: 0.8rem;
-}
-.custom-table th,
-.custom-table td {
-  padding: 5px;
-  font-size: 0.8rem;
-}
-
-.custom-table input, .jenisPengeluaran input {
-  padding: 4px;
-  font-size: 0.8rem;
-}
- 
-
-aside{
-  width: 200px; /* Fixed width for sidebar */
-  background: var(--warna);
-  position: fixed;
-  height: 100vh;
-  left: 0;
-  top: 0;
-  padding-top: 3rem; /* Match the main padding-top */
-}
-aside ul {
-  padding-left: 5px;
-  height: 100%;
-  width: 100%;
-}
-aside li {
-  line-height: 40px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-aside ul li a {
-  color: #e7e7e7;
-  font-size: 0.83rem;
-  font-weight: 100;
-  display: block;
-  width: 100%;
-  border-left: 1px;
-  position: relative;
-  padding-left: 5px;
-  text-decoration: none;
-}
-
-aside ul li a:hover {
-  color: white;
-  border-left: 1px solid;
-  border-left-color: white;
-}
-
-aside ul li a span {
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  transform: translateY(-50%);
-  font-size: 10px;
-  transition: transform 0.4s;
-}
-
-aside ul li a:hover span {
-  transform: translateY(-50%) rotate(-180deg);
-}
-
-aside ul ul li a {
-  font-size: 0.8rem;
-  color: #e7e7e7;
-  padding-left: 5px;
-}
-
-aside ul ul {
-  position: static;
-  display: none;
-}
-
-aside ul .inpt-show.show {
-  display: block;
-}
-
-aside ul ul li {
-  line-height: 32px;
-  border-bottom: none;
-}
 
 /*css saldo awal*/
 
@@ -286,13 +133,7 @@ aside ul ul li {
   background: var(--warna);
 }
 
-.btn,
-.form-select {
-  font-size: 0.8rem;
-}
-.form-control {
-  font-size: 0.8rem;
-}
+
 .hidden {
   display: none;
 }
@@ -363,27 +204,6 @@ footer {
   /* Make table scrollable horizontally */
   .container {
     padding: 10px;
-  }
-  
-  .table-responsive {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Adjust form elements */
-  .form-select-sm,
-  .form-control-sm {
-    width: 140px;
-    min-width: 140px;
-  }
-  
-  /* Adjust table header and cells */
-  .table th,
-  .table td {
-    white-space: nowrap;
-    padding: 8px;
   }
   
   /* Make the button full width */
