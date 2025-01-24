@@ -1,1 +1,0 @@
-import { db } from './configFirebase.js';
