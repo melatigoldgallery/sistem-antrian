@@ -1,4 +1,5 @@
 // Import statements
+import { database } from './configFirebase.js';
 import { dateHandler } from "./date.js";
 import { QueueManager } from "./antrian.js";
 import {
@@ -32,31 +33,49 @@ window.speechSynthesis.onvoiceschanged = () => {
   const voices = window.speechSynthesis.getVoices();
   console.log("Available voices:", voices);
 };
-document.addEventListener("DOMContentLoaded", () => {
-  const queueManager = new QueueManager();
-const queueDisplay = document.getElementById("queueNumber");
-const nextQueueDisplay = document.getElementById("nextQueueNumber");
-const delayQueueDisplay = document.getElementById("delayQueueNumber");
+// Global variables
+let queueManager;
+let queueDisplay;
+let nextQueueDisplay;
+let delayQueueDisplay;
 
 function updateDisplays() {
-  const currentQueue = queueManager.getCurrentQueue();
-  queueDisplay.textContent = currentQueue;
-  nextQueueDisplay.textContent = queueManager.getNextQueue();
-  delayQueueDisplay.textContent = queueManager.getDelayedQueue().join(", ") || "-";
-}
-updateDisplays();
+    // Add null checks and default values
+    const currentQueue = queueManager?.getCurrentQueue() || 'A01';
+    const nextQueue = queueManager?.getNextQueue() || 'A02';
+    const delayedQueue = queueManager?.getDelayedQueue() || [];
 
+    if (queueDisplay) queueDisplay.textContent = currentQueue;
+    if (nextQueueDisplay) nextQueueDisplay.textContent = nextQueue;
+    if (delayQueueDisplay) delayQueueDisplay.textContent = delayedQueue.join(", ") || "-";
+}
+document.addEventListener("DOMContentLoaded", async () => {
+  // Initialize DOM elements
+  queueDisplay = document.getElementById("queueNumber");
+  nextQueueDisplay = document.getElementById("nextQueueNumber");
+  delayQueueDisplay = document.getElementById("delayQueueNumber");
+  
+  // Initialize queue manager
+  queueManager = new QueueManager();
+  await queueManager.initializeFromFirebase();
+  updateDisplays();
+  // Update the delay queue button handler
   document.getElementById("delayQueueButton").addEventListener("click", () => {
-    const currentQueue = queueDisplay.textContent;
-    queueManager.addToDelayedQueue(currentQueue);
-    queueDisplay.textContent = queueManager.next();
-    updateDisplays();
-  });
+    const modal = new bootstrap.Modal(document.getElementById("confirmDelayModal"));
+    modal.show();
+});
+document.getElementById("confirmDelayYes").addEventListener("click", () => {
+  const currentQueue = queueDisplay.textContent;
+  queueManager.addToDelayedQueue(currentQueue);
+  queueDisplay.textContent = queueManager.next();
+  bootstrap.Modal.getInstance(document.getElementById("confirmDelayModal")).hide();
+  updateDisplays();
+});
   // Call Queue Number (Indonesia)
   document.getElementById("callButton").addEventListener("click", async () => {
     const currentQueue = queueDisplay.textContent;
     await playQueueAnnouncement(currentQueue, "id");
-  });
+});
   // Call Queue Number (English)
   document.getElementById("callQueue").addEventListener("click", async () => {
     const currentQueue = queueDisplay.textContent;
@@ -72,7 +91,7 @@ updateDisplays();
     queueDisplay.textContent = queueManager.next();
     bootstrap.Modal.getInstance(document.getElementById("confirmModal")).hide();
     updateDisplays();
-  });
+});
   
   // Tombol Handle Delay Queue Number
   delayHandleButton.addEventListener("click", () => {
@@ -194,11 +213,12 @@ queueManager.addToDelayedQueue = function(queueNumber) {
   document.getElementById("resetButton").addEventListener("click", () => {
     const modal = new bootstrap.Modal(document.getElementById("resetModal"));
     modal.show();
-  });
-  document.getElementById("resetYes").addEventListener("click", () => {
-    queueDisplay.textContent = queueManager.reset();
-    bootstrap.Modal.getInstance(document.getElementById("resetModal")).hide();
-  });
+});
+document.getElementById("resetYes").addEventListener("click", () => {
+  queueDisplay.textContent = queueManager.reset();
+  bootstrap.Modal.getInstance(document.getElementById("resetModal")).hide();
+  updateDisplays();
+});
 
   // Informasi Kendaraan
   const carTypeInput = document.getElementById("carType");

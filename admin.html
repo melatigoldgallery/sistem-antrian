@@ -20,7 +20,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
     <!-- Firebase -->
-  
+
     <!-- Your custom CSS -->
     <link rel="stylesheet" href="css/Project1.css" />
     <title>Sistem Antrian</title>
@@ -46,25 +46,8 @@
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              K
+              A
             </button>
-            <ul class="dropdown-menu">
-              <li>
-                <span><i class="fa-solid fa-user"></i></span>
-                <button class="dropdown-item" type="button">Tambah Sales</button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-gear"></i></span>
-                <button class="dropdown-item" type="button">Pengaturan Printer</button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-download opacity-75"></i></span>
-                <button class="dropdown-item" type="button">Unduh Konektor Printer</button>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button">Logout</button>
-              </li>
-            </ul>
           </div>
         </div>
       </nav>
@@ -248,6 +231,25 @@
             </div>
           </div>
         </div>
+        <!-- Add this modal for delay queue confirmation -->
+        <div class="modal fade" id="confirmDelayModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Konfirmasi Antrian Tertunda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p>Apakah Anda yakin ingin memindahkan nomor antrian ini ke antrian tertunda?</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tidak</button>
+                <button type="button" class="btn btn-primary" id="confirmDelayYes">Ya</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Documentation Modal -->
         <div class="modal fade" id="documentationModal" tabindex="-1">
           <div class="modal-dialog modal-lg">
@@ -312,5 +314,9 @@
       <div class="credit">&copy Melati Gold Gallery 2025</div>
     </footer>
     <script type="module" src="js/melati.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+      import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+    </script>
   </body>
 </html>

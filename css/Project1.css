@@ -5,7 +5,7 @@
   box-sizing: border-box;
   text-decoration: none;
   list-style-type: none;
-  font-family: "roboto", sans-serif;
+  font-family: "", sans-serif;
 
 }
 :root {
@@ -30,16 +30,36 @@ nav img {
   width: 40px;
 }
 nav {
-  background-color: #f1f1f1;
+  background: #f1f1f1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 3rem;
   padding: 10px;
   position:fixed;
+
   width: 100%;
   box-shadow: 4px 4px 10px 0px rgba(0, 0, 0, 0.3);
   z-index: 999;
+}
+nav .display {
+  background: var(--warna);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 3rem;
+  padding: 10px;
+  position:fixed;
+  left: 0;
+  width: 100%;
+  z-index: 999;
+}
+.nav-display a{
+  font-weight: 500;
+  font-size: 20px;
+  padding-left: 10px;
+  text-decoration: none;
+  color: rgb(255, 255, 255);
 }
 .left-nav{
   display: flex;
@@ -111,17 +131,17 @@ align-items: center;
   font-size: 24px;
   padding: 10px;
 }
-.boxServis {
+.boxServis, .cardThird {
   background-color: #fee440;
 }
-.boxPk {
+.boxPk, .cardSecond {
   background-color: #00bbf9;
 }
 .boxPj {
   background-color: #f15bb5;
 }
-.report {
-  background-color: #6eeb83;
+.report, .cardFirst {
+  background-color: #89ff72;
 }
 .buyback {
   background-color: #e69e41;
@@ -165,7 +185,7 @@ align-items: center;
   font-weight: bold;
 }
 .queue-display-client {
-  font-size: 10rem;
+  font-size: 5rem;
   font-weight: bold;
 }
 .action-buttons button {
