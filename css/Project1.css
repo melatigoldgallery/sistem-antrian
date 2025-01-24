@@ -141,7 +141,7 @@ align-items: center;
   background-color: #f15bb5;
 }
 .report, .cardFirst {
-  background-color: #89ff72;
+  background-color: #70e000;
 }
 .buyback {
   background-color: #e69e41;
@@ -183,10 +183,12 @@ align-items: center;
 .queue-display {
   font-size: 4rem;
   font-weight: bold;
+  
 }
 .queue-display-client {
   font-size: 5rem;
   font-weight: bold;
+  height: 175px;
 }
 .action-buttons button {
   min-width: 150px;
