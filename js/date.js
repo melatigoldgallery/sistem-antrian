@@ -7,13 +7,43 @@ export const dateHandler = {
   },
 
   initializeDatepicker() {
-      const today = new Date();
-      
-      // Set static date display
-      const tglElement = document.getElementById('tgl');
-      if (tglElement) {
-          tglElement.textContent = this.formatTanggal(today);
-      }
+    const today = new Date();
+    
+    // Format date in Indonesian
+    const formatTanggal = (date) => {
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        
+        const day = date.getDate();
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        
+        return `${day} ${month} ${year}`;
+    };
+    
+    // Update clock every second
+    const updateClock = () => {
+        const now = new Date();
+        const time = now.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('clock').textContent = time;
+    };
+    
+    // Set initial date
+    const tglElement = document.getElementById('tgl');
+    if (tglElement) {
+        tglElement.textContent = formatTanggal(today);
+    }
+    
+    // Start clock
+    updateClock();
+    setInterval(updateClock, 1000);
+
 
       // Initialize datepicker
       const tanggalInput = document.getElementById('tanggal');

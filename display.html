@@ -6,6 +6,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
     <!-- jQuery first -->
     <script src="js/jquery-3.6.3.min.js"></script>
     <!-- Bootstrap CSS and JS -->
@@ -28,25 +31,20 @@
   <body>
     <header>
       <nav>
-        <div class="display">
-          <div class="nav-display">
-            <a href="index.html">
-              <img src="img/Melati.jfif" alt="Logo" />
-              Melati Gold Shop
-            </a>
+        <div class="nav-brand">
+          <a href="admin.html">
+            <img src="img/Melati.jfif" alt="Logo" />
+            <span class="tangerine-bold">Melati Gold Gallery</span>
+          </a>
+        </div>
+        <div class="left-nav">
+          <div class="hamburger-menu">
+            <i class="fas fa-bars"></i>
           </div>
-          <div class="left-nav">
-            <div class="hamburger-menu">
-              <i class="fas fa-bars"></i>
-            </div>
-            <div class=""><span id="tgl" class="font-weight-bold text-light"></span></div>
-            <div class="dropdown">
-              <button
-                class="btn btn-secondary dropdown-toggle akun"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false">A</button>
-            </div>
+          <div class="">
+            <span id="clock" class="font-weight-bold"></span>
+            <br/>
+            <span id="tgl" class="font-weight-bold"></span>
           </div>
         </div>
       </nav>
@@ -62,7 +60,7 @@
               <div class="cardFirst rounded">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4 pt-2 fw-bold opacity-75">Nomor Antrian Tertunda</h5>
-                  <div class="queue-display-client mb-4" id="delayQueueNumber"></div>
+                  <div class="queue-display-client pb-5" id="delayQueueNumber"></div>
                 </div>
               </div>
             </div>
@@ -70,7 +68,7 @@
               <div class="cardSecond rounded">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4 pt-2 fw-bold opacity-75">Nomor Antrian Saat ini</h5>
-                  <div class="queue-display-client mb-4" id="queueNumber"></div>
+                  <div class="queue-display-client pb-5" id="queueNumber"></div>
                 </div>
               </div>
             </div>
@@ -78,7 +76,7 @@
               <div class="cardThird rounded">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4 pt-2 fw-bold opacity-75">Nomor Antrian Selanjutnya</h5>
-                  <div class="queue-display-client mb-4" id="nextQueueNumber"></div>
+                  <div class="queue-display-client pb-5" id="nextQueueNumber"></div>
                 </div>
               </div>
             </div>

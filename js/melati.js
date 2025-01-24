@@ -1,4 +1,5 @@
 // Import statements
+import { QueueAnalytics } from './queueAnalytics.js';
 import { database } from './configFirebase.js';
 import { dateHandler } from "./date.js";
 import { QueueManager } from "./antrian.js";
@@ -9,6 +10,7 @@ import {
   announceQueueNumber,
   announceVehicleMessage,
 } from "./audioHandlers.js";
+// Initialize analytics class
 
 document.querySelector(".hamburger-menu").addEventListener("click", function () {
   document.querySelector(".sidebar").classList.toggle("active");
@@ -50,6 +52,7 @@ function updateDisplays() {
     if (delayQueueDisplay) delayQueueDisplay.textContent = delayedQueue.join(", ") || "-";
 }
 document.addEventListener("DOMContentLoaded", async () => {
+  const queueAnalytics = new QueueAnalytics(database);
   // Initialize DOM elements
   queueDisplay = document.getElementById("queueNumber");
   nextQueueDisplay = document.getElementById("nextQueueNumber");
@@ -60,17 +63,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   await queueManager.initializeFromFirebase();
   updateDisplays();
   // Update the delay queue button handler
-  document.getElementById("delayQueueButton").addEventListener("click", () => {
-    const modal = new bootstrap.Modal(document.getElementById("confirmDelayModal"));
-    modal.show();
-});
-document.getElementById("confirmDelayYes").addEventListener("click", () => {
-  const currentQueue = queueDisplay.textContent;
-  queueManager.addToDelayedQueue(currentQueue);
-  queueDisplay.textContent = queueManager.next();
-  bootstrap.Modal.getInstance(document.getElementById("confirmDelayModal")).hide();
-  updateDisplays();
-});
+  // Initialize buttons
+  const delayQueueButton = document.getElementById("delayQueueButton");
+  const confirmDelayYes = document.getElementById("confirmDelayYes");
+  
+  // Add click handler for delay button
+  if (delayQueueButton) {
+      delayQueueButton.addEventListener("click", () => {
+          const modal = new bootstrap.Modal(document.getElementById("confirmDelayModal"));
+          modal.show();
+      });
+  }
+  
+  // Add click handler for confirmation
+  if (confirmDelayYes) {
+    confirmDelayYes.addEventListener("click", async () => {
+        try {
+            const currentQueue = queueDisplay.textContent;
+            
+            // Track the queue in analytics with delayed status
+            await queueAnalytics.trackServedQueue(currentQueue, 'delayed');
+            
+            // Update queue management
+            queueManager.addToDelayedQueue(currentQueue);
+            queueDisplay.textContent = queueManager.next();
+            
+            // Close modal and update displays
+            bootstrap.Modal.getInstance(document.getElementById("confirmDelayModal")).hide();
+            updateDisplays();
+            
+            console.log('Queue delayed and tracked successfully');
+        } catch (error) {
+            console.error('Error processing delayed queue:', error);
+        }
+    });
+}
   // Call Queue Number (Indonesia)
   document.getElementById("callButton").addEventListener("click", async () => {
     const currentQueue = queueDisplay.textContent;
@@ -87,10 +114,24 @@ document.getElementById("confirmDelayYes").addEventListener("click", () => {
     const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
     modal.show();
   });
-  document.getElementById("confirmYes").addEventListener("click", () => {
-    queueDisplay.textContent = queueManager.next();
-    bootstrap.Modal.getInstance(document.getElementById("confirmModal")).hide();
-    updateDisplays();
+  // Update confirm handler
+  document.getElementById("confirmYes").addEventListener("click", async () => {
+    try {
+        const currentQueue = queueDisplay.textContent;
+        console.log('Processing queue:', currentQueue);
+        
+        await queueAnalytics.trackServedQueue(currentQueue);
+        queueDisplay.textContent = queueManager.next();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
+        modal.hide();
+        
+        updateDisplays();
+        
+        console.log('Queue processed successfully');
+    } catch (error) {
+        console.error('Processing error:', error);
+    }
 });
   
   // Tombol Handle Delay Queue Number

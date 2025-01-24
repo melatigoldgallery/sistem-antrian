@@ -6,6 +6,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
     <!-- jQuery first -->
     <script src="js/jquery-3.6.3.min.js"></script>
     <!-- Bootstrap CSS and JS -->
@@ -29,41 +32,38 @@
     <header>
       <nav>
         <div class="nav-brand">
-          <a href="index.html">
+          <a href="admin.html">
             <img src="img/Melati.jfif" alt="Logo" />
-            Melati Gold Shop
+            <span class="tangerine-bold">Melati Gold Gallery</span>
           </a>
+        </div>
+        <div class="nav-list align-items-center mt-3">
+          <ul class="d-flex justify-content-center gap-3">
+            <li>
+              <a class="text-decoration-none" href="#" id="documentationLink">Dokumentasi</a>
+            </li>
+            <li>
+              <a class="text-decoration-none" href="analisis.html">Analisis Antrian</a>
+            </li>
+            <li>
+              <a class="text-decoration-none" href="display.html">Display Antrian</a>
+            </li>
+          </ul>
         </div>
         <div class="left-nav">
           <div class="hamburger-menu">
             <i class="fas fa-bars"></i>
           </div>
-          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
-          <div class="dropdown">
-            <button
-              class="btn btn-secondary dropdown-toggle akun"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              A
-            </button>
+          <div class="">
+            <span id="clock" class="font-weight-bold"></span>
+            <br/>
+            <span id="tgl" class="font-weight-bold"></span>
           </div>
         </div>
       </nav>
     </header>
     <main>
       <div class="mainbar-atr">
-        <div class="maintop d-flex justify-content-between">
-          <div class="text-left">
-            <a class="text-decoration-none text-light" href="#" id="documentationLink">
-              Dokumentasi dan Cara Penggunaan
-            </a>
-          </div>
-          <div class="text-right">
-            <p class="button">Antrian Melati Gold Shop</p>
-          </div>
-        </div>
         <div class="container mt-3">
           <!-- Customer Message Section -->
           <div class="row mb-4">
@@ -80,7 +80,7 @@
         <div class="container-fluid">
           <!-- Queue Management Section -->
           <div class="row">
-            <div class="col-md-3 mx-auto">
+            <div class="col-md-3 mx-auto mb-5">
               <div class="card">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4">Nomor Antrian Tertunda</h5>
