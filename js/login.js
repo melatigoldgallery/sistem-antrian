@@ -9,7 +9,7 @@ document.querySelector('.form').addEventListener('submit', function(e) {
     console.log('Username:', username);
     console.log('Password:', password);
     
-    if (username === "adminmelati" && password === "admin") {
+    if (username === "adminyoung" && password === "admin") {
         console.log('Login successful');
         sessionStorage.setItem('isLoggedIn', 'true');
         window.location.href = "admin.html";
