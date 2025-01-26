@@ -2,11 +2,12 @@ import { AUDIO_PATHS } from "./audioConfig.js";
 
 export async function playWaitMessageSequence(language = 'id') {
   const openingChime = new Audio(AUDIO_PATHS.informasi);
+  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
   
   // Wait message texts
   const waitTexts = {
-    id: "Kepada Pelanggan Melati, kami mohon kesabarannya untuk menunggu giliran pelayanan. Terima kasih atas perhatiannya",
-    en: "To Melati Customer, we ask for your patience to wait for your service turn. Thank you for your attention"
+    id: "Kepada Pelanggan Melati yang belum dilayani, kami mohon kesabarannya untuk menunggu giliran pelayanan. Terima kasih atas perhatiannya",
+    en: "To Melati customers who have not been served, we ask for patience to wait for their turn. Thank you for your attention"
   };
 
   // Play opening chime
@@ -19,16 +20,22 @@ export async function playWaitMessageSequence(language = 'id') {
   await new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(waitTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
-    utterance.rate = 0.7;
+    utterance.rate = 0.8;
     utterance.pitch = 1;
     utterance.onend = resolve;
     
     speechSynthesis.speak(utterance);
   });
+  // Play closing chime
+  await new Promise((resolve) => {
+    closingChime.addEventListener("ended", resolve);
+    closingChime.play();
+  });
 }
 
 export async function playTakeQueueMessage(language = 'id') {
   const openingChime = new Audio(AUDIO_PATHS.informasi);
+  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
   
   // Reminder message texts
   const reminderTexts = {
@@ -46,11 +53,16 @@ export async function playTakeQueueMessage(language = 'id') {
   await new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(reminderTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
-    utterance.rate = 0.7;
+    utterance.rate = 0.8;
     utterance.pitch = 1;
     utterance.onend = resolve;
 
     speechSynthesis.speak(utterance);
+  });
+   // Play closing chime
+   await new Promise((resolve) => {
+    closingChime.addEventListener("ended", resolve);
+    closingChime.play();
   });
 }
 
@@ -59,8 +71,8 @@ export function announceQueueNumber(queueNumber, language = 'id') {
   const numbers = queueNumber.substring(1);
 
   const texts = {
-    id: `Nomor antrian ${letter} ${numbers.split("").join(" ")}`,
-    en: `Queue number ${letter} ${numbers.split("").join(" ")}`
+    id: `Nomor antrian ${letter}, ${numbers.split("").join("")}`,
+    en: `Queue number ${letter}, ${numbers.split("").join("")}`
   };
 
   const utterance = new SpeechSynthesisUtterance(texts[language]);
@@ -70,7 +82,7 @@ export function announceQueueNumber(queueNumber, language = 'id') {
 
   // Set voice preferences based on language
   utterance.lang = language === 'id' ? "id-ID" : "en-US";
-  utterance.rate = 0.7;
+  utterance.rate = 0.8;
   utterance.pitch = 1;
 
   speechSynthesis.speak(utterance);
@@ -79,6 +91,8 @@ export function announceQueueNumber(queueNumber, language = 'id') {
 
 export async function playQueueAnnouncement(queueNumber, language = 'id') {
   const introRingtone = new Audio(AUDIO_PATHS.antrian);
+  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
+
   const playRingtone = () => {
     return new Promise((resolve) => {
       introRingtone.addEventListener("ended", resolve);
@@ -110,7 +124,13 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
   // Announce message
   const utterance = new SpeechSynthesisUtterance(messages[language]);
   utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
-  utterance.rate = 0.7;
+  utterance.rate = 0.8;
   utterance.pitch = 1;
   window.speechSynthesis.speak(utterance);
+  
+  // Play closing chime
+  await new Promise((resolve) => {
+    closingChime.addEventListener("ended", resolve);
+    closingChime.play();
+  });
 }
