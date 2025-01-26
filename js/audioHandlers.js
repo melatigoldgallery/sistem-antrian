@@ -71,8 +71,8 @@ export function announceQueueNumber(queueNumber, language = 'id') {
   const numbers = queueNumber.substring(1);
 
   const texts = {
-    id: `Nomor antrian ${letter}, ${numbers.split("").join("")}`,
-    en: `Queue number ${letter}, ${numbers.split("").join("")}`
+    id: `Nomor antrian ${letter}, ${numbers.split("").join(" ")}`,
+    en: `Queue number ${letter}, ${numbers.split("").join(" ")}`
   };
 
   const utterance = new SpeechSynthesisUtterance(texts[language]);
@@ -111,7 +111,7 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
 
   // Vehicle message texts
   const messages = {
-    id: `Mohon kepada pemilik ${carType} dengan nomor polisi ${plateNumber}, untuk memindahkan kendaraan karena ada kendaraan yang akan keluar. Terima kasih atas perhatiannya`,
+    id: `Mohon kepada pemilik ${carType} dengan nomor polisi, ${plateNumber}, untuk memindahkan kendaraan karena ada kendaraan yang akan keluar. Terima kasih atas perhatiannya`,
     en: `To the owner of ${carType} with license plate ${plateNumber}, please move your vehicle as there is a vehicle in front that needs to exit. Thank you for your attention`
   };
 
