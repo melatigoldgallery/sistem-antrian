@@ -232,15 +232,18 @@ queueManager.addToDelayedQueue = function(queueNumber) {
     playWaitMessageSequence("en");
   });
 
+  // Store the intended action
+let pendingAction = '';
   // Add event listeners for custom queue
   document.getElementById("customQueueButton").addEventListener("click", () => {
-    const modal = new bootstrap.Modal(document.getElementById("customQueueModal"));
-    modal.show();
+    pendingAction = 'custom';
+    const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+    passwordModal.show();
   });
   document.getElementById("setCustomQueue").addEventListener("click", () => {
     const letter = document.getElementById("queueLetter").value;
     const number = parseInt(document.getElementById("queueNumberInput").value);
-
+  
     if (number >= 1 && number <= 50) {
       queueDisplay.textContent = queueManager.setCustomQueue(letter, number);
       bootstrap.Modal.getInstance(document.getElementById("customQueueModal")).hide();
@@ -249,18 +252,43 @@ queueManager.addToDelayedQueue = function(queueNumber) {
     }
     updateDisplays();
   });
+  document.getElementById("confirmPassword").addEventListener("click", () => {
+    const adminId = document.getElementById("adminId").value;
+    const password = document.getElementById("adminPassword").value;
+    
+    // Replace these credentials with your actual authentication logic
+    if (adminId === "admin" && password === "password123") {
+      // Hide password modal
+      bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
+      
+      // Clear the form
+      document.getElementById("adminId").value = '';
+      document.getElementById("adminPassword").value = '';
+      
+      // Proceed with the intended action
+      if (pendingAction === 'custom') {
+        const customQueueModal = new bootstrap.Modal(document.getElementById("customQueueModal"));
+        customQueueModal.show();
+      } else if (pendingAction === 'reset') {
+        const resetModal = new bootstrap.Modal(document.getElementById("resetModal"));
+        resetModal.show();
+      }
+    } else {
+      alert("Invalid credentials. Please try again.");
+    }
+  });
 
   // Update event listener for reset button
   document.getElementById("resetButton").addEventListener("click", () => {
-    const modal = new bootstrap.Modal(document.getElementById("resetModal"));
-    modal.show();
-});
-document.getElementById("resetYes").addEventListener("click", () => {
-  queueDisplay.textContent = queueManager.reset();
-  bootstrap.Modal.getInstance(document.getElementById("resetModal")).hide();
-  updateDisplays();
-});
-
+    pendingAction = 'reset';
+    const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+    passwordModal.show();
+  });
+  document.getElementById("resetYes").addEventListener("click", () => {
+    queueDisplay.textContent = queueManager.reset();
+    bootstrap.Modal.getInstance(document.getElementById("resetModal")).hide();
+    updateDisplays();
+  });
   // Informasi Kendaraan
   const carTypeInput = document.getElementById("carType");
   const plateNumberInput = document.getElementById("plateNumber");
@@ -383,6 +411,7 @@ document.getElementById("callInformation").addEventListener("click", () => {
   const spelledPlateNumber = spellPlateNumber(plateNumber, "en");
   announceVehicleMessage(carType, spelledPlateNumber, "en");
 });
+
 // Documentation modal handler
 document.getElementById('documentationLink').addEventListener('click', (e) => {
   e.preventDefault();
@@ -390,3 +419,4 @@ document.getElementById('documentationLink').addEventListener('click', (e) => {
   documentationModal.show();
 });
 });
+// Add event listener for password confirmation
