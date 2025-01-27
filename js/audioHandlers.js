@@ -21,7 +21,7 @@ export async function playWaitMessageSequence(language = 'id') {
     const utterance = new SpeechSynthesisUtterance(waitTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
     utterance.rate = 0.8;
-    utterance.pitch = 1;
+    utterance.pitch = 1.5;
     utterance.onend = resolve;
     
     speechSynthesis.speak(utterance);
@@ -54,7 +54,7 @@ export async function playTakeQueueMessage(language = 'id') {
     const utterance = new SpeechSynthesisUtterance(reminderTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
     utterance.rate = 0.8;
-    utterance.pitch = 1;
+    utterance.pitch = 1.5;
     utterance.onend = resolve;
 
     speechSynthesis.speak(utterance);
@@ -83,7 +83,7 @@ export function announceQueueNumber(queueNumber, language = 'id') {
   // Set voice preferences based on language
   utterance.lang = language === 'id' ? "id-ID" : "en-US";
   utterance.rate = 0.8;
-  utterance.pitch = 1;
+  utterance.pitch = 1.5;
 
   speechSynthesis.speak(utterance);
 }
@@ -108,10 +108,11 @@ export async function playQueueAnnouncement(queueNumber, language = 'id') {
 
 export async function announceVehicleMessage(carType, plateNumber, language = 'id') {
   const openingChime = new Audio(AUDIO_PATHS.informasi);
+  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
 
   // Vehicle message texts
   const messages = {
-    id: `Mohon kepada pemilik ${carType} dengan nomor polisi ${plateNumber}, untuk memindahkan kendaraan karena ada kendaraan yang akan keluar. Terima kasih atas perhatiannya`,
+    id: `Mohon kepada pemilik ${carType} dengan nomor polisi, ${plateNumber}, untuk memindahkan kendaraan karena ada kendaraan yang akan keluar. Terima kasih atas perhatiannya`,
     en: `To the owner of ${carType} with license plate ${plateNumber}, please move your vehicle as there is a vehicle in front that needs to exit. Thank you for your attention`
   };
 
@@ -121,12 +122,15 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
     openingChime.play();
   });
 
-  // Announce message
-  const utterance = new SpeechSynthesisUtterance(messages[language]);
-  utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
-  utterance.rate = 0.8;
-  utterance.pitch = 1;
-  window.speechSynthesis.speak(utterance);
+  // Announce message with proper Promise handling
+  await new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(messages[language]);
+    utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
+    utterance.rate = 0.8;
+    utterance.pitch = 1.5;
+    utterance.onend = resolve;
+    window.speechSynthesis.speak(utterance);
+  });
   
   // Play closing chime
   await new Promise((resolve) => {
