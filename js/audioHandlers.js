@@ -108,6 +108,7 @@ export async function playQueueAnnouncement(queueNumber, language = 'id') {
 
 export async function announceVehicleMessage(carType, plateNumber, language = 'id') {
   const openingChime = new Audio(AUDIO_PATHS.informasi);
+  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
 
   // Vehicle message texts
   const messages = {
@@ -121,12 +122,15 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
     openingChime.play();
   });
 
-  // Announce message
-  const utterance = new SpeechSynthesisUtterance(messages[language]);
-  utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
-  utterance.rate = 0.8;
-  utterance.pitch = 1;
-  window.speechSynthesis.speak(utterance);
+  // Announce message with proper Promise handling
+  await new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(messages[language]);
+    utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    utterance.onend = resolve;
+    window.speechSynthesis.speak(utterance);
+  });
   
   // Play closing chime
   await new Promise((resolve) => {
