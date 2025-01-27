@@ -21,7 +21,7 @@ export async function playWaitMessageSequence(language = 'id') {
     const utterance = new SpeechSynthesisUtterance(waitTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
     utterance.rate = 0.8;
-    utterance.pitch = 1;
+    utterance.pitch = 1.5;
     utterance.onend = resolve;
     
     speechSynthesis.speak(utterance);
@@ -54,7 +54,7 @@ export async function playTakeQueueMessage(language = 'id') {
     const utterance = new SpeechSynthesisUtterance(reminderTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
     utterance.rate = 0.8;
-    utterance.pitch = 1;
+    utterance.pitch = 1.5;
     utterance.onend = resolve;
 
     speechSynthesis.speak(utterance);
@@ -83,7 +83,7 @@ export function announceQueueNumber(queueNumber, language = 'id') {
   // Set voice preferences based on language
   utterance.lang = language === 'id' ? "id-ID" : "en-US";
   utterance.rate = 0.8;
-  utterance.pitch = 1;
+  utterance.pitch = 1.5;
 
   speechSynthesis.speak(utterance);
 }
@@ -125,7 +125,7 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
   const utterance = new SpeechSynthesisUtterance(messages[language]);
   utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
   utterance.rate = 0.8;
-  utterance.pitch = 1;
+  utterance.pitch = 1.5;
   window.speechSynthesis.speak(utterance);
   
   // Play closing chime
