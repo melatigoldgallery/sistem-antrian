@@ -5,6 +5,8 @@ export class QueueManager {
     constructor() {
         this.letters = ["A", "B", "C", "D"];
         this.initializeFromFirebase();
+        this.customerRef = ref(database, 'customerCount');
+        this.initializeCustomerCount();
     }
 
     async initializeFromFirebase() {
@@ -22,6 +24,26 @@ export class QueueManager {
             this.currentBlock = 0;
             this.delayedQueue = [];
             this.saveState();
+        }
+    }
+    async initializeCustomerCount() {
+        const snapshot = await get(this.customerRef);
+        if (!snapshot.exists()) {
+            await set(this.customerRef, 0);
+        }
+    }
+
+    async incrementCustomer() {
+        const snapshot = await get(this.customerRef);
+        const currentCount = snapshot.val() || 0;
+        await set(this.customerRef, currentCount + 1);
+    }
+
+    async decrementCustomer() {
+        const snapshot = await get(this.customerRef);
+        const currentCount = snapshot.val() || 0;
+        if (currentCount > 0) {
+            await set(this.customerRef, currentCount - 1);
         }
     }
 

@@ -66,6 +66,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize buttons
   const delayQueueButton = document.getElementById("delayQueueButton");
   const confirmDelayYes = document.getElementById("confirmDelayYes");
+  // Add customer count button handlers
+    const tambahCustomerBtn = document.getElementById("tambahCustomerBtn");
+    const kurangiCustomerBtn = document.getElementById("kurangiCustomerBtn");
+
+    tambahCustomerBtn.addEventListener("click", async () => {
+        await queueManager.incrementCustomer();
+    });
+
+    kurangiCustomerBtn.addEventListener("click", async () => {
+        await queueManager.decrementCustomer();
+    });
+   
   
   // Add click handler for delay button
   if (delayQueueButton) {
@@ -114,21 +126,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
     modal.show();
   });
-  // Update confirm handler
+  // Update the confirm handlers to decrease customer count
   document.getElementById("confirmYes").addEventListener("click", async () => {
     try {
         const currentQueue = queueDisplay.textContent;
-        console.log('Processing queue:', currentQueue);
-        
         await queueAnalytics.trackServedQueue(currentQueue);
+        await queueManager.decrementCustomer(); // Add this line
         queueDisplay.textContent = queueManager.next();
         
         const modal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
         modal.hide();
         
         updateDisplays();
-        
-        console.log('Queue processed successfully');
     } catch (error) {
         console.error('Processing error:', error);
     }
@@ -157,20 +166,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
   
-  document.getElementById("confirmDelayedYes").addEventListener("click", () => {
+  document.getElementById("confirmDelayedYes").addEventListener("click", async () => {
     const selectElement = document.getElementById("delayedQueueSelect");
     const selectedQueue = selectElement.value;
     
     if (selectedQueue) {
-      queueManager.removeFromDelayedQueue(selectedQueue);
-      updateDisplays();
-      
-      const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDelayedModal"));
-      modal.hide();
+        await queueManager.decrementCustomer(); // Add this line
+        queueManager.removeFromDelayedQueue(selectedQueue);
+        updateDisplays();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDelayedModal"));
+        modal.hide();
     }
-  });
-
-
+});
+const { onValue } = window;
+onValue(queueManager.customerRef, (snapshot) => {
+  const count = snapshot.val() || 0;
+  const customerCountDisplay = document.getElementById("customerCount");
+  if (customerCountDisplay) {
+      customerCountDisplay.textContent = count;
+  }
+});
 // Tambahkan variabel untuk tracking index pemanggilan
 let currentCallIndex = 0;
 

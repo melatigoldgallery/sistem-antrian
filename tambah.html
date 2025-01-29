@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Antrian</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .display {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Jumlah Customer Belum Dilayani</h1>
+    <div class="display" id="customerCount">0</div>
+    <button onclick="tambahCustomer()">Tambah Customer</button>
+</div>
+
+<audio id="notifSound">
+    <source src="audio/antrian.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    // Ambil jumlah customer dari LocalStorage saat halaman dimuat
+    let customerBelumDilayani = localStorage.getItem("customerCount") || 0;
+    document.getElementById("customerCount").textContent = customerBelumDilayani;
+
+    function tambahCustomer() {
+        customerBelumDilayani++;
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        document.getElementById("customerCount").textContent = customerBelumDilayani;
+        localStorage.setItem("customerCount", customerBelumDilayani);
+    }
+
+    // Cek setiap 1 menit jika jumlahnya > 0, mainkan suara notifikasi
+    setInterval(() => {
+        if (customerBelumDilayani > 0) {
+            document.getElementById("notifSound").play();
+        }
+    }, 10000); // 60000 ms = 1 menit
+</script>
+
+</body>
+</html>
