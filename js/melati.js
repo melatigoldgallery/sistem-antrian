@@ -257,7 +257,7 @@ let pendingAction = '';
     const password = document.getElementById("adminPassword").value;
     
     // Replace these credentials with your actual authentication logic
-    if (adminId === "admin" && password === "password123") {
+    if (adminId === "adminmelati" && password === "standingongiant") {
       // Hide password modal
       bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
       
