@@ -193,7 +193,7 @@ align-items: center;
   font-weight: bold;
   
 }
-.queue-display-client {
+.queue-display-client, .display-client {
   font-size: 5rem;
   font-weight: bold;
 }

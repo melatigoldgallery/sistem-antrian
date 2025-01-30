@@ -1,4 +1,5 @@
 // Import statements
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { QueueAnalytics } from './queueAnalytics.js';
 import { database } from './configFirebase.js';
 import { dateHandler } from "./date.js";
@@ -61,22 +62,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize queue manager
   queueManager = new QueueManager();
   await queueManager.initializeFromFirebase();
+  await queueManager.initializeCustomerCount();
   updateDisplays();
+  
   // Update the delay queue button handler
   // Initialize buttons
   const delayQueueButton = document.getElementById("delayQueueButton");
   const confirmDelayYes = document.getElementById("confirmDelayYes");
-  // Add customer count button handlers
-    const tambahCustomerBtn = document.getElementById("tambahCustomerBtn");
-    const kurangiCustomerBtn = document.getElementById("kurangiCustomerBtn");
+  
+ // Customer count button handlers
+ const tambahCustomerBtn = document.getElementById("tambahCustomerBtn");
+  const kurangiCustomerBtn = document.getElementById("kurangiCustomerBtn");
 
-    tambahCustomerBtn.addEventListener("click", async () => {
-        await queueManager.incrementCustomer();
-    });
-
-    kurangiCustomerBtn.addEventListener("click", async () => {
-        await queueManager.decrementCustomer();
-    });
+  tambahCustomerBtn.addEventListener("click", () => queueManager.incrementCustomer());
+  kurangiCustomerBtn.addEventListener("click", () => queueManager.decrementCustomer());
    
   
   // Add click handler for delay button
@@ -129,19 +128,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Update the confirm handlers to decrease customer count
   document.getElementById("confirmYes").addEventListener("click", async () => {
     try {
-        const currentQueue = queueDisplay.textContent;
-        await queueAnalytics.trackServedQueue(currentQueue);
-        await queueManager.decrementCustomer(); // Add this line
-        queueDisplay.textContent = queueManager.next();
-        
-        const modal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
-        modal.hide();
-        
-        updateDisplays();
+      const currentQueue = queueDisplay.textContent;
+      await queueAnalytics.trackServedQueue(currentQueue);
+      await queueManager.decrementCustomer(); // Kurangi customer saat dilayani
+      queueDisplay.textContent = queueManager.next();
+      
+      const modal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
+      modal.hide();
+      
+      updateDisplays();
     } catch (error) {
-        console.error('Processing error:', error);
+      console.error('Processing error:', error);
     }
-});
+  });
   
   // Tombol Handle Delay Queue Number
   delayHandleButton.addEventListener("click", () => {
@@ -171,22 +170,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     const selectedQueue = selectElement.value;
     
     if (selectedQueue) {
-        await queueManager.decrementCustomer(); // Add this line
-        queueManager.removeFromDelayedQueue(selectedQueue);
-        updateDisplays();
-        
-        const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDelayedModal"));
-        modal.hide();
+      await queueManager.decrementCustomer(); // Kurangi customer saat dilayani
+      queueManager.removeFromDelayedQueue(selectedQueue);
+      updateDisplays();
+      
+      const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDelayedModal"));
+      modal.hide();
     }
-});
-const { onValue } = window;
+  });
+
+  // Tambahkan listener untuk perubahan data customer count di Firebase
+// Customer count real-time listener
 onValue(queueManager.customerRef, (snapshot) => {
   const count = snapshot.val() || 0;
   const customerCountDisplay = document.getElementById("customerCount");
   if (customerCountDisplay) {
-      customerCountDisplay.textContent = count;
+    customerCountDisplay.textContent = count;
   }
 });
+
 // Tambahkan variabel untuk tracking index pemanggilan
 let currentCallIndex = 0;
 
