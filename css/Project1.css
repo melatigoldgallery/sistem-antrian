@@ -151,7 +151,7 @@ align-items: center;
 .report, .cardFirst {
   background-color: #70e000;
 }
-.buyback {
+.buyback, .cardFour {
   background-color: #e69e41;
 }
 .antrian {

@@ -10,6 +10,7 @@ import {
   playQueueAnnouncement,
   announceQueueNumber,
   announceVehicleMessage,
+  playNotificationSound
 } from "./audioHandlers.js";
 // Initialize analytics class
 
@@ -186,7 +187,41 @@ onValue(queueManager.customerRef, (snapshot) => {
   const customerCountDisplay = document.getElementById("customerCount");
   if (customerCountDisplay) {
     customerCountDisplay.textContent = count;
+    
+    // Start or stop notifications based on count
+    if (count > 0) {
+      startPeriodicNotifications();
+    } else {
+      stopPeriodicNotifications();
+    }
   }
+});
+
+//Fungsi notifikasi setiap 30 detik
+let notificationInterval;
+
+// Function to start periodic notifications
+function startPeriodicNotifications() {
+  if (!notificationInterval) {
+    notificationInterval = setInterval(() => {
+      const count = parseInt(document.getElementById("customerCount").textContent);
+      if (count > 0) {
+        playNotificationSound();
+      }
+    }, 30000); // 30 seconds
+  }
+}
+
+// Function to stop periodic notifications
+function stopPeriodicNotifications() {
+  if (notificationInterval) {
+    clearInterval(notificationInterval);
+    notificationInterval = null;
+  }
+}
+// Clean up interval when page unloads
+window.addEventListener('beforeunload', () => {
+  stopPeriodicNotifications();
 });
 
 // Tambahkan variabel untuk tracking index pemanggilan

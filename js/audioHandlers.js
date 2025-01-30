@@ -138,3 +138,8 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
     closingChime.play();
   });
 }
+
+export function playNotificationSound() {
+  const notifSound = new Audio(AUDIO_PATHS.notif);
+  notifSound.play();
+}
