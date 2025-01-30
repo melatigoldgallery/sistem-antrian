@@ -12,6 +12,9 @@ import {
   announceVehicleMessage,
   playNotificationSound
 } from "./audioHandlers.js";
+
+// ===== Global Variables =====
+
 // Initialize analytics class
 
 document.querySelector(".hamburger-menu").addEventListener("click", function () {
@@ -208,7 +211,7 @@ function startPeriodicNotifications() {
       if (count > 0) {
         playNotificationSound();
       }
-    }, 30000); // 30 seconds
+    }, 60000); // 60 seconds
   }
 }
 
