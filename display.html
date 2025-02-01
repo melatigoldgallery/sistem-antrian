@@ -43,7 +43,7 @@
           </div>
           <div class="">
             <span id="clock" class="font-weight-bold"></span>
-            <br/>
+            <br />
             <span id="tgl" class="font-weight-bold"></span>
           </div>
         </div>
@@ -80,6 +80,14 @@
                 </div>
               </div>
             </div>
+            <div class="col-md-4 mb-5">
+              <div class="cardFour rounded">
+                <div class="card-body text-center">
+                  <h5 class="card-title mb-4 pt-2 fw-bold opacity-75 fs-3">Belum Dilayani</h5>
+                  <div class="display-client pb-5" id="customerCount"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -95,6 +103,8 @@
       import { database } from "./js/configFirebase.js";
 
       const queueRef = ref(database, "queue");
+      const customerRef = ref(database, "customerCount");
+
       onValue(queueRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -116,6 +126,12 @@
             displayNextNumber + nextBlock * 10
           ).padStart(2, "0")}`;
         }
+      });
+       
+      // Add listener for customer count
+      onValue(customerRef, (snapshot) => {
+        const count = snapshot.val() || 0;
+        document.getElementById("customerCount").textContent = count;
       });
     </script>
   </body>

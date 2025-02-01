@@ -56,7 +56,7 @@
           </div>
           <div class="">
             <span id="clock" class="font-weight-bold"></span>
-            <br/>
+            <br />
             <span id="tgl" class="font-weight-bold"></span>
           </div>
         </div>
@@ -80,27 +80,27 @@
         <div class="container-fluid">
           <!-- Queue Management Section -->
           <div class="row">
-            <div class="col-md-4 mx-auto mb-5">
+            <div class="col-md-3 mx-auto mb-5">
               <div class="card">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4">Nomor Antrian Tertunda</h5>
                   <div class="queue-display mb-4" id="delayQueueNumber"></div>
                   <div class="action-buttons d-flex flex-column gap-3">
                     <button class="btn btn-primary" id="sequentialCallButton">Panggil Antrian Berurutan</button>
-                    <button class="btn btn-info" id="sequentialCallQueueButton">Call Sequential Queue</button>
+                    <button class="btn btn-info d-none" id="sequentialCallQueueButton">Call Sequential Queue</button>
                     <button class="btn btn-success" id="delayHandleButton">Sudah Dilayani</button>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-4 mx-auto mb-5">
+            <div class="col-md-3 mx-auto mb-5">
               <div class="card">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4">Nomor Antrian Saat ini</h5>
                   <div class="queue-display mb-4" id="queueNumber"></div>
                   <div class="action-buttons d-flex flex-column gap-3">
                     <button class="btn btn-primary" id="callButton">Panggil Nomor Antrian</button>
-                    <button class="btn btn-info" id="callQueue">Call Queue Number</button>
+                    <button class="btn btn-info d-none" id="callQueue">Call Queue Number</button>
                     <button class="btn btn-success" id="handleButton">Sudah Dilayani</button>
                     <button class="btn btn-warning" id="delayQueueButton">Nomor Antrian Tertunda</button>
                     <button class="btn btn-danger" id="customQueueButton">Custom Nomor Antrian</button>
@@ -109,18 +109,20 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-3 mx-auto d-none">
+            
+            <div class="col-md-3 mx-auto">
               <div class="card">
                 <div class="card-body text-center">
-                  <h5 class="card-title mb-4">Nomor Antrian Selanjutnya</h5>
-                  <div class="queue-display mb-4" id="nextQueueNumber"></div>
+                  <h5 class="card-title mb-4">Customer Belum Dilayani</h5>
+                  <div class="display mb-4" id="customerCount"></div>
                   <div class="action-buttons d-flex flex-column gap-3">
-                    <button class="btn btn-primary" id="handleButton">Antrian Selanjutnya Yang Akan Dipanggil</button>
+                    <button class="btn btn-primary" id="tambahCustomerBtn">Tambah Customer</button>
+                    <button class="btn btn-danger" id="kurangiCustomerBtn">Kurangi Customer</button>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-4 mx-auto">
+            <div class="col-md-3 mx-auto">
               <div class="card">
                 <div class="card-body text-center">
                   <h5 class="card-title mb-4">Informasi Kendaraan</h5>
