@@ -151,7 +151,7 @@ align-items: center;
 .report, .cardFirst {
   background-color: #70e000;
 }
-.buyback {
+.buyback, .cardFour {
   background-color: #e69e41;
 }
 .antrian {
@@ -188,12 +188,12 @@ align-items: center;
   padding-right: 5px;
 }
 
-.queue-display {
+.queue-display, .display {
   font-size: 4rem;
   font-weight: bold;
   
 }
-.queue-display-client {
+.queue-display-client, .display-client {
   font-size: 5rem;
   font-weight: bold;
 }

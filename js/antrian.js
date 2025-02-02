@@ -5,6 +5,8 @@ export class QueueManager {
     constructor() {
         this.letters = ["A", "B", "C", "D"];
         this.initializeFromFirebase();
+        this.customerRef = ref(database, 'customerCount');
+        this.initializeCustomerCount();
     }
 
     async initializeFromFirebase() {
@@ -24,6 +26,38 @@ export class QueueManager {
             this.saveState();
         }
     }
+    async initializeCustomerCount() {
+        const snapshot = await get(this.customerRef);
+        this.customerCount = snapshot.val() || 0;
+        this.updateCustomerDisplay();
+      }
+    
+      async incrementCustomer() {
+        const snapshot = await get(this.customerRef);
+        const currentCount = snapshot.val() || 0;
+        const newCount = currentCount + 1;
+        await set(this.customerRef, newCount);
+        this.customerCount = newCount;
+        this.updateCustomerDisplay();
+      }
+    
+      async decrementCustomer() {
+        const snapshot = await get(this.customerRef);
+        const currentCount = snapshot.val() || 0;
+        if (currentCount > 0) {
+          const newCount = currentCount - 1;
+          await set(this.customerRef, newCount);
+          this.customerCount = newCount;
+          this.updateCustomerDisplay();
+        }
+      }
+    
+      updateCustomerDisplay() {
+        const customerCountDisplay = document.getElementById("customerCount");
+        if (customerCountDisplay) {
+          customerCountDisplay.textContent = this.customerCount;
+        }
+      }
 
     formatNumber(num) {
         return num.toString().padStart(2, "0");
