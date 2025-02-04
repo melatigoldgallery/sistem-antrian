@@ -16,12 +16,10 @@ export class QueueManager {
             const data = snapshot.val();
             this.currentLetter = data.currentLetter;
             this.currentNumber = data.currentNumber;
-            this.currentBlock = data.currentBlock;
             this.delayedQueue = data.delayedQueue || [];
         } else {
             this.currentLetter = 0;
             this.currentNumber = 1;
-            this.currentBlock = 0;
             this.delayedQueue = [];
             this.saveState();
         }
@@ -64,15 +62,14 @@ export class QueueManager {
     }
 
     getCurrentQueue() {
-        return `${this.letters[this.currentLetter]}${this.formatNumber(this.currentNumber + this.currentBlock * 10)}`;
+        const number = parseInt(this.currentNumber);
+        return `${this.letters[this.currentLetter]}${this.formatNumber(number)}`;
     }
-
     saveState() {
         const queueRef = ref(database, 'queue');
         set(queueRef, {
             currentLetter: this.currentLetter,
             currentNumber: this.currentNumber,
-            currentBlock: this.currentBlock,
             delayedQueue: this.delayedQueue
         });
     }
@@ -111,19 +108,15 @@ export class QueueManager {
     }
 
     getNextQueue() {
+        const currentNumber = parseInt(this.currentNumber);
+        const nextNumber = currentNumber + 1;
         let nextLetter = this.currentLetter;
-        let nextNumber = this.currentNumber + 1;
-
-        if (nextNumber > 50) {
-            nextNumber = 1;
-            nextLetter++;
-
-            if (nextLetter >= this.letters.length) {
-                nextLetter = 0;
-            }
+    
+        if (nextNumber <= 50) {
+            return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
+        } else {
+            return `${this.letters[(nextLetter + 1) % this.letters.length]}${this.formatNumber(1)}`;
         }
-
-        return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
     }
 
     setCustomQueue(letter, number) {
@@ -142,7 +135,6 @@ export class QueueManager {
     reset() {
         this.currentLetter = 0;
         this.currentNumber = 1;
-        this.currentBlock = 0;
         this.delayedQueue = [];
         this.saveState();
         return this.getCurrentQueue();
