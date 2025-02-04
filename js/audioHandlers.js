@@ -20,8 +20,8 @@ export async function playWaitMessageSequence(language = 'id') {
   await new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(waitTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
-    utterance.rate = 0.8;
-    utterance.pitch = 1.5;
+    utterance.rate = 0.85;
+    utterance.pitch = 1.2;
     utterance.onend = resolve;
     
     speechSynthesis.speak(utterance);
@@ -53,8 +53,8 @@ export async function playTakeQueueMessage(language = 'id') {
   await new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(reminderTexts[language]);
     utterance.lang = language === 'id' ? "id-ID" : "en-US";
-    utterance.rate = 0.8;
-    utterance.pitch = 1.5;
+    utterance.rate = 0.85;
+    utterance.pitch = 1.12;
     utterance.onend = resolve;
 
     speechSynthesis.speak(utterance);
@@ -71,8 +71,8 @@ export function announceQueueNumber(queueNumber, language = 'id') {
   const numbers = queueNumber.substring(1);
 
   const texts = {
-    id: `Nomor antrian ${letter}, ${numbers.split("").join(" ")}`,
-    en: `Queue number ${letter}, ${numbers.split("").join(" ")}`
+    id: `Nomor antrian, ${letter}, ${numbers.split("").join("")}`,
+    en: `Queue number, ${letter}, ${numbers.split("").join("")}`
   };
 
   const utterance = new SpeechSynthesisUtterance(texts[language]);
@@ -82,8 +82,8 @@ export function announceQueueNumber(queueNumber, language = 'id') {
 
   // Set voice preferences based on language
   utterance.lang = language === 'id' ? "id-ID" : "en-US";
-  utterance.rate = 0.8;
-  utterance.pitch = 1.5;
+  utterance.rate = 0.85;
+  utterance.pitch = 1.2;
 
   speechSynthesis.speak(utterance);
 }
@@ -103,6 +103,7 @@ export async function playQueueAnnouncement(queueNumber, language = 'id') {
   // Play sequence: ringtone first, then queue announcement
   await playRingtone();
   await announceQueueNumber(queueNumber, language);
+  
 }
 
 export async function announceVehicleMessage(carType, plateNumber, language = 'id') {
@@ -115,25 +116,48 @@ export async function announceVehicleMessage(carType, plateNumber, language = 'i
     en: `To the owner of ${carType} with license plate ${plateNumber}, please move your vehicle as there is a vehicle in front that needs to exit. Thank you for your attention`
   };
 
+  // Cancel any existing speech
+  window.speechSynthesis.cancel();
+
   // Play opening chime
   await new Promise((resolve) => {
-    openingChime.addEventListener("ended", resolve);
+    openingChime.addEventListener("ended", resolve, { once: true });
     openingChime.play();
   });
 
-  // Announce message with proper Promise handling
-  await new Promise((resolve) => {
-    const utterance = new SpeechSynthesisUtterance(messages[language]);
-    utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
-    utterance.rate = 0.8;
-    utterance.pitch = 1.5;
-    utterance.onend = resolve;
-    window.speechSynthesis.speak(utterance);
-  });
-  
+  // Split message into smaller parts for better reliability
+  const messageParts = messages[language].split('. ');
+
+  // Play each part of the message
+  for (const part of messageParts) {
+    await new Promise((resolve) => {
+      const utterance = new SpeechSynthesisUtterance(part.trim() + '.');
+      utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
+      utterance.rate = 0.85;
+      utterance.pitch = 1.2;
+      utterance.onend = resolve;
+      utterance.onerror = resolve; // Handle errors gracefully
+      
+      // Add small pause between parts
+      utterance.addEventListener('end', () => {
+        setTimeout(resolve, 300);
+      }, { once: true });
+
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+
   // Play closing chime
   await new Promise((resolve) => {
-    closingChime.addEventListener("ended", resolve);
+    closingChime.addEventListener("ended", resolve, { once: true });
     closingChime.play();
   });
+
+  // Clear any remaining speech
+  window.speechSynthesis.cancel();
+}
+
+export function playNotificationSound() {
+  const notifSound = new Audio(AUDIO_PATHS.notifOn);
+  notifSound.play();
 }
