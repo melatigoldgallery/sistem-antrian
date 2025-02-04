@@ -103,7 +103,6 @@ export async function playQueueAnnouncement(queueNumber, language = 'id') {
   // Play sequence: ringtone first, then queue announcement
   await playRingtone();
   await announceQueueNumber(queueNumber, language);
-  await announceQueueNumber(queueNumber, language);
 }
 
 export async function announceVehicleMessage(carType, plateNumber, language = 'id') {

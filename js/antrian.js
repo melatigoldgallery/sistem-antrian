@@ -64,17 +64,12 @@ export class QueueManager {
 
     next() {
         this.currentNumber++;
-        if (this.currentNumber > 10) {
+        if (this.currentNumber > 50) {
             this.currentNumber = 1;
             this.currentLetter++;
 
             if (this.currentLetter >= this.letters.length) {
                 this.currentLetter = 0;
-                this.currentBlock++;
-
-                if (this.currentBlock >= 5) {
-                    this.currentBlock = 0;
-                }
             }
         }
         this.saveState();
@@ -82,27 +77,19 @@ export class QueueManager {
     }
 
     getNextQueue() {
-        const nextState = {
-            letter: this.currentLetter,
-            number: this.currentNumber + 1,
-            block: this.currentBlock
-        };
+        let nextLetter = this.currentLetter;
+        let nextNumber = this.currentNumber + 1;
 
-        if (nextState.number > 10) {
-            nextState.number = 1;
-            nextState.letter++;
+        if (nextNumber > 50) {
+            nextNumber = 1;
+            nextLetter++;
 
-            if (nextState.letter >= this.letters.length) {
-                nextState.letter = 0;
-                nextState.block++;
-
-                if (nextState.block >= 5) {
-                    nextState.block = 0;
-                }
+            if (nextLetter >= this.letters.length) {
+                nextLetter = 0;
             }
         }
 
-        return `${this.letters[nextState.letter]}${this.formatNumber(nextState.number + nextState.block * 10)}`;
+        return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
     }
 
     setCustomQueue(letter, number) {
@@ -112,8 +99,7 @@ export class QueueManager {
         }
 
         this.currentLetter = letterIndex;
-        this.currentBlock = Math.floor((number - 1) / 10);
-        this.currentNumber = ((number - 1) % 10) + 1;
+        this.currentNumber = number;
 
         this.saveState();
         return this.getCurrentQueue();
