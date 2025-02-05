@@ -62,8 +62,7 @@ export class QueueManager {
     }
 
     getCurrentQueue() {
-        const number = parseInt(this.currentNumber);
-        return `${this.letters[this.currentLetter]}${this.formatNumber(number)}`;
+        return `${this.letters[this.currentLetter]}${this.formatNumber(this.currentNumber)}`;
     }
     saveState() {
         const queueRef = ref(database, 'queue');
@@ -108,15 +107,19 @@ export class QueueManager {
     }
 
     getNextQueue() {
-        const currentNumber = parseInt(this.currentNumber);
-        const nextNumber = currentNumber + 1;
+        let nextNumber = this.currentNumber + 1;
         let nextLetter = this.currentLetter;
-    
-        if (nextNumber <= 50) {
-            return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
-        } else {
-            return `${this.letters[(nextLetter + 1) % this.letters.length]}${this.formatNumber(1)}`;
+
+        if (nextNumber > 50) {
+            nextNumber = 1;
+            nextLetter++;
+
+            if (nextLetter >= this.letters.length) {
+                nextLetter = 0;
+            }
         }
+
+        return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
     }
 
     setCustomQueue(letter, number) {
