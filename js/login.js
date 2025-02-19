@@ -1,19 +1,15 @@
-// Add console.log to check if form submission works
-document.querySelector('.form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    console.log('Form submitted');
-    
-    const username = document.querySelector('input[type="text"]').value;
-    const password = document.querySelector('input[type="password"]').value;
-    
-    console.log('Username:', username);
-    console.log('Password:', password);
-    
-    if (username === "adminmelati" && password === "admin") {
-        console.log('Login successful');
-        sessionStorage.setItem('isLoggedIn', 'true');
-        window.location.href = "admin.html";
-    } else {
-        alert("Username atau Password salah!");
-    }
+import { authService } from './configFirebase.js';
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    await authService.login(username, password);
+    window.location.href = 'index.html';
+  } catch (error) {
+    alert('Login gagal: Username atau password salah');
+  }
 });

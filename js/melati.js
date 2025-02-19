@@ -4,6 +4,9 @@ import { QueueAnalytics } from './queueAnalytics.js';
 import { database } from './configFirebase.js';
 import { dateHandler } from "./date.js";
 import { QueueManager } from "./antrian.js";
+import { initializeUsers } from './auth/initUsers.js';
+import { authService } from './configFirebase.js';
+import { checkAuth } from './auth/authCheck.js';
 import {
   playWaitMessageSequence,
   playTakeQueueMessage,
@@ -11,7 +14,36 @@ import {
   announceQueueNumber,
   announceVehicleMessage,
 } from "./audioHandlers.js";
+async function initializePage() {
+  try {
+      // Initialize authorized users
+      await initializeUsers();
+      console.log('Users initialized successfully');
 
+      // Check authentication
+      const isAuthenticated = await checkAuth();
+      if (!isAuthenticated) {
+          window.location.href = 'index.html';
+          return;
+      }
+
+      // Add logout button handler
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+          try {
+              await authService.logout();
+              window.location.href = 'index.html';
+          } catch (error) {
+              console.error('Logout failed:', error);
+          }
+      });
+
+  } catch (error) {
+      console.error('Initialization error:', error);
+  }
+}
+
+// Start the application
+initializePage();
 // Hamberger Menu
 const hamburgerMenu = document.querySelector('.hamburger-menu');
 const navList = document.querySelector('.nav-list');
