@@ -2,8 +2,8 @@ import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/1
 import app from '../configFirebase.js';
 const db = getDatabase(app);
 const authorizedUsers = {
-    'admin': {
-      password: 'admin123',
+    'adminmelati': {
+      password: 'admin',
       role: 'admin'
     },
     'operator': {
