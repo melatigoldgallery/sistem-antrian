@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
-import { getDatabase, ref, get, child } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js';
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyB6WS177m4mFIIlDE9sSSW21XHkWHQdwdU",
@@ -13,26 +13,22 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+export default app;
 const database = getDatabase(app);
 console.log('Firebase initialized successfully');
 export { database };
 
 export const authService = {
-    async login(username, password) {
-      const usersRef = ref(database, 'authorized_users');
-      const snapshot = await get(child(usersRef, username));
-      
-      console.log('Login attempt:', { username }); // Debug log
-      console.log('User data found:', snapshot.val()); // Debug log
-      
-      if (snapshot.exists()) {
-        const userData = snapshot.val();
-        if (userData.password === password) {
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('username', username);
-          return true;
-        }
-      }
-      throw new Error('Invalid username or password');
+    getCurrentUser: async () => {
+        const user = sessionStorage.getItem('currentUser');
+        return user ? JSON.parse(user) : null;
+    },
+    
+    setCurrentUser: (user) => {
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+    },
+    
+    logout: () => {
+        sessionStorage.removeItem('currentUser');
     }
-  };
+};

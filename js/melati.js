@@ -7,6 +7,7 @@ import { QueueManager } from "./antrian.js";
 import { initializeUsers } from './auth/initUsers.js';
 import { authService } from './configFirebase.js';
 import { checkAuth } from './auth/authCheck.js';
+import { handleLogout } from './auth/logout.js';
 import {
   playWaitMessageSequence,
   playTakeQueueMessage,
@@ -14,36 +15,24 @@ import {
   announceQueueNumber,
   announceVehicleMessage,
 } from "./audioHandlers.js";
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  handleLogout();
+});
 async function initializePage() {
   try {
-      // Initialize authorized users
       await initializeUsers();
       console.log('Users initialized successfully');
-
-      // Check authentication
+      
       const isAuthenticated = await checkAuth();
-      if (!isAuthenticated) {
-          window.location.href = 'index.html';
-          return;
+      if (isAuthenticated) {
+          // Continue with authenticated user logic
       }
-
-      // Add logout button handler
-      document.getElementById('logoutBtn').addEventListener('click', async () => {
-          try {
-              await authService.logout();
-              window.location.href = 'index.html';
-          } catch (error) {
-              console.error('Logout failed:', error);
-          }
-      });
-
   } catch (error) {
-      console.error('Initialization error:', error);
+      console.log('Initialization error:', error);
   }
 }
 
-// Start the application
-initializePage();
+document.addEventListener('DOMContentLoaded', initializePage);
 // Hamberger Menu
 const hamburgerMenu = document.querySelector('.hamburger-menu');
 const navList = document.querySelector('.nav-list');
@@ -106,6 +95,10 @@ function updateDisplays() {
     if (delayQueueDisplay) delayQueueDisplay.textContent = delayedQueue.join(", ") || "-";
 }
 document.addEventListener("DOMContentLoaded", async () => {
+  const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
   const queueAnalytics = new QueueAnalytics(database);
   // Initialize DOM elements
   queueDisplay = document.getElementById("queueNumber");

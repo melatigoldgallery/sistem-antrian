@@ -1,15 +1,39 @@
-import { authService } from './configFirebase.js';
+import { initializeUsers } from './auth/initUsers.js';
+import { loginUser } from './auth/initUsers.js';
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (!username || !password) {
+      alert('Mohon isi username dan password');
+      return;
+    }
   
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-
-  try {
-    await authService.login(username, password);
-    window.location.href = 'index.html';
-  } catch (error) {
-    alert('Login gagal: Username atau password salah');
-  }
-});
+    try {
+      // Initialize users first
+      await initializeUsers();
+      
+      const result = await loginUser(username, password);
+      if (result.success) {
+        sessionStorage.setItem('currentUser', JSON.stringify({
+          username: result.username,
+          role: result.role
+        }));
+        
+        if (result.role === 'admin') {
+          window.location.href = 'admin.html';
+        } else {
+          window.location.href = 'operator.html';
+        }
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Gagal login: Silakan periksa koneksi internet dan coba lagi');
+    }
+  });
+  

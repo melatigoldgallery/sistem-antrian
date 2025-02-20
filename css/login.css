@@ -117,11 +117,11 @@ section .signin .content .inputBox input
   background: rgb(206, 205, 205);
   border: none;
   outline: none;
-  padding: 25px 5px 7.5px;
+  padding: 30px 5px 7.5px 7.5px;
   border-radius: 4px;
   color: #000;
   font-weight: 500;
-  font-size: 1em;
+  font-size: 1em;  
 }
 section .signin .content .inputBox i 
 {

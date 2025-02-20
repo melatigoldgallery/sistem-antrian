@@ -10,25 +10,40 @@ export class QueueManager {
     }
 
     async initializeFromFirebase() {
-        const queueRef = ref(database, 'queue');
-        const snapshot = await get(queueRef);
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            this.currentLetter = data.currentLetter;
-            this.currentNumber = data.currentNumber;
-            this.delayedQueue = data.delayedQueue || [];
-        } else {
+        try {
+            const queueRef = ref(database, 'queue');
+            const snapshot = await get(queueRef);
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                this.currentLetter = data.currentLetter;
+                this.currentNumber = data.currentNumber;
+                this.delayedQueue = data.delayedQueue || [];
+            } else {
+                this.currentLetter = 0;
+                this.currentNumber = 1;
+                this.delayedQueue = [];
+                await this.saveState();
+            }
+        } catch (error) {
+            console.log('Initializing default values due to:', error.message);
             this.currentLetter = 0;
             this.currentNumber = 1;
             this.delayedQueue = [];
-            this.saveState();
+            await this.saveState();
         }
     }
+    
     async initializeCustomerCount() {
-        const snapshot = await get(this.customerRef);
-        this.customerCount = snapshot.val() || 0;
-        this.updateCustomerDisplay();
-      }
+        try {
+            const snapshot = await get(this.customerRef);
+            this.customerCount = snapshot.val() || 0;
+            this.updateCustomerDisplay();
+        } catch (error) {
+            console.log('Initializing customer count to 0 due to:', error.message);
+            this.customerCount = 0;
+            this.updateCustomerDisplay();
+        }
+    }
     
       async incrementCustomer() {
         const snapshot = await get(this.customerRef);
@@ -62,7 +77,8 @@ export class QueueManager {
     }
 
     getCurrentQueue() {
-        return `${this.letters[this.currentLetter]}${this.formatNumber(this.currentNumber)}`;
+        const number = parseInt(this.currentNumber);
+        return `${this.letters[this.currentLetter]}${this.formatNumber(number)}`;
     }
     saveState() {
         const queueRef = ref(database, 'queue');
@@ -107,19 +123,15 @@ export class QueueManager {
     }
 
     getNextQueue() {
-        let nextNumber = this.currentNumber + 1;
+        const currentNumber = parseInt(this.currentNumber);
+        const nextNumber = currentNumber + 1;
         let nextLetter = this.currentLetter;
-
-        if (nextNumber > 50) {
-            nextNumber = 1;
-            nextLetter++;
-
-            if (nextLetter >= this.letters.length) {
-                nextLetter = 0;
-            }
+    
+        if (nextNumber <= 50) {
+            return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
+        } else {
+            return `${this.letters[(nextLetter + 1) % this.letters.length]}${this.formatNumber(1)}`;
         }
-
-        return `${this.letters[nextLetter]}${this.formatNumber(nextNumber)}`;
     }
 
     setCustomQueue(letter, number) {
