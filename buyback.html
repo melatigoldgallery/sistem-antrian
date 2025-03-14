@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Datepicker CSS and JS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
+    <!-- Your custom CSS -->
+    <link rel="stylesheet" href="css/Project1.css" />
+    <link rel="stylesheet" href="fontawesome/css/all.css" />
+    <title>Buyback</title>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <div class="nav-brand">
+          <a href="#">
+            <img src="img/Melati.jfif" alt="Logo" />
+            <span class="tangerine-bold">Melati Gold Shop</span>
+          </a>
+        </div>
+        <div class="left-nav">
+          <div class="hamburger-menu">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
+          <div class="dropdown">
+            <button
+              class="btn btn-secondary dropdown-toggle akun"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              K
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <span><i class="fa-solid fa-user"></i></span>
+                <button class="dropdown-item" type="button">Tambah Sales</button>
+              </li>
+              <li>
+                <span><i class="fa-solid fa-gear"></i></span>
+                <button class="dropdown-item" type="button">Pengaturan Printer</button>
+              </li>
+              <li>
+                <span><i class="fa-solid fa-download opacity-75"></i></span>
+                <button class="dropdown-item" type="button">Unduh Konektor Printer</button>
+              </li>
+              <li>
+                <button class="dropdown-item" type="button">Logout</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main>
+      <div class="mainbar">
+        <h4 class="tangerine-bold fs-2 fw-bold">Sistem Buyback Perhiasan</h4>
+        <div class="maintop">
+          <p>Hitung Harga Terima Perhiasan</p>
+        </div>
+        <div class="container mb-3">
+          <div class="d-flex justify-content-between mt-3">
+            <h6 class="fw-bold">Detail Barang</h6>
+            <button type="button" class="btn btn-outline-primary p-1" id="btnTambahPenerimaan">Tambah</button>
+          </div>
+          <form id="penerimaanForm">
+            <div class="table-responsive">
+              <table class="table" id="tablePenerimaan">
+                <thead class="table">
+                  <tr>
+                    <th style="width:3%">No</th>
+                    <th style="width:8%">Kadar</th>
+                    <th style="width:10%">Asal Toko</th>
+                    <th style="width:25%">Nama Barang</th>
+                    <th style="width:15%">Kondisi Barang</th>
+                    <th style="width:15%">Harga Per Gram Saat Beli</th>
+                    <th style="width:15%">Harga Per Gram Hari Ini</th>
+                    <th style="width:7%">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td>
+                      <select id="kadar" name="kadar" class="form-select form-select-sm pl-0" required>
+                        <option value="" disabled selected>Pilih</option>
+                        <option value="8K">8K</option>
+                        <option value="9K">9K</option>
+                        <option value="16K">16K</option>
+                        <option value="17K">17K</option>
+                        <option value="18K">18K</option>
+                        <option value="22K">22K</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select id="asalToko" name="asalToko" class="form-select form-select-sm" required>
+                        <option value="" disabled selected>Pilih</option>
+                        <option value="Toko Melati">Toko Melati</option>
+                        <option value="Luar Toko">Luar Toko</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="form-control form-select-sm" placeholder="Nama Barang"></td>
+                    <td>
+                      <select id="kondisiBarang" name="kondisiBarang" class="form-select form-select-sm" required>
+                        <option value="" disabled selected>Pilih</option>
+                        <option value="1">K1</option>
+                        <option value="2">K2</option>
+                        <option value="3">K3</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        name="hargaBeli"
+                        class="form-control form-control-sm"
+                        placeholder="Harga beli"
+                        required
+                        min="0"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        name="hargaHariIni"
+                        class="form-control form-control-sm"
+                        placeholder="Harga hari ini"
+                        required
+                        min="0"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-grid mt-3">
+              <button type="submit" class="btn btn-primary">Hitung Buyback Perhiasan</button>
+            </div>
+          </form>
+        </div>
+        <div class="container mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="fw-bold mb-0 tangerine-bold">Catatan Penting Buyback</h6>
+            </div>
+            <div class="card-body">
+              <h6 class="fw-bold">Kode Kategori Kondisi Barang:</h6>
+              <ul>
+                <li>K1 = Kondisi Sangat Baik (Mengkilap, Mulus, Model Bagus)</li>
+                <li>K2 = Kondisi Sedang :
+                  <ul>
+                  <li>
+                    1. Sedikit Kusam, Sedikit Baret, Model Bagus <br>
+                    2. Sedikit Kusam, Sedikit Baret, Batu Kecil Lepas (1-3 batu)
+                  </li>
+                </ul></li>
+                <li>K3 = Kondisi Kurang : <ul>
+                  <li>
+                    1. Kusam & Banyak Baret, <br>
+                    2. Kusam, Sedikit Baret, Batu Kecil Lepas (lebih dari 3)
+                  </li>
+                </ul></li>
+              </ul>
+              
+              <h6 class="fw-bold mt-3">Aturan Penentuan Harga:</h6>
+              <p>Untuk pembelian beberapa barang dengan kondisi berbeda dengan kadar emas yang sama, harga per gram mengikuti kondisi dibawahnya untuk menyeragamkan nilai buyback. Contoh:</p>
+              <ul>
+                <li>Jika ada barang K1 dan K2, maka semua barang diharga mengikuti K2</li>
+                <li>Jika ada barang K1, K2 dan K3, maka semua barang diharga mengikuti K3</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+
+        <!-- Modal -->
+        <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="resultModalLabel">Hasil Perhitungan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body" id="modalMessage">
+                <!-- Results will be inserted here -->
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                  <button type="button" class="btn btn-primary" onclick="printModal()">Print</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="sidebar">
+        <ul>
+          <li>
+            <a href="index.html" class="dashboard">Dashboard</a>
+          </li>
+          <li>
+            <a href="#" class="inpt-btn" data-target="inpt-show">
+              Input Data
+              <span class="fas fa-caret-down first"></span>
+            </a>
+            <ul class="inpt-btn" id="inpt-show">
+              <li><a href="dataAksesoris.html">Aksesoris Perhiasan</a></li>
+              <li><a href="dataServis.html">Data Servis</a></li>
+              <li><a href="Summary.html">Data Kasir</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#" class="sell-btn" data-target="sell-show">
+              Penjualan
+              <span class="fas fa-caret-down first"></span>
+            </a>
+            <ul class="sell-btn" id="sell-show">
+              <li><a href="penjualanManual.html">Penjualan Manual</a></li>
+              <li><a href="penjualanAksesoris.html">Penjualan Aksesoris</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#" class="utlt-btn" data-target="utlt-show">
+              Utility
+              <span class="fas fa-caret-down second"></span>
+            </a>
+            <ul class="utlt-show" id="utlt-show">
+              <li><a href="#">Edit Data</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#" class="lprn-btn" data-target="lprn-show">
+              Laporan
+              <span class="fas fa-caret-down third"></span>
+            </a>
+            <ul class="lprn-show" id="lprn-show">
+              <li><a href="#">Laporan Aksesoris</a></li>
+              <li><a href="#">Laporan Data Servis</a></li>
+              <li><a href="#">Laporan Penjualan</a></li>
+              <li><a href="#">Laporan Kasir</a></li>
+            </ul>
+          </li>
+        </ul>
+      </aside>
+    </main>
+    <script type="module" src="js/melati.js"></script>
+
+  </body>
+</html>

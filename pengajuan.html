@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Datepicker CSS and JS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
+    <!-- Your custom CSS -->
+    <link rel="stylesheet" href="css/Project1.css" />
+    <link rel="stylesheet" href="fontawesome/css/all.css" />
+    <title>Sistem Absensi Karyawan</title>
+    <link rel="stylesheet" href="css/absensi.css" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <div class="nav-brand">
+          <a href="#">
+            <img src="img/Melati.jfif" alt="Logo" />
+            <span class="tangerine-bold">Melati Gold Shop</span>
+          </a>
+        </div>
+        <div class="nav-list align-items-center mt-3">
+          <ul class="d-flex justify-content-center gap-3">
+            <li class="dropdown">
+              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-users"></i> Pengajuan Staff
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengajuan.html">
+                  <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
+                </a>
+                <a class="dropdown-item" href="cuti.html">
+                  <i class="fa-solid fa-calendar-days"></i> Pengajuan Kasbon
+                </a>
+              </div>
+            </li>
+            <li>
+              <a class="text-decoration-none text-dark" href="pengguna.html">
+                <i class="fa-solid fa-gear"></i> Pengaturan
+              </a>
+            </li>
+            <li>
+              <a class="text-decoration-none text-dark" href="laporan.html">
+                <i class="fa-solid fa-file-lines"></i> Laporan
+              </a>
+            </li>
+          </ul>
+        </div>
+        
+        <div class="left-nav">
+          <div class="left-nav">
+            <div class="hamburger-menu">
+              <i class="fas fa-bars"></i>
+            </div>
+          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
+          <div class="dropdown">
+            <button
+              class="btn btn-secondary dropdown-toggle akun"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              K
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <span><i class="fa-solid fa-user"></i></span
+                ><button class="dropdown-item" type="button">
+                  Tambah Sales
+                </button>
+              </li>
+              <li>
+                <span><i class="fa-solid fa-gear"></i></span
+                ><button class="dropdown-item" type="button">
+                  Pengaturan Printer
+                </button>
+              </li>
+              <li>
+                <span><i class="fa-solid fa-download opacity-75"></i></span
+                ><button class="dropdown-item" type="button">
+                  Unduh Konektor Printer
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item" type="button">Logout</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main>
+      <div class="mainbar">
+        <div class="maintop">
+          <p>Absensi Staff Melati</p>
+        </div>
+        <div class="container">
+            <!-- Leave Form Section - 8 parts -->
+            <div class="leave-section">
+              <h2>Form Pengajuan Izin</h2>
+              <form id="leaveForm">
+                <input type="text" id="employeeId" placeholder="ID Karyawan" required>
+                <label for=""><input type="date" id="leaveDate" required></label>
+                <textarea id="leaveReason" placeholder="Alasan izin" required></textarea>
+                
+                <div class="replacement-type">
+                  <label>Jenis Pengganti:</label>
+                  <select id="replacementType" required>
+                    <option value="">Pilih Jenis Pengganti</option>
+                    <option value="libur">Ganti Libur</option>
+                    <option value="jam">Ganti Jam</option>
+                  </select>
+                </div>
+        
+                <div id="replacementLibur" class="replacement-detail" style="display: none;">
+                  <label>Tanggal Ganti Libur:</label>
+                  <input type="date" id="replacementDate">
+                </div>
+        
+                <div id="replacementJam" class="replacement-detail" style="display: none;">
+                  <label>Tanggal Ganti Jam:</label>
+                  <input type="date" id="replacementHourDate">
+                  <label>Jumlah Jam Pengganti:</label>
+                  <input type="number" id="replacementHours" min="1" max="12" placeholder="Jumlah jam">
+                </div>
+        
+                <button type="submit">Ajukan Izin</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <aside class="sidebar">
+        <ul>
+          <li>
+            <a href="index.html" class="dashboard">Dashboard</a>
+          </li>
+          <li>
+            <a href="#" class="inpt-btn" data-target="inpt-show"
+              >Input Data<span class="fas fa-caret-down first"></span
+            ></a>
+            <ul class="inpt-show" id="inpt-show">
+              <li><a href="#">Data Servis</a></li>
+              <li><a href="penjualanManual.html">Penjualan Manual</a></li>
+              <li><a href="#">Penjualan Kotak</a></li>
+              <li><a href="Summary.html">Laporan Kasir</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#" class="utlt-btn" data-target="utlt-show"
+              >Utility<span class="fas fa-caret-down second"></span
+            ></a>
+            <ul class="utlt-show" id="utlt-show">
+              <li><a href="#">Edit Data</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#" class="lprn-btn" data-target="lprn-show"
+              >Laporan
+              <span class="fas fa-caret-down third"></span>
+            </a>
+            <ul class="lprn-show" id="lprn-show">
+              <li><a href="#">Grand Total</a></li>
+            </ul>
+          </li>
+        </ul>
+      </aside>
+    </main>
+    <script type="module" src="js/melati.js"></script>
+    <script src="script.js"></script>
+    <script>
+      let employees = JSON.parse(localStorage.getItem('employees')) || [
+  { id: "EMP001", name: "John Doe", barcode: "123456" },
+  { id: "EMP002", name: "Jane Smith", barcode: "789012" }
+];
+      // Add these functions after the existing script
+function saveEmployees() {
+  localStorage.setItem('employees', JSON.stringify(employees));
+}
+
+function updateStaffTable() {
+  const tbody = document.getElementById('staffList');
+  tbody.innerHTML = '';
+  
+  employees.forEach(employee => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${employee.id}</td>
+      <td>${employee.name}</td>
+      <td>${employee.barcode}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteStaff('${employee.id}')">
+          Hapus
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function deleteStaff(id) {
+  employees = employees.filter(emp => emp.id !== id);
+  saveEmployees();
+  updateStaffTable();
+}
+
+// Add form submission handler
+document.getElementById('staffForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const newStaff = {
+    id: document.getElementById('staffId').value,
+    name: document.getElementById('staffName').value,
+    barcode: document.getElementById('staffBarcode').value
+  };
+  
+  employees.push(newStaff);
+  saveEmployees();
+  updateStaffTable();
+  this.reset();
+});
+
+      // Store attendance and leave records
+      let attendanceRecords = [];
+      let leaveRecords = [];
+
+      // Handle barcode scanning
+      document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          const barcode = this.value;
+          const employee = employees.find((emp) => emp.barcode === barcode);
+          const scanResult = document.getElementById("scanResult");
+
+          if (employee) {
+            const now = new Date();
+            attendanceRecords.push({
+              employeeId: employee.id,
+              name: employee.name,
+              timeIn: now,
+              status: "Hadir",
+            });
+
+            scanResult.innerHTML = `Absensi berhasil: ${employee.name}`;
+            scanResult.className = "success";
+            updateAttendanceTable();
+          } else {
+            scanResult.innerHTML = "Barcode tidak valid!";
+            scanResult.className = "error";
+          }
+
+          scanResult.style.display = "block";
+          this.value = "";
+
+          // Hide result after 3 seconds
+          setTimeout(() => {
+            scanResult.style.display = "none";
+          }, 3000);
+        }
+      });
+
+// Event listener for replacement type selection
+document.getElementById('replacementType').addEventListener('change', function() {
+    const liburSection = document.getElementById('replacementLibur');
+    const jamSection = document.getElementById('replacementJam');
+    
+    if (this.value === 'libur') {
+        liburSection.style.display = 'block';
+        jamSection.style.display = 'none';
+    } else if (this.value === 'jam') {
+        liburSection.style.display = 'none';
+        jamSection.style.display = 'block';
+    } else {
+        liburSection.style.display = 'none';
+        jamSection.style.display = 'none';
+    }
+});
+
+      // Update leave form submission
+document.getElementById('leaveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const employeeId = document.getElementById('employeeId').value;
+    const employee = employees.find(emp => emp.id === employeeId);
+    
+    if (employee) {
+        const leaveDate = document.getElementById('leaveDate').value;
+        const leaveReason = document.getElementById('leaveReason').value;
+        const replacementType = document.getElementById('replacementType').value;
+        
+        let replacementDetails = {};
+        
+        if (replacementType === 'libur') {
+            const replacementDate = document.getElementById('replacementDate').value;
+            replacementDetails = {
+                type: 'libur',
+                date: replacementDate,
+                formattedDate: new Date(replacementDate).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })
+            };
+        } else if (replacementType === 'jam') {
+            const replacementHourDate = document.getElementById('replacementHourDate').value;
+            const replacementHours = document.getElementById('replacementHours').value;
+            replacementDetails = {
+                type: 'jam',
+                date: replacementHourDate,
+                hours: replacementHours,
+                formattedDate: new Date(replacementHourDate).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })
+            };
+        }
+        
+        const newLeave = {
+            id: 'LEAVE' + Date.now(),
+            employeeId: employee.id,
+            name: employee.name,
+            leaveDate: new Date(leaveDate).toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }),
+            reason: leaveReason,
+            replacementType: replacementType,
+            replacementDetails: replacementDetails,
+            status: 'Pending',
+            replacementStatus: 'Belum Diganti', // Added default replacement status
+            submitDate: new Date().toLocaleDateString()
+        };
+        
+        leaveRecords.push(newLeave);
+        localStorage.setItem('leaveRecords', JSON.stringify(leaveRecords));
+        updateLeaveTable();
+        this.reset();
+    }
+});
+
+      // Update attendance table
+      function updateAttendanceTable() {
+        const tbody = document.getElementById("attendanceList");
+        tbody.innerHTML = "";
+
+        attendanceRecords.forEach((record) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${record.employeeId}</td>
+            <td>${record.name}</td>
+            <td>${record.timeIn.toLocaleTimeString()}</td>
+            <td>${record.status}</td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+
+   // Update the table HTML structure
+function updateLeaveTable() {
+    const tbody = document.getElementById('leaveList');
+    tbody.innerHTML = '';
+    
+    leaveRecords.forEach(record => {
+        const replacementInfo = getReplacementInfo(record);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${record.employeeId}</td>
+            <td>${record.name}</td>
+            <td>${record.leaveDate}</td>
+            <td>${record.reason}</td>
+            <td>${record.replacementType === 'libur' ? 'Ganti Libur' : 'Ganti Jam'}</td>
+            <td>${replacementInfo}</td>
+            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+            <td class="replacement-status-${record.replacementStatus.toLowerCase().replace(/\s+/g, '-')}">${record.replacementStatus}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+// Update leave table display with enhanced replacement info
+function updateLeaveTable() {
+    const tbody = document.getElementById('leaveList');
+    tbody.innerHTML = '';
+    
+    leaveRecords.forEach(record => {
+        const replacementInfo = getReplacementInfo(record);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${record.employeeId}</td>
+            <td>${record.name}</td>
+            <td>${record.leaveDate}</td>
+            <td>${record.reason}</td>
+            <td>${record.replacementType === 'libur' ? 'Ganti Libur' : 'Ganti Jam'}</td>
+            <td>${replacementInfo}</td>
+            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+// Enhanced helper function to format replacement information
+function getReplacementInfo(record) {
+    if (record.replacementType === 'libur') {
+        return `Ganti libur pada ${record.replacementDetails.formattedDate}`;
+    } else if (record.replacementType === 'jam') {
+        return `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`;
+    }
+    return '-';
+}
+      // Initialize tables
+      updateAttendanceTable();
+      updateLeaveTable();
+      updateStaffTable();
+    </script>
+  </body>
+</html>
+*

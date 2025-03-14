@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRD Dashboard - Sistem Absensi Karyawan</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+       * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h2 {
+    margin-bottom: 15px;
+}
+
+.scanner-section, .attendance-section, .leave-section, .leave-list-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+input[type="text"], input[type="date"], textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+#scanResult {
+    margin-top: 10px;
+    padding: 10px;
+    display: none;
+}
+
+.success {
+    background-color: #dff0d8;
+    color: #3c763d;
+    border: 1px solid #d6e9c6;
+}
+
+.error {
+    background-color: #f2dede;
+    color: #a94442;
+    border: 1px solid #ebccd1;
+}
+.pending-leaves-section, .leave-history-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.approve-btn {
+    background-color: #4CAF50;
+}
+
+.reject-btn {
+    background-color: #f44336;
+}
+
+.status-pending {
+    color: #ff9800;
+    font-weight: bold;
+}
+
+.status-approved {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.status-rejected {
+    color: #f44336;
+    font-weight: bold;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HRD Dashboard</h1>
+        
+        <!-- Pending Leave Requests -->
+        <div class="pending-leaves-section">
+            <h2>Pengajuan Izin yang Menunggu Persetujuan</h2>
+            <table id="pendingLeaveTable">
+                <thead>
+                    <tr>
+                        <th>ID Karyawan</th>
+                        <th>Nama</th>
+                        <th>Tanggal Izin</th>
+                        <th>Alasan</th>
+                        <th>Tanggal Pengganti</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingLeaveList"></tbody>
+            </table>
+        </div>
+
+        <!-- All Leave History -->
+        <div class="leave-history-section">
+            <h2>Riwayat Semua Izin</h2>
+            <table id="leaveHistoryTable">
+                <thead>
+                    <tr>
+                        <th>ID Karyawan</th>
+                        <th>Nama</th>
+                        <th>Tanggal Izin</th>
+                        <th>Alasan</th>
+                        <th>Tanggal Pengganti</th>
+                        <th>Status</th>
+                        <th>Tanggal Keputusan</th>
+                    </tr>
+                </thead>
+                <tbody id="leaveHistoryList"></tbody>
+            </table>
+        </div>
+    </div>
+    <script src="hrd-script.js"></script>
+    <script>
+        // Sample employee data (In real application, this would come from a database)
+const employees = [
+    { id: "EMP001", name: "John Doe", barcode: "123456" },
+    { id: "EMP002", name: "Jane Smith", barcode: "789012" }
+];
+
+// Get leave records from localStorage or initialize empty array
+let leaveRecords = JSON.parse(localStorage.getItem('leaveRecords')) || [];
+
+function updatePendingLeaveTable() {
+    const tbody = document.getElementById('pendingLeaveList');
+    tbody.innerHTML = '';
+    
+    const pendingLeaves = leaveRecords.filter(record => record.status === 'Pending');
+    
+    pendingLeaves.forEach(record => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${record.employeeId}</td>
+            <td>${record.name}</td>
+            <td>${record.leaveDate}</td>
+            <td>${record.reason}</td>
+            <td>${record.replacementDate}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="approve-btn" onclick="handleLeaveAction('${record.id}', 'Approved')">Setuju</button>
+                    <button class="reject-btn" onclick="handleLeaveAction('${record.id}', 'Rejected')">Tolak</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateLeaveHistoryTable() {
+    const tbody = document.getElementById('leaveHistoryList');
+    tbody.innerHTML = '';
+    
+    leaveRecords.forEach(record => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${record.employeeId}</td>
+            <td>${record.name}</td>
+            <td>${record.leaveDate}</td>
+            <td>${record.reason}</td>
+            <td>${record.replacementDate}</td>
+            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+            <td>${record.decisionDate || '-'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function handleLeaveAction(leaveId, action) {
+    const leaveIndex = leaveRecords.findIndex(record => record.id === leaveId);
+    
+    if (leaveIndex !== -1) {
+        leaveRecords[leaveIndex].status = action;
+        leaveRecords[leaveIndex].decisionDate = new Date().toLocaleDateString();
+        
+        // Save to localStorage
+        localStorage.setItem('leaveRecords', JSON.stringify(leaveRecords));
+        
+        // Update tables
+        updatePendingLeaveTable();
+        updateLeaveHistoryTable();
+    }
+}
+
+// Initialize tables
+updatePendingLeaveTable();
+updateLeaveHistoryTable();
+    </script>
+</body>
+</html>
