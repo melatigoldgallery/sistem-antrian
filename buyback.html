@@ -36,10 +36,15 @@
           </a>
         </div>
         <div class="left-nav">
-          <div class="hamburger-menu">
-            <i class="fas fa-bars"></i>
-          </div>
-          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
+          <div class="left-nav">
+            <div class="hamburger-menu">
+              <i class="fas fa-bars"></i>
+            </div>
+            <div class="date">
+              <span id="clock" class="font-weight-bold"></span>
+              <br />
+              <span id="tgl" class="font-weight-bold"></span>
+            </div>
           <div class="dropdown">
             <button
               class="btn btn-secondary dropdown-toggle akun"
@@ -51,19 +56,7 @@
             </button>
             <ul class="dropdown-menu">
               <li>
-                <span><i class="fa-solid fa-user"></i></span>
-                <button class="dropdown-item" type="button">Tambah Sales</button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-gear"></i></span>
-                <button class="dropdown-item" type="button">Pengaturan Printer</button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-download opacity-75"></i></span>
-                <button class="dropdown-item" type="button">Unduh Konektor Printer</button>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button">Logout</button>
+                <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
               </li>
             </ul>
           </div>
@@ -72,9 +65,8 @@
     </header>
     <main>
       <div class="mainbar">
-        <h4 class="tangerine-bold fs-2 fw-bold">Sistem Buyback Perhiasan</h4>
-        <div class="maintop">
-          <p>Hitung Harga Terima Perhiasan</p>
+        <div class="maintop d-flex align-items-center">
+          <p class="tangerine-bold m-0">Hitung Harga Terima Perhiasan</p>
         </div>
         <div class="container mb-3">
           <div class="d-flex justify-content-between mt-3">
@@ -211,48 +203,28 @@
       <aside class="sidebar">
         <ul>
           <li>
-            <a href="index.html" class="dashboard">Dashboard</a>
+            <a href="dashboard.html" class="dashboard">Dashboard</a>
           </li>
           <li>
-            <a href="#" class="inpt-btn" data-target="inpt-show">
-              Input Data
-              <span class="fas fa-caret-down first"></span>
-            </a>
-            <ul class="inpt-btn" id="inpt-show">
-              <li><a href="dataAksesoris.html">Aksesoris Perhiasan</a></li>
-              <li><a href="dataServis.html">Data Servis</a></li>
-              <li><a href="Summary.html">Data Kasir</a></li>
-            </ul>
+            <a href="admin.html" class="inpt-btn" data-target="inpt-show"
+              >Antrian</a>
           </li>
           <li>
-            <a href="#" class="sell-btn" data-target="sell-show">
-              Penjualan
-              <span class="fas fa-caret-down first"></span>
-            </a>
-            <ul class="sell-btn" id="sell-show">
-              <li><a href="penjualanManual.html">Penjualan Manual</a></li>
-              <li><a href="penjualanAksesoris.html">Penjualan Aksesoris</a></li>
-            </ul>
+            <a href="buyback.html" class="sell-btn" data-target="sell-show"
+              >Buyback</a>
           </li>
           <li>
-            <a href="#" class="utlt-btn" data-target="utlt-show">
-              Utility
-              <span class="fas fa-caret-down second"></span>
-            </a>
-            <ul class="utlt-show" id="utlt-show">
-              <li><a href="#">Edit Data</a></li>
-            </ul>
+            <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show"
+              >Absensi</a>
           </li>
           <li>
-            <a href="#" class="lprn-btn" data-target="lprn-show">
-              Laporan
-              <span class="fas fa-caret-down third"></span>
-            </a>
+            <a href="#" class="lprn-btn" data-target="lprn-show"
+              >Laporan<span class="fas fa-caret-down third"></span
+            ></a>
             <ul class="lprn-show" id="lprn-show">
-              <li><a href="#">Laporan Aksesoris</a></li>
-              <li><a href="#">Laporan Data Servis</a></li>
-              <li><a href="#">Laporan Penjualan</a></li>
-              <li><a href="#">Laporan Kasir</a></li>
+              <li><a href="analisis.html">Analisis Antrian</a></li>
+              <li><a href="#">Laporan Kehadiran</a></li>
+              <li><a href="#">Laporan Izin</a></li>
             </ul>
           </li>
         </ul>

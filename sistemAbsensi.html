@@ -28,9 +28,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
     <!-- Your custom CSS -->
     <link rel="stylesheet" href="css/Project1.css" />
-    <link rel="stylesheet" href="fontawesome/css/all.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="css/absensi.css"/> 
     <title>Sistem Absensi Karyawan</title>
-    <link rel="stylesheet" href="css/absensi.css" />
   </head>
   <body>
     <header>
@@ -81,13 +81,16 @@
             </li>
           </ul>
         </div>
-        
         <div class="left-nav">
           <div class="left-nav">
             <div class="hamburger-menu">
               <i class="fas fa-bars"></i>
             </div>
-          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
+            <div class="date">
+              <span id="clock" class="font-weight-bold"></span>
+              <br />
+              <span id="tgl" class="font-weight-bold"></span>
+            </div>
           <div class="dropdown">
             <button
               class="btn btn-secondary dropdown-toggle akun"
@@ -99,25 +102,7 @@
             </button>
             <ul class="dropdown-menu">
               <li>
-                <span><i class="fa-solid fa-user"></i></span
-                ><button class="dropdown-item" type="button">
-                  Tambah Sales
-                </button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-gear"></i></span
-                ><button class="dropdown-item" type="button">
-                  Pengaturan Printer
-                </button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-download opacity-75"></i></span
-                ><button class="dropdown-item" type="button">
-                  Unduh Konektor Printer
-                </button>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button">Logout</button>
+                <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
               </li>
             </ul>
           </div>
@@ -178,34 +163,28 @@
       <aside class="sidebar">
         <ul>
           <li>
-            <a href="index.html" class="dashboard">Dashboard</a>
+            <a href="dashboard.html" class="dashboard">Dashboard</a>
           </li>
           <li>
-            <a href="#" class="inpt-btn" data-target="inpt-show"
-              >Input Data<span class="fas fa-caret-down first"></span
-            ></a>
-            <ul class="inpt-show" id="inpt-show">
-              <li><a href="#">Data Servis</a></li>
-              <li><a href="penjualanManual.html">Penjualan Manual</a></li>
-              <li><a href="#">Penjualan Kotak</a></li>
-              <li><a href="Summary.html">Laporan Kasir</a></li>
-            </ul>
+            <a href="admin.html" class="inpt-btn" data-target="inpt-show"
+              >Antrian</a>
           </li>
           <li>
-            <a href="#" class="utlt-btn" data-target="utlt-show"
-              >Utility<span class="fas fa-caret-down second"></span
-            ></a>
-            <ul class="utlt-show" id="utlt-show">
-              <li><a href="#">Edit Data</a></li>
-            </ul>
+            <a href="buyback.html" class="sell-btn" data-target="sell-show"
+              >Buyback</a>
+          </li>
+          <li>
+            <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show"
+              >Absensi</a>
           </li>
           <li>
             <a href="#" class="lprn-btn" data-target="lprn-show"
-              >Laporan
-              <span class="fas fa-caret-down third"></span>
-            </a>
+              >Laporan<span class="fas fa-caret-down third"></span
+            ></a>
             <ul class="lprn-show" id="lprn-show">
-              <li><a href="#">Grand Total</a></li>
+              <li><a href="analisis.html">Analisis Antrian</a></li>
+              <li><a href="#">Laporan Kehadiran</a></li>
+              <li><a href="#">Laporan Izin</a></li>
             </ul>
           </li>
         </ul>

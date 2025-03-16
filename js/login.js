@@ -24,7 +24,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         }));
         
         if (result.role === 'admin') {
-          window.location.href = 'admin.html';
+          window.location.href = 'dashboard.html';
         } else {
           window.location.href = 'operator.html';
         }

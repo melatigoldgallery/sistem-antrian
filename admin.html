@@ -32,7 +32,7 @@
     <header>
       <nav>
         <div class="nav-brand">
-          <a href="admin.html">
+          <a href="dashboard.html">
             <img src="img/Melati.jfif" alt="Logo" />
             <span class="tangerine-bold">Melati Gold Gallery</span>
           </a>
@@ -43,9 +43,6 @@
               <a class="text-decoration-none" href="#" id="documentationLink">Dokumentasi</a>
             </li>
             <li>
-              <a class="text-decoration-none" href="analisis.html">Analisis Antrian</a>
-            </li>
-            <li>
               <a class="text-decoration-none" href="display.html">Display Antrian</a>
             </li>
           </ul>
@@ -54,16 +51,38 @@
           <i class="fas fa-bars"></i>
         </div>
         <div class="left-nav">
-          <div class="date">
-            <span id="clock" class="font-weight-bold"></span>
-            <br />
-            <span id="tgl" class="font-weight-bold"></span>
+          <div class="left-nav">
+            <div class="hamburger-menu">
+              <i class="fas fa-bars"></i>
+            </div>
+            <div class="date">
+              <span id="clock" class="font-weight-bold"></span>
+              <br />
+              <span id="tgl" class="font-weight-bold"></span>
+            </div>
+          <div class="dropdown">
+            <button
+              class="btn btn-secondary dropdown-toggle akun"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              K
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
+              </li>
+            </ul>
           </div>
         </div>
       </nav>
     </header>
     <main>
-      <div class="mainbar-atr">
+      <div class="mainbar">
+        <div class="maintop">
+          <p>Sistem Buyback Perhiasan</p>
+        </div>
         <div class="container mt-3">
           <!-- Customer Message Section -->
           <div class="row mb-4">
@@ -75,7 +94,7 @@
               <button class="btn cta btn-lg" id="takeMessage">Pengingat Antrian</button>
               <button class="btn cta btn-lg d-none" id="takeQueue">Queue Reminder</button>
             </div>
-            <div class="col text-center">
+            <div class="col text-center d-none">
               <button class="btn cta btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
             </div>
           </div>
@@ -339,10 +358,35 @@
           </div>
         </div>
       </div>
+      <aside class="sidebar">
+        <ul>
+          <li>
+            <a href="dashboard.html" class="dashboard">Dashboard</a>
+          </li>
+          <li>
+            <a href="admin.html" class="inpt-btn" data-target="inpt-show">Antrian</a>
+          </li>
+          <li>
+            <a href="buyback.html" class="sell-btn" data-target="sell-show">Buyback</a>
+          </li>
+          <li>
+            <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show">Absensi</a>
+          </li>
+          <li>
+            <a href="#" class="lprn-btn" data-target="lprn-show">
+              Laporan
+              <span class="fas fa-caret-down third"></span>
+            </a>
+            <ul class="lprn-show" id="lprn-show">
+              <li><a href="analisis.html">Analisis Antrian</a></li>
+              <li><a href="#">Laporan Kehadiran</a></li>
+              <li><a href="#">Laporan Izin</a></li>
+            </ul>
+          </li>
+        </ul>
+      </aside>
     </main>
-    <footer>
-      <div class="credit">&copy Melati Gold Gallery 2025</div>
-    </footer>
+   
     <script type="module" src="js/melati.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
