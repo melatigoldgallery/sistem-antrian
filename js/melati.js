@@ -9,6 +9,7 @@ import { authService } from './configFirebase.js';
 import { checkAuth } from './auth/authCheck.js';
 import { handleLogout } from './auth/logout.js';
 import { sidebarToggle } from "./sidebar.js";
+import { penerimaanHandler, formatNumber, getNumericValue } from "./buyback.js";
 import {
   playWaitMessageSequence,
   playTakeQueueMessage,
@@ -25,7 +26,13 @@ try {
 document.addEventListener('DOMContentLoaded', function() {
   const printButton = document.querySelector('.modal-footer .btn-primary');
   printButton.addEventListener('click', printModal);
+  // Tambah baris dan Fungsi Penerimaan Buyback
+ document.getElementById("btnTambahPenerimaan").addEventListener("click", () => {
+  tambahBaris("#tablePenerimaan tbody");
 });
+penerimaanHandler.initializeForm();
+});
+ 
 
 function printModal() {
   const modalContent = document.getElementById("modalMessage").innerHTML;
