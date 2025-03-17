@@ -87,15 +87,15 @@ const penerimaanHandler = {
     } else if (persentaseBeli >= 90) {
         const persentaseMap = {
             1: 97,
-            2: 96,
-            3: 95
+            2: 95,
+            3: 94
         };
         return persentaseMap[kondisiBarang];
     } else if (persentaseBeli >= 85) {
         const persentaseMap = {
             1: 95,
-            2: 94,
-            3: 93
+            2: 93,
+            3: 92
         };
         return persentaseMap[kondisiBarang];
     } else if (persentaseBeli >= 80) {
@@ -105,16 +105,22 @@ const penerimaanHandler = {
             3: 88
         };
         return persentaseMap[kondisiBarang];
-    } else {
+    }  else if (persentaseBeli >= 75) {
+      const persentaseMap = {
+          1: 90,
+          2: 87,
+          3: 80
+      };
+      return persentaseMap[kondisiBarang];
+     } else {
         const persentaseMap = {
             1: 90,
-            2: 87,
-            3: 80
+            2: 83,
+            3: 79
         };
         return persentaseMap[kondisiBarang];
     }
 },
-
   calculateLuarTokoPersentase(kondisiBarang) {
     const persentaseMap = {
       1: 72,
