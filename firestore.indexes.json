@@ -1,0 +1,22 @@
+{
+    "indexes": [
+      {
+        "collectionGroup": "attendance",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "date", "order": "ASCENDING" },
+          { "fieldPath": "timeIn", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "leaveRequests",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "submitDate", "order": "DESCENDING" }
+        ]
+      }
+    ],
+    "fieldOverrides": []
+  }
+  

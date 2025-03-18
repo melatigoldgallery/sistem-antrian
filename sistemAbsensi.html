@@ -51,8 +51,8 @@
                 <a class="dropdown-item" href="pengajuan.html">
                   <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
                 </a>
-                <a class="dropdown-item" href="cuti.html">
-                  <i class="fa-solid fa-calendar-days"></i> Pengajuan Kasbon
+                <a class="dropdown-item" href="supervisor.html">
+                  <i class="fa-solid fa-calendar-days"></i> Statsus Pengajuan
                 </a>
               </div>
             </li>
@@ -61,7 +61,7 @@
                 <i class="fa-solid fa-gear"></i> Pengaturan <i class="fa-solid fa-chevron-down ms-1"></i>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="pengguna.html.html">
+                <a class="dropdown-item" href="pengguna.html">
                   <i class="fa-solid fa-file-contract"></i> Tambah User 
                 </a>
               </div>
@@ -191,120 +191,6 @@
       </aside>
     </main>
     <script type="module" src="js/melati.js"></script>
-    <script>
-      let employees = JSON.parse(localStorage.getItem('employees')) || [
-  { id: "EMP001", name: "John Doe", barcode: "123456" },
-  { id: "EMP002", name: "Jane Smith", barcode: "789012" }
-];
-      // Store attendance and leave records
-      let attendanceRecords = [];
-      let leaveRecords = [];
-
-      // Handle barcode scanning
-      document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
-        if (e.key === "Enter") {
-          const barcode = this.value;
-          const employee = employees.find((emp) => emp.barcode === barcode);
-          const scanResult = document.getElementById("scanResult");
-
-          if (employee) {
-            const now = new Date();
-            attendanceRecords.push({
-              employeeId: employee.id,
-              name: employee.name,
-              timeIn: now,
-              status: "Hadir",
-            });
-
-            scanResult.innerHTML = `Absensi berhasil: ${employee.name}`;
-            scanResult.className = "success";
-            updateAttendanceTable();
-          } else {
-            scanResult.innerHTML = "Barcode tidak valid!";
-            scanResult.className = "error";
-          }
-
-          scanResult.style.display = "block";
-          this.value = "";
-
-          // Hide result after 3 seconds
-          setTimeout(() => {
-            scanResult.style.display = "none";
-          }, 3000);
-        }
-      });
-
-      // Update attendance table
-      function updateAttendanceTable() {
-        const tbody = document.getElementById("attendanceList");
-        tbody.innerHTML = "";
-
-        attendanceRecords.forEach((record) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${record.employeeId}</td>
-            <td>${record.name}</td>
-            <td>${record.timeIn.toLocaleTimeString()}</td>
-            <td>${record.status}</td>
-        `;
-          tbody.appendChild(row);
-        });
-      }
-
-   // Update the table HTML structure
-function updateLeaveTable() {
-    const tbody = document.getElementById('leaveList');
-    tbody.innerHTML = '';
-    
-    leaveRecords.forEach(record => {
-        const replacementInfo = getReplacementInfo(record);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${record.employeeId}</td>
-            <td>${record.name}</td>
-            <td>${record.leaveDate}</td>
-            <td>${record.reason}</td>
-            <td>${record.replacementType === 'libur' ? 'Ganti Libur' : 'Ganti Jam'}</td>
-            <td>${replacementInfo}</td>
-            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-            <td class="replacement-status-${record.replacementStatus.toLowerCase().replace(/\s+/g, '-')}">${record.replacementStatus}</td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-// Update leave table display with enhanced replacement info
-function updateLeaveTable() {
-    const tbody = document.getElementById('leaveList');
-    tbody.innerHTML = '';
-    
-    leaveRecords.forEach(record => {
-        const replacementInfo = getReplacementInfo(record);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${record.employeeId}</td>
-            <td>${record.name}</td>
-            <td>${record.leaveDate}</td>
-            <td>${record.reason}</td>
-            <td>${record.replacementType === 'libur' ? 'Ganti Libur' : 'Ganti Jam'}</td>
-            <td>${replacementInfo}</td>
-            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-// Enhanced helper function to format replacement information
-function getReplacementInfo(record) {
-    if (record.replacementType === 'libur') {
-        return `Ganti libur pada ${record.replacementDetails.formattedDate}`;
-    } else if (record.replacementType === 'jam') {
-        return `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`;
-    }
-    return '-';
-}
-      // Initialize tables
-      updateAttendanceTable();
-      updateLeaveTable();
-      updateStaffTable();
-    </script>
+    <script type="module" src="js/sistem-absensi.js"></script>
   </body>
 </html>

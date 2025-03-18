@@ -1,10 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HRD Dashboard - Sistem Absensi Karyawan</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Datepicker CSS and JS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
+    <!-- Your custom CSS -->
+    <link rel="stylesheet" href="css/Project1.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="css/absensi.css"/> 
     <style>
        * {
     margin: 0;
@@ -125,9 +150,89 @@ th {
     </style>
 </head>
 <body>
+<header>
+    <nav>
+        <div class="nav-brand">
+          <a href="#">
+            <img src="img/Melati.jfif" alt="Logo" />
+            <span class="tangerine-bold">Melati Gold Shop</span>
+          </a>
+        </div>
+        <div class="nav-list align-items-center mt-3">
+          <ul class="d-flex justify-content-center gap-3">
+            <li class="dropdown">
+              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-users"></i> Pengajuan Staff <i class="fa-solid fa-chevron-down"></i>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengajuan.html">
+                  <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
+                </a>
+                <a class="dropdown-item" href="supervisor.html">
+                  <i class="fa-solid fa-calendar-days"></i> Status Pengajuan
+                </a>
+              </div>
+            </li>
+            <li class="dropdown">
+              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-gear"></i> Pengaturan <i class="fa-solid fa-chevron-down ms-1"></i>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengguna.html">
+                  <i class="fa-solid fa-file-contract"></i> Tambah User 
+                </a>
+              </div>
+            </li>
+            <li class="dropdown">
+              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-file-lines"></i> Laporan <i class="fa-solid fa-chevron-down ms-1"></i>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengguna.html.html">
+                  <i class="fa-solid fa-file-contract"></i> Laporan  Kehadiran
+                </a>
+                <a class="dropdown-item" href="pengguna.html.html">
+                  <i class="fa-solid fa-file-contract"></i> Laporan  Izin
+                </a>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="left-nav">
+          <div class="left-nav">
+            <div class="hamburger-menu">
+              <i class="fas fa-bars"></i>
+            </div>
+            <div class="date">
+              <span id="clock" class="font-weight-bold"></span>
+              <br />
+              <span id="tgl" class="font-weight-bold"></span>
+            </div>
+          <div class="dropdown">
+            <button
+              class="btn btn-secondary dropdown-toggle akun"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              K
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+</header>
+<main>
+    <div class="mainbar">
+        <div class="maintop">
+            <p>Status Penerimaan Izin</p>
+        </div>
     <div class="container">
         <h1>HRD Dashboard</h1>
-        
         <!-- Pending Leave Requests -->
         <div class="pending-leaves-section">
             <h2>Pengajuan Izin yang Menunggu Persetujuan</h2>
@@ -145,7 +250,6 @@ th {
                 <tbody id="pendingLeaveList"></tbody>
             </table>
         </div>
-
         <!-- All Leave History -->
         <div class="leave-history-section">
             <h2>Riwayat Semua Izin</h2>
@@ -165,80 +269,37 @@ th {
             </table>
         </div>
     </div>
-    <script src="hrd-script.js"></script>
-    <script>
-        // Sample employee data (In real application, this would come from a database)
-const employees = [
-    { id: "EMP001", name: "John Doe", barcode: "123456" },
-    { id: "EMP002", name: "Jane Smith", barcode: "789012" }
-];
-
-// Get leave records from localStorage or initialize empty array
-let leaveRecords = JSON.parse(localStorage.getItem('leaveRecords')) || [];
-
-function updatePendingLeaveTable() {
-    const tbody = document.getElementById('pendingLeaveList');
-    tbody.innerHTML = '';
-    
-    const pendingLeaves = leaveRecords.filter(record => record.status === 'Pending');
-    
-    pendingLeaves.forEach(record => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${record.employeeId}</td>
-            <td>${record.name}</td>
-            <td>${record.leaveDate}</td>
-            <td>${record.reason}</td>
-            <td>${record.replacementDate}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="approve-btn" onclick="handleLeaveAction('${record.id}', 'Approved')">Setuju</button>
-                    <button class="reject-btn" onclick="handleLeaveAction('${record.id}', 'Rejected')">Tolak</button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function updateLeaveHistoryTable() {
-    const tbody = document.getElementById('leaveHistoryList');
-    tbody.innerHTML = '';
-    
-    leaveRecords.forEach(record => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${record.employeeId}</td>
-            <td>${record.name}</td>
-            <td>${record.leaveDate}</td>
-            <td>${record.reason}</td>
-            <td>${record.replacementDate}</td>
-            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-            <td>${record.decisionDate || '-'}</td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function handleLeaveAction(leaveId, action) {
-    const leaveIndex = leaveRecords.findIndex(record => record.id === leaveId);
-    
-    if (leaveIndex !== -1) {
-        leaveRecords[leaveIndex].status = action;
-        leaveRecords[leaveIndex].decisionDate = new Date().toLocaleDateString();
-        
-        // Save to localStorage
-        localStorage.setItem('leaveRecords', JSON.stringify(leaveRecords));
-        
-        // Update tables
-        updatePendingLeaveTable();
-        updateLeaveHistoryTable();
-    }
-}
-
-// Initialize tables
-updatePendingLeaveTable();
-updateLeaveHistoryTable();
-    </script>
+</div>
+<aside class="sidebar">
+    <ul>
+      <li>
+        <a href="dashboard.html" class="dashboard">Dashboard</a>
+      </li>
+      <li>
+        <a href="admin.html" class="inpt-btn" data-target="inpt-show"
+          >Antrian</a>
+      </li>
+      <li>
+        <a href="buyback.html" class="sell-btn" data-target="sell-show"
+          >Buyback</a>
+      </li>
+      <li>
+        <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show"
+          >Absensi</a>
+      </li>
+      <li>
+        <a href="#" class="lprn-btn" data-target="lprn-show"
+          >Laporan<span class="fas fa-caret-down third"></span
+        ></a>
+        <ul class="lprn-show" id="lprn-show">
+          <li><a href="analisis.html">Analisis Antrian</a></li>
+          <li><a href="#">Laporan Kehadiran</a></li>
+          <li><a href="#">Laporan Izin</a></li>
+        </ul>
+      </li>
+    </ul>
+  </aside>
+</main>
+    <script type="module" src="js/supervisor.js"></script>
 </body>
 </html>
