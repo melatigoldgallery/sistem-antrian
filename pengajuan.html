@@ -5,18 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
     <!-- jQuery first -->
     <script src="js/jquery-3.6.3.min.js"></script>
     <!-- Bootstrap CSS and JS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
     <!-- Datepicker CSS and JS -->
@@ -26,11 +20,18 @@
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <!-- Your custom CSS -->
     <link rel="stylesheet" href="css/Project1.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <title>Sistem Absensi Karyawan</title>
     <link rel="stylesheet" href="css/absensi.css" />
+    <title>Pengajuan Izin - Melati Gold Shop</title>
   </head>
   <body>
     <header>
@@ -44,37 +45,82 @@
         <div class="nav-list align-items-center mt-3">
           <ul class="d-flex justify-content-center gap-3">
             <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-users"></i> Pengajuan Staff
+              <a
+                class="text-decoration-none text-dark dropdown-toggle"
+                href="#"
+                id="documentationLink"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fa-solid fa-users"></i>
+                Pengajuan Staff
+                <i class="fa-solid fa-chevron-down"></i>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="pengajuan.html">
-                  <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
+                <a class="dropdown-item" href="sistemAbsensi.html">
+                  <i class="fa-solid fa-file-contract"></i>
+                  Kehadiran
                 </a>
-                <a class="dropdown-item" href="cuti.html">
-                  <i class="fa-solid fa-calendar-days"></i> Pengajuan Kasbon
+                <a class="dropdown-item" href="pengajuan.html">
+                  <i class="fa-solid fa-file-contract"></i>
+                  Pengajuan Izin
+                </a>
+                <a class="dropdown-item" href="supervisor.html">
+                  <i class="fa-solid fa-calendar-days"></i>
+                  Status Pengajuan
                 </a>
               </div>
             </li>
-            <li>
-              <a class="text-decoration-none text-dark" href="pengguna.html">
-                <i class="fa-solid fa-gear"></i> Pengaturan
+            <li class="dropdown">
+              <a
+                class="text-decoration-none text-dark dropdown-toggle"
+                href="#"
+                id="documentationLink"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fa-solid fa-gear"></i>
+                Pengaturan
+                <i class="fa-solid fa-chevron-down ms-1"></i>
               </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengguna.html">
+                  <i class="fa-solid fa-file-contract"></i>
+                  Tambah User
+                </a>
+              </div>
             </li>
-            <li>
-              <a class="text-decoration-none text-dark" href="laporan.html">
-                <i class="fa-solid fa-file-lines"></i> Laporan
+            <li class="dropdown">
+              <a
+                class="text-decoration-none text-dark dropdown-toggle"
+                href="#"
+                id="documentationLink"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fa-solid fa-file-lines"></i>
+                Laporan
+                <i class="fa-solid fa-chevron-down ms-1"></i>
               </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengguna.html.html">
+                  <i class="fa-solid fa-file-contract"></i>
+                  Laporan Kehadiran
+                </a>
+                <a class="dropdown-item" href="pengguna.html.html">
+                  <i class="fa-solid fa-file-contract"></i>
+                  Laporan Izin
+                </a>
+              </div>
             </li>
           </ul>
         </div>
-        
         <div class="left-nav">
-          <div class="left-nav">
-            <div class="hamburger-menu">
-              <i class="fas fa-bars"></i>
-            </div>
-          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
+          <div class="hamburger-menu">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class="date">
+            <span id="clock" class="font-weight-bold"></span>
+            <br />
+            <span id="tgl" class="font-weight-bold"></span>
+          </div>
           <div class="dropdown">
             <button
               class="btn btn-secondary dropdown-toggle akun"
@@ -86,25 +132,7 @@
             </button>
             <ul class="dropdown-menu">
               <li>
-                <span><i class="fa-solid fa-user"></i></span
-                ><button class="dropdown-item" type="button">
-                  Tambah Sales
-                </button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-gear"></i></span
-                ><button class="dropdown-item" type="button">
-                  Pengaturan Printer
-                </button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-download opacity-75"></i></span
-                ><button class="dropdown-item" type="button">
-                  Unduh Konektor Printer
-                </button>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button">Logout</button>
+                <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
               </li>
             </ul>
           </div>
@@ -113,75 +141,406 @@
     </header>
     <main>
       <div class="mainbar">
-        <div class="maintop">
-          <p>Absensi Staff Melati</p>
+        <div class="maintop d-flex align-items-center">
+          <p class="m-0">
+            <i class="fas fa-clipboard-list me-2"></i>
+            Pengajuan Izin Staff Melati
+          </p>
         </div>
         <div class="container">
-            <!-- Leave Form Section - 8 parts -->
-            <div class="leave-section">
-              <h2>Form Pengajuan Izin</h2>
-              <form id="leaveForm">
-                <input type="text" id="employeeId" placeholder="ID Karyawan" required>
-                <label for=""><input type="date" id="leaveDate" required></label>
-                <textarea id="leaveReason" placeholder="Alasan izin" required></textarea>
-                
-                <div class="replacement-type">
-                  <label>Jenis Pengganti:</label>
-                  <select id="replacementType" required>
-                    <option value="">Pilih Jenis Pengganti</option>
-                    <option value="libur">Ganti Libur</option>
-                    <option value="jam">Ganti Jam</option>
-                  </select>
+          <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+              <!-- Alert untuk feedback -->
+              <div id="formFeedback" style="display: none"></div>
+
+              <!-- Leave Form Section -->
+              <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Form Pengajuan Izin
+                  </h5>
+                  <span class="badge bg-primary">Staff</span>
                 </div>
-        
-                <div id="replacementLibur" class="replacement-detail" style="display: none;">
-                  <label>Tanggal Ganti Libur:</label>
-                  <input type="date" id="replacementDate">
+                <div class="card-body">
+                  <form id="leaveForm">
+                    <div class="mb-3">
+                      <label for="employeeId" class="form-label">ID Karyawan</label>
+                      <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="employeeId"
+                          placeholder="Masukkan ID Karyawan"
+                          required
+                        />
+                      </div>
+                      <div class="form-text">Masukkan ID karyawan yang terdaftar di sistem</div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="leaveDate" class="form-label">Tanggal Izin</label>
+                      <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                        <input type="date" class="form-control" id="leaveDate" required />
+                      </div>
+                      <div class="form-text">Pilih tanggal saat Anda berencana untuk izin</div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="leaveReason" class="form-label">Alasan Izin</label>
+                      <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-comment-alt"></i></span>
+                        <textarea
+                          class="form-control"
+                          id="leaveReason"
+                          rows="3"
+                          placeholder="Jelaskan alasan izin Anda secara detail"
+                          required
+                        ></textarea>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="replacementType" class="form-label">Jenis Pengganti</label>
+                      <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-exchange-alt"></i></span>
+                        <select class="form-select" id="replacementType" required>
+                          <option value="" selected disabled>Pilih Jenis Pengganti</option>
+                          <option value="libur">Ganti Libur</option>
+                          <option value="jam">Ganti Jam</option>
+                        </select>
+                      </div>
+                      <div class="form-text">Pilih bagaimana Anda akan mengganti waktu izin</div>
+                    </div>
+
+                    <div id="replacementLibur" class="replacement-detail" style="display: none">
+                      <h6 class="mb-3">
+                        <i class="fas fa-calendar-day me-2"></i>
+                        Detail Ganti Libur
+                      </h6>
+                      <div class="mb-3">
+                        <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
+                        <div class="input-group">
+                          <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+                          <input type="date" class="form-control" id="replacementDate" />
+                        </div>
+                        <div class="form-text">Pilih tanggal libur yang akan Anda gunakan sebagai pengganti</div>
+                      </div>
+                    </div>
+
+                    <div id="replacementJam" class="replacement-detail" style="display: none">
+                      <h6 class="mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        Detail Ganti Jam
+                      </h6>
+                      <div class="mb-3">
+                        <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
+                        <div class="input-group">
+                          <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+                          <input type="date" class="form-control" id="replacementHourDate" />
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
+                        <div class="input-group">
+                          <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
+                          <input
+                            type="number"
+                            class="form-control"
+                            id="replacementHours"
+                            min="1"
+                            max="12"
+                            placeholder="Jumlah jam"
+                          />
+                          <span class="input-group-text">jam</span>
+                        </div>
+                        <div class="form-text">Masukkan jumlah jam yang akan Anda ganti (maksimal 12 jam)</div>
+                      </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Ajukan Izin
+                      </button>
+                      <button type="reset" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-2"></i>
+                        Reset Form
+                      </button>
+                    </div>
+                  </form>
                 </div>
-        
-                <div id="replacementJam" class="replacement-detail" style="display: none;">
-                  <label>Tanggal Ganti Jam:</label>
-                  <input type="date" id="replacementHourDate">
-                  <label>Jumlah Jam Pengganti:</label>
-                  <input type="number" id="replacementHours" min="1" max="12" placeholder="Jumlah jam">
+              </div>
+
+              <!-- Informasi Tambahan -->
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informasi Pengajuan Izin
+                  </h5>
                 </div>
-        
-                <button type="submit">Ajukan Izin</button>
-              </form>
+                <div class="card-body">
+                  <div class="alert alert-info">
+                    <h6>
+                      <i class="fas fa-lightbulb me-2"></i>
+                      Petunjuk Pengajuan:
+                    </h6>
+                    <ul class="mb-0">
+                      <li>Pengajuan izin harus dilakukan minimal 1 hari sebelum tanggal izin</li>
+                      <li>Pastikan alasan izin dijelaskan dengan detail</li>
+                      <li>Pengajuan akan diproses oleh HRD dalam waktu 1x24 jam</li>
+                      <li>Status pengajuan dapat dilihat di menu "Kehadiran"</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <aside class="sidebar">
-          <ul>
-            <li>
-              <a href="dashboard.html" class="dashboard">Dashboard</a>
-            </li>
-            <li>
-              <a href="admin.html" class="inpt-btn" data-target="inpt-show"
-                >Antrian</a>
-            </li>
-            <li>
-              <a href="buyback.html" class="sell-btn" data-target="sell-show"
-                >Buyback</a>
-            </li>
-            <li>
-              <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show"
-                >Absensi</a>
-            </li>
-            <li>
-              <a href="#" class="lprn-btn" data-target="lprn-show"
-                >Laporan<span class="fas fa-caret-down third"></span
-              ></a>
-              <ul class="lprn-show" id="lprn-show">
-                <li><a href="#">Analisis Antrian</a></li>
-                <li><a href="#">Perizinan</a></li>
-              </ul>
-            </li>
-          </ul>
-        </aside>
+      </div>
+      <aside class="sidebar">
+        <ul>
+          <li>
+            <a href="dashboard.html" class="dashboard">Dashboard</a>
+          </li>
+          <li>
+            <a href="admin.html" class="inpt-btn" data-target="inpt-show">Antrian</a>
+          </li>
+          <li>
+            <a href="buyback.html" class="sell-btn" data-target="sell-show">Buyback</a>
+          </li>
+          <li>
+            <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show">Absensi</a>
+          </li>
+          <li>
+            <a href="#" class="lprn-btn" data-target="lprn-show">
+              Laporan
+              <span class="fas fa-caret-down third"></span>
+            </a>
+            <ul class="lprn-show" id="lprn-show">
+              <li><a href="#">Analisis Antrian</a></li>
+              <li><a href="#">Perizinan</a></li>
+            </ul>
+          </li>
+        </ul>
+      </aside>
     </main>
+
     <script type="module" src="js/melati.js"></script>
-    <script type="module" src="js/pengajuan.js"></script>
+    <script type="module">
+      import { getEmployees } from "./js/employee-service.js";
+      import { submitLeaveRequest } from "./js/leave-service.js";
+
+      // Initialize data
+      let employees = [];
+
+      // Load employees
+      async function loadEmployees() {
+        try {
+          employees = await getEmployees();
+          console.log("Employees loaded:", employees.length);
+        } catch (error) {
+          console.error("Error loading employees:", error);
+          showFeedback("error", "Gagal memuat data karyawan. Silakan refresh halaman.");
+        }
+      }
+
+      // Show feedback to user
+      function showFeedback(type, message) {
+        const feedbackEl = document.getElementById("formFeedback");
+        feedbackEl.innerHTML = `
+<div class="alert alert-${type === "success" ? "success" : "danger"} alert-dismissible fade show" role="alert">
+<i class="fas fa-${type === "success" ? "check-circle" : "exclamation-circle"} me-2"></i>
+${message}
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+`;
+        feedbackEl.style.display = "block";
+
+        // Auto hide after 5 seconds
+        if (type === "success") {
+          setTimeout(() => {
+            const alert = document.querySelector(".alert");
+            if (alert) {
+              const bsAlert = new bootstrap.Alert(alert);
+              bsAlert.close();
+            }
+          }, 5000);
+        }
+
+        // Scroll to feedback
+        feedbackEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // Event listener for replacement type selection
+      document.getElementById("replacementType").addEventListener("change", function () {
+        const liburSection = document.getElementById("replacementLibur");
+        const jamSection = document.getElementById("replacementJam");
+
+        // Remove active class from both
+        liburSection.classList.remove("active");
+        jamSection.classList.remove("active");
+
+        if (this.value === "libur") {
+          liburSection.style.display = "block";
+          jamSection.style.display = "none";
+          liburSection.classList.add("active");
+        } else if (this.value === "jam") {
+          liburSection.style.display = "none";
+          jamSection.style.display = "block";
+          jamSection.classList.add("active");
+        } else {
+          liburSection.style.display = "none";
+          jamSection.style.display = "none";
+        }
+      });
+
+      // Handle leave form submission
+      document.getElementById("leaveForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
+        submitBtn.disabled = true;
+
+        const employeeId = document.getElementById("employeeId").value;
+        const employee = employees.find((emp) => emp.employeeId === employeeId);
+
+        if (!employee) {
+          showFeedback("error", "ID Karyawan tidak ditemukan! Silakan periksa kembali.");
+          submitBtn.innerHTML = originalBtnText;
+          submitBtn.disabled = false;
+          return;
+        }
+
+        try {
+          const leaveDate = document.getElementById("leaveDate").value;
+          const leaveReason = document.getElementById("leaveReason").value;
+          const replacementType = document.getElementById("replacementType").value;
+
+          // Validasi tanggal
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const selectedDate = new Date(leaveDate);
+          selectedDate.setHours(0, 0, 0, 0);
+
+          if (selectedDate < today) {
+            showFeedback("error", "Tanggal izin tidak boleh kurang dari hari ini!");
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+            return;
+          }
+
+          let replacementDetails = {};
+
+          if (replacementType === "libur") {
+            const replacementDate = document.getElementById("replacementDate").value;
+            if (!replacementDate) {
+              showFeedback("error", "Tanggal ganti libur harus diisi!");
+              submitBtn.innerHTML = originalBtnText;
+              submitBtn.disabled = false;
+              return;
+            }
+
+            replacementDetails = {
+              type: "libur",
+              date: replacementDate,
+              formattedDate: new Date(replacementDate).toLocaleDateString("id-ID", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+            };
+          } else if (replacementType === "jam") {
+            const replacementHourDate = document.getElementById("replacementHourDate").value;
+            const replacementHours = document.getElementById("replacementHours").value;
+
+            if (!replacementHourDate || !replacementHours) {
+              showFeedback("error", "Tanggal dan jumlah jam pengganti harus diisi!");
+              submitBtn.innerHTML = originalBtnText;
+              submitBtn.disabled = false;
+              return;
+            }
+
+            replacementDetails = {
+              type: "jam",
+              date: replacementHourDate,
+              hours: replacementHours,
+              formattedDate: new Date(replacementHourDate).toLocaleDateString("id-ID", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }),
+            };
+          }
+
+          const newLeave = {
+            employeeId: employee.employeeId,
+            name: employee.name,
+            leaveDate: new Date(leaveDate).toLocaleDateString("id-ID", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+            rawLeaveDate: leaveDate, // Store original date for sorting
+            reason: leaveReason,
+            replacementType: replacementType,
+            replacementDetails: replacementDetails,
+            status: "Pending",
+            replacementStatus: "Belum Diganti",
+            submissionDate: new Date(),
+          };
+
+          await submitLeaveRequest(newLeave);
+
+          showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
+          this.reset();
+
+          // Hide replacement sections
+          document.getElementById("replacementLibur").style.display = "none";
+          document.getElementById("replacementJam").style.display = "none";
+        } catch (error) {
+          console.error("Error submitting leave request:", error);
+          showFeedback("error", "Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.");
+        } finally {
+          // Restore button state
+          submitBtn.innerHTML = originalBtnText;
+          submitBtn.disabled = false;
+        }
+      });
+
+      // Initialize datepickers with better UX
+      function initDatepickers() {
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach((input) => {
+          // Set min date to today for future dates
+          if (input.id === "leaveDate" || input.id === "replacementDate" || input.id === "replacementHourDate") {
+            const today = new Date().toISOString().split("T")[0];
+            input.min = today;
+          }
+        });
+      }
+
+      // Initialize page
+      document.addEventListener("DOMContentLoaded", () => {
+        loadEmployees();
+        initDatepickers();
+
+        // Reset button functionality
+        document.querySelector('button[type="reset"]').addEventListener("click", () => {
+          document.getElementById("replacementLibur").style.display = "none";
+          document.getElementById("replacementJam").style.display = "none";
+          document.getElementById("formFeedback").style.display = "none";
+        });
+      });
+    </script>
   </body>
 </html>
-

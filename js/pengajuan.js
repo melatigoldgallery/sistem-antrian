@@ -97,7 +97,10 @@ document.getElementById('leaveForm').addEventListener('submit', async function(e
       rawLeaveDate: leaveDate, // Store original date for sorting
       reason: leaveReason,
       replacementType: replacementType,
-      replacementDetails: replacementDetails
+      replacementDetails: replacementDetails,
+      status: 'Pending', // Tambahkan status Pending secara default
+      replacementStatus: 'Belum Diganti', // Tambahkan status ganti default
+      submissionDate: new Date() // Tambahkan tanggal pengajuan
     };
     
     await submitLeaveRequest(newLeave);

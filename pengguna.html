@@ -28,8 +28,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
     <!-- Your custom CSS -->
     <link rel="stylesheet" href="css/Project1.css" />
-    <title>Sistem Absensi Karyawan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="css/absensi.css" />
+    <title>Sistem Absensi Karyawan</title>
   </head>
   <body>
     <header>
@@ -44,70 +45,70 @@
           <ul class="d-flex justify-content-center gap-3">
             <li class="dropdown">
               <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-users"></i> Pengajuan Staff
+                <i class="fa-solid fa-users"></i> Pengajuan Staff <i class="fa-solid fa-chevron-down"></i>
               </a>
               <div class="dropdown-menu">
+                <a class="dropdown-item" href="sistemAbsensi.html">
+                  <i class="fa-solid fa-file-contract"></i> Kehadiran
+                </a>
                 <a class="dropdown-item" href="pengajuan.html">
                   <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
                 </a>
-                <a class="dropdown-item" href="cuti.html">
-                  <i class="fa-solid fa-calendar-days"></i> Pengajuan Kasbon
+                <a class="dropdown-item" href="supervisor.html">
+                  <i class="fa-solid fa-calendar-days"></i> Status Pengajuan
                 </a>
               </div>
             </li>
-            <li>
-              <a class="text-decoration-none text-dark" href="pengguna.html">
-                <i class="fa-solid fa-gear"></i> Pengaturan
+            <li class="dropdown">
+              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-gear"></i> Pengaturan <i class="fa-solid fa-chevron-down ms-1"></i>
               </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengguna.html">
+                  <i class="fa-solid fa-file-contract"></i> Tambah User 
+                </a>
+              </div>
             </li>
-            <li>
-              <a class="text-decoration-none text-dark" href="laporan.html">
-                <i class="fa-solid fa-file-lines"></i> Laporan
+            <li class="dropdown">
+              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-file-lines"></i> Laporan <i class="fa-solid fa-chevron-down ms-1"></i>
               </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="pengguna.html.html">
+                  <i class="fa-solid fa-file-contract"></i> Laporan  Kehadiran
+                </a>
+                <a class="dropdown-item" href="pengguna.html.html">
+                  <i class="fa-solid fa-file-contract"></i> Laporan  Izin
+                </a>
+              </div>
             </li>
           </ul>
         </div>
-        
         <div class="left-nav">
-          <div class="left-nav">
-            <div class="hamburger-menu">
-              <i class="fas fa-bars"></i>
-            </div>
-          <div class=""><span id="tgl" class="font-weight-bold"></span></div>
-          <div class="dropdown">
-            <button
-              class="btn btn-secondary dropdown-toggle akun"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              K
-            </button>
-            <ul class="dropdown-menu">
-              <li>
-                <span><i class="fa-solid fa-user"></i></span
-                ><button class="dropdown-item" type="button">
-                  Tambah Sales
-                </button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-gear"></i></span
-                ><button class="dropdown-item" type="button">
-                  Pengaturan Printer
-                </button>
-              </li>
-              <li>
-                <span><i class="fa-solid fa-download opacity-75"></i></span
-                ><button class="dropdown-item" type="button">
-                  Unduh Konektor Printer
-                </button>
-              </li>
-              <li>
-                <button class="dropdown-item" type="button">Logout</button>
-              </li>
-            </ul>
+          <div class="hamburger-menu">
+            <i class="fas fa-bars"></i>
           </div>
+          <div class="date">
+            <span id="clock" class="font-weight-bold"></span>
+            <br />
+            <span id="tgl" class="font-weight-bold"></span>
+          </div>
+        <div class="dropdown">
+          <button
+            class="btn btn-secondary dropdown-toggle akun"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            K
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
+            </li>
+          </ul>
         </div>
+      </div>
       </nav>
     </header>
     <main>

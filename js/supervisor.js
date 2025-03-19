@@ -1,5 +1,5 @@
 //import { checkAuthState } from './auth.js';
-import { getPendingLeaveRequests, getAllLeaveRequests, updateLeaveRequestStatus } from './leave-service.js';
+import { getPendingLeaveRequests, getAllLeaveRequests, updateLeaveRequestStatus,updateReplacementStatus } from './leave-service.js';
 
 // Check if user is logged in
 // checkAuthState((user) => {
@@ -16,9 +16,18 @@ let allLeaves = [];
 async function loadPendingLeaveRequests() {
   try {
     pendingLeaves = await getPendingLeaveRequests();
-    updatePendingLeaveTable();
+    console.log("Pending leave requests:", pendingLeaves); // Tambahkan log untuk debugging
+    
+    if (pendingLeaves.length === 0) {
+      const tbody = document.getElementById('pendingLeaveList');
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada pengajuan izin yang menunggu persetujuan</td></tr>';
+    } else {
+      updatePendingLeaveTable();
+    }
   } catch (error) {
     console.error("Error loading pending leave requests:", error);
+    const tbody = document.getElementById('pendingLeaveList');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Error: Gagal memuat data</td></tr>';
   }
 }
 
@@ -92,6 +101,18 @@ function updateLeaveHistoryTable() {
   allLeaves.forEach(record => {
     const replacementInfo = getReplacementInfo(record);
     const row = document.createElement('tr');
+    
+    // Tentukan status ganti dan tombol yang sesuai
+    const replacementStatus = record.replacementStatus || 'Belum Diganti';
+    const buttonText = replacementStatus === 'Sudah Diganti' ? 'Batalkan' : 'Sudah Diganti';
+    const buttonClass = replacementStatus === 'Sudah Diganti' ? 'btn-warning' : 'btn-success';
+    
+    // Hanya tampilkan tombol aksi jika status pengajuan adalah Approved
+    const actionButton = record.status === 'Approved' ? 
+      `<button class="replacement-status-btn ${buttonClass} btn-sm" data-id="${record.id}" data-status="${replacementStatus}">
+        ${buttonText}
+      </button>` : '-';
+    
     row.innerHTML = `
       <td>${record.employeeId}</td>
       <td>${record.name}</td>
@@ -100,8 +121,39 @@ function updateLeaveHistoryTable() {
       <td>${replacementInfo}</td>
       <td class="status-${record.status.toLowerCase()}">${record.status}</td>
       <td>${record.decisionDate ? new Date(record.decisionDate.seconds * 1000).toLocaleDateString() : '-'}</td>
+      <td class="status-${replacementStatus.toLowerCase().replace(/\s+/g, '-')}">${replacementStatus}</td>
+      <td>${actionButton}</td>
     `;
     tbody.appendChild(row);
+  });
+   // Tambahkan event listener untuk tombol status ganti
+  document.querySelectorAll('.replacement-status-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+      try {
+        const id = this.getAttribute('data-id');
+        const currentStatus = this.getAttribute('data-status');
+        const newStatus = currentStatus === 'Sudah Diganti' ? 'Belum Diganti' : 'Sudah Diganti';
+        
+        // Tampilkan indikator loading
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        this.disabled = true;
+        
+        await updateReplacementStatus(id, newStatus);
+        await refreshData();
+        
+        // Notifikasi sukses
+        alert(`Status ganti berhasil diubah menjadi "${newStatus}"`);
+      } catch (error) {
+        console.error("Error updating replacement status:", error);
+        alert('Terjadi kesalahan saat mengubah status ganti: ' + error.message);
+        
+        // Kembalikan tombol ke keadaan semula
+        const currentStatus = this.getAttribute('data-status');
+        const buttonText = currentStatus === 'Sudah Diganti' ? 'Batalkan' : 'Tandai Sudah Diganti';
+        this.innerHTML = buttonText;
+        this.disabled = false;
+      }
+    });
   });
 }
 
@@ -121,7 +173,21 @@ async function refreshData() {
   await loadAllLeaveRequests();
 }
 
-// Initialize page
+// Tambahkan fungsi ini di bagian akhir file
+function setupRefreshButton() {
+  const refreshButton = document.getElementById('refreshButton');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', () => {
+      refreshData();
+    });
+  }
+}
+
+// Modifikasi fungsi initialize
 document.addEventListener('DOMContentLoaded', () => {
   refreshData();
+  setupRefreshButton();
+  
+  // Tambahkan refresh otomatis setiap 30 detik
+  setInterval(refreshData, 30000);
 });

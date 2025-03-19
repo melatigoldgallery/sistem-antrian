@@ -50,20 +50,19 @@ export async function getAllLeaveRequests() {
 // Get pending leave requests
 export async function getPendingLeaveRequests() {
   try {
-    const leaveCollection = collection(db, "leaveRequests");
-    const q = query(
-      leaveCollection, 
-      where("status", "==", "Pending"),
-      orderBy("submitDate", "desc")
-    );
+    const leaveCollection = collection(db, 'leaveRequests');
+    const q = query(leaveCollection, where('status', '==', 'Pending'), orderBy('submissionDate', 'desc'));
+    const querySnapshot = await getDocs(q);
     
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate()
-    }));
+    const pendingLeaves = [];
+    querySnapshot.forEach((doc) => {
+      pendingLeaves.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    return pendingLeaves;
   } catch (error) {
     console.error("Error getting pending leave requests:", error);
     throw error;
@@ -88,11 +87,13 @@ export async function updateLeaveRequestStatus(id, status) {
 // Update replacement status
 export async function updateReplacementStatus(id, status) {
   try {
-    const leaveDoc = doc(db, "leaveRequests", id);
-    await updateDoc(leaveDoc, {
+    const leaveRef = doc(db, 'leaveRequests', id);
+    
+    await updateDoc(leaveRef, {
       replacementStatus: status,
-      replacementDate: Timestamp.now()
+      replacementStatusDate: new Date()
     });
+    
     return true;
   } catch (error) {
     console.error("Error updating replacement status:", error);
