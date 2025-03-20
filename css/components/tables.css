@@ -1,0 +1,27 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+  }
+  
+  table tbody {
+    font-size: 0.8rem;
+  }
+  
+  .custom-table th,
+  .custom-table td {
+    padding: 5px;
+    font-size: 0.8rem;
+  }
+  

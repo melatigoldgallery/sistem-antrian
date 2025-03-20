@@ -1,0 +1,15 @@
+body {
+    font-family: "Roboto", sans-serif;
+    color: var(--text-color);
+  }
+  
+  .tangerine-bold {
+    font-family: "Tangerine", serif;
+    font-weight: bold;
+    font-size: 1.3rem;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 15px;
+  }
+  

@@ -1,0 +1,28 @@
+/* Styles khusus untuk halaman absensi */
+.scanner-section,
+.attendance-section,
+.leave-section,
+.leave-list-section {
+  margin-bottom: 40px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+#scanResult {
+  margin-top: 10px;
+  padding: 10px;
+  display: none;
+}
+
+.success {
+  background-color: #dff0d8;
+  color: #3c763d;
+  border: 1px solid #d6e9c6;
+}
+
+.error {
+  background-color: #f2dede;
+  color: #a94442;
+  border: 1px solid #ebccd1;
+}

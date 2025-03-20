@@ -25,14 +25,173 @@ try {
 }
 document.addEventListener('DOMContentLoaded', function() {
   const printButton = document.querySelector('.modal-footer .btn-primary');
-  printButton.addEventListener('click', printModal);
+  if (printButton) {
+    printButton.addEventListener('click', printModal);
+  }
   // Tambah baris dan Fungsi Penerimaan Buyback
- document.getElementById("btnTambahPenerimaan").addEventListener("click", () => {
-  tambahBaris("#tablePenerimaan tbody");
-});
-penerimaanHandler.initializeForm();
+  const btnTambahPenerimaan = document.getElementById("btnTambahPenerimaan");
+  if (btnTambahPenerimaan) {
+    btnTambahPenerimaan.addEventListener("click", () => {
+      tambahBaris("#tablePenerimaan tbody");
+    });
+  }
+  
+  if (typeof penerimaanHandler !== 'undefined') {
+    penerimaanHandler.initializeForm();
+  }
+  
+  // Initialize attendance system components
+  initializeAttendanceSystem();
 });
  
+
+// Initialize attendance system components
+function initializeAttendanceSystem() {
+  // Set up event listeners for attendance filters
+  setupAttendanceFilters();
+  
+  // Set up scan type toggle
+  setupScanTypeToggle();
+  
+  // Set up employee type change
+  setupEmployeeTypeChange();
+  
+  // Set up shift change
+  setupShiftChange();
+  
+  // Set up export button
+  setupExportButton();
+}
+
+// Set up attendance filters
+function setupAttendanceFilters() {
+  // Shift filter
+  document.querySelectorAll('[data-shift-filter]').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const filter = this.dataset.shiftFilter;
+      filterAttendance('shift', filter);
+    });
+  });
+  
+  // Status filter
+  document.querySelectorAll('[data-status-filter]').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const filter = this.dataset.statusFilter;
+      filterAttendance('status', filter);
+    });
+  });
+  
+  // Employee type filter
+  document.querySelectorAll('[data-employee-filter]').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const filter = this.dataset.employeeFilter;
+      filterAttendance('type', filter);
+    });
+  });
+}
+
+// Filter attendance records
+function filterAttendance(filterType, value) {
+  const rows = document.querySelectorAll('#attendanceList tr');
+  
+  rows.forEach(row => {
+    let showRow = true;
+    
+    if (value !== 'all') {
+      if (filterType === 'shift') {
+        const shiftCell = row.querySelector('td:nth-child(4)')?.textContent;
+        showRow = (value === 'morning' && shiftCell === 'Pagi') || 
+                  (value === 'afternoon' && shiftCell === 'Sore');
+      } else if (filterType === 'status') {
+        const statusCell = row.querySelector('td:nth-child(6) .status-badge')?.textContent;
+        showRow = (value === 'ontime' && statusCell === 'Tepat Waktu') || 
+                  (value === 'late' && statusCell === 'Terlambat');
+      } else if (filterType === 'type') {
+        const typeCell = row.querySelector('td:nth-child(3)')?.textContent;
+        showRow = (value === 'staff' && typeCell === 'Staff') || 
+                  (value === 'ob' && typeCell === 'Office Boy');
+      }
+    }
+    
+    if (row) {
+      row.style.display = showRow ? '' : 'none';
+    }
+  });
+  
+  // Update dropdown button text
+  if (filterType === 'shift') {
+    const buttonText = value === 'all' ? 'Shift' : value === 'morning' ? 'Shift Pagi' : 'Shift Sore';
+    const dropdown = document.getElementById('shiftFilterDropdown');
+    if (dropdown) {
+      dropdown.innerHTML = `<i class="fas fa-clock"></i> ${buttonText}`;
+    }
+  } else if (filterType === 'status') {
+    const buttonText = value === 'all' ? 'Status' : value === 'ontime' ? 'Tepat Waktu' : 'Terlambat';
+    const dropdown = document.getElementById('statusFilterDropdown');
+    if (dropdown) {
+      dropdown.innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
+    }
+  } else if (filterType === 'type') {
+    const buttonText = value === 'all' ? 'Tipe' : value === 'staff' ? 'Staff' : 'Office Boy';
+    const dropdown = document.getElementById('employeeFilterDropdown');
+    if (dropdown) {
+      dropdown.innerHTML = `<i class="fas fa-user-tag"></i> ${buttonText}`;
+    }
+  }
+}
+
+// Set up scan type toggle
+function setupScanTypeToggle() {
+  const scanTypeRadios = document.querySelectorAll('input[name="scanType"]');
+  scanTypeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      const scannerAnimation = document.querySelector('.scanner-animation');
+      if (this.value === 'in') {
+        scannerAnimation.style.backgroundColor = 'var(--gray-200)';
+        scannerAnimation.querySelector('.scanner-line').style.background = 'linear-gradient(90deg, transparent, var(--primary-color), transparent)';
+      } else {
+        scannerAnimation.style.backgroundColor = 'var(--gray-200)';
+        scannerAnimation.querySelector('.scanner-line').style.background = 'linear-gradient(90deg, transparent, var(--secondary-color), transparent)';
+      }
+    });
+  });
+}
+
+// Set up employee type change
+function setupEmployeeTypeChange() {
+  const employeeTypeRadios = document.querySelectorAll('input[name="employeeType"]');
+  employeeTypeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // You can add additional logic here if needed
+      console.log('Employee type changed to:', this.value);
+    });
+  });
+}
+
+// Set up shift change
+function setupShiftChange() {
+  const shiftRadios = document.querySelectorAll('input[name="shiftOption"]');
+  shiftRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // You can add additional logic here if needed
+      console.log('Shift changed to:', this.value);
+    });
+  });
+}
+
+// Set up export button
+function setupExportButton() {
+  const exportButton = document.getElementById('exportAttendance');
+  if (exportButton) {
+    exportButton.addEventListener('click', function() {
+      // This function will be implemented in sistem-absensi.js
+      console.log('Export button clicked');
+    });
+  }
+}
 
 function printModal() {
   const modalContent = document.getElementById("modalMessage").innerHTML;
@@ -119,11 +278,13 @@ function printModal() {
 }
 
 
-document.querySelector(".hamburger-menu").addEventListener("click", function () {
-  document.querySelector(".sidebar").classList.toggle("active");
+document.querySelector(".hamburger-menu")?.addEventListener("click", function () {
+  document.querySelector(".sidebar")?.classList.toggle("active");
 });
+
 dateHandler.initializeDatepicker();
-document.getElementById('logoutBtn').addEventListener('click', () => {
+
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
   handleLogout();
 });
 async function initializePage() {
@@ -142,40 +303,41 @@ async function initializePage() {
 
 document.addEventListener('DOMContentLoaded', initializePage);
 // Hamberger Menu
-const hamburgerMenu = document.querySelector('.hamburger-menu');
+
 const navList = document.querySelector('.nav-list');
 
-// Toggle menu when hamburger is clicked
-hamburgerMenu.addEventListener('click', (event) => {
-  event.stopPropagation();
-  navList.classList.toggle('active');
-});
 
-// Close menu when clicking anywhere on the document
-document.addEventListener('click', (event) => {
-  if (!navList.contains(event.target) && !hamburgerMenu.contains(event.target)) {
-    navList.classList.remove('active');
+
+
+
+
+
+// Prevent menu from closing when clicking inside nav-list
+navList?.addEventListener('click', (event) => {
+  event.stopPropagation();
+});;
+
+
+dateHandler.initializeDatepicker();
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof aksesorisSaleHandler !== 'undefined') {
+    aksesorisSaleHandler.init();
+  }
+  
+  if (typeof initTableToggles === 'function') {
+    initTableToggles();
+  }
+  
+  if (typeof initPengeluaranInput === 'function') {
+    initPengeluaranInput();
   }
 });
 
-// Prevent menu from closing when clicking inside nav-list
-navList.addEventListener('click', (event) => {
-  event.stopPropagation();
-});
-
-document.querySelector(".hamburger-menu").addEventListener("click", function () {
-  document.querySelector(".sidebar").classList.toggle("active");
-});
-dateHandler.initializeDatepicker();
-document.addEventListener("DOMContentLoaded", () => {
-  aksesorisSaleHandler.init();
-  initTableToggles();
-  initPengeluaranInput();
-});
 // Add jQuery ready check for datepicker
 $(document).ready(function () {
   dateHandler.initializeDatepicker();
 });
+
 document.addEventListener("DOMContentLoaded", function () {
   // Re-initialize date handling after DOM is loaded
   dateHandler.initializeDatepicker();
@@ -202,6 +364,17 @@ function updateDisplays() {
     if (nextQueueDisplay) nextQueueDisplay.textContent = nextQueue;
     if (delayQueueDisplay) delayQueueDisplay.textContent = delayedQueue.join(", ") || "-";
 }
+
+// Export functions and variables that might be needed in other modules
+export {
+  filterAttendance,
+  setupAttendanceFilters,
+  setupScanTypeToggle,
+  setupEmployeeTypeChange,
+  setupShiftChange,
+  setupExportButton,
+  printModal
+};
 document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.getElementById('loginForm');
     if (loginForm) {

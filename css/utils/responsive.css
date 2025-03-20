@@ -1,0 +1,97 @@
+@media screen and (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-250px); /* Hide sidebar by default */
+      z-index: 1000;
+      padding-top: 50px;
+    }
+  
+    .sidebar.active {
+      transform: translateX(0); /* Show sidebar when active */
+    }
+  
+    .mainbar {
+      margin-left: 0; /* Remove margin when sidebar is hidden */
+      width: 100%;
+    }
+  
+    /* Hide the regular navigation */
+    .nav-list {
+      display: none;
+    }
+  
+    /* Show hamburger menu */
+    .hamburger-menu {
+      display: block;
+      position: fixed;
+      right: 10px;
+      z-index: 10; /* Increased z-index to appear above sidebar */
+      cursor: pointer;
+      font-size: 20px;
+      color: #333;
+      /* Add background to make it stand out */
+      padding: 7px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  
+    /* When nav is active/clicked */
+    .nav-list.active {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 100vh;
+      background-color: #fff;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      margin-top: 0 !important;
+    }
+  
+    /* Adjust the ul when menu is active */
+    .nav-list.active ul {
+      flex-direction: column;
+    }
+  
+    /* Style the list items */
+    .nav-list.active li {
+      width: 100%;
+    }
+  
+    /* Style the links */
+    .nav-list.active a {
+      display: block;
+      padding: 10px 0;
+      color: #333;
+    }
+  
+    /* Make table scrollable horizontally */
+    .container {
+      padding: 10px;
+    }
+  
+    /* Make the button full width */
+    .btn-primary {
+      width: 100%;
+      margin: 10px 0;
+    }
+  
+    /* Adjust heading sizes */
+    h4 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+  
+    h6 {
+      font-size: 1rem;
+    }
+  
+    /* Adjust top section spacing */
+    .maintop, .cardInform {
+      margin-bottom: 35px;
+    }
+  
+    .date {
+      display: none;
+    }
+  }
+  

@@ -1,0 +1,101 @@
+/* Styles khusus untuk halaman supervisor */
+.pending-leaves-section,
+.leave-history-section {
+  margin-bottom: 40px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.approve-btn {
+  background-color: var(--primary-color);
+}
+
+.reject-btn {
+  background-color: #f44336;
+}
+
+.status-pending {
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.status-approved {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.status-rejected {
+  color: #f44336;
+  font-weight: bold;
+}
+
+.replacement-status-belum-diganti {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.replacement-status-sudah-diganti {
+  color: #51cf66;
+  font-weight: bold;
+}
+
+/* Memperlebar tabel riwayat izin */
+#leaveHistoryTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* Mengatur lebar kolom-kolom tertentu */
+#leaveHistoryTable th:nth-child(1),
+#leaveHistoryTable td:nth-child(1) {
+  width: 8%;
+}
+
+#leaveHistoryTable th:nth-child(2),
+#leaveHistoryTable td:nth-child(2) {
+  width: 8%;
+}
+
+#leaveHistoryTable th:nth-child(3),
+#leaveHistoryTable td:nth-child(3) {
+  width: 15%;
+}
+
+#leaveHistoryTable th:nth-child(4),
+#leaveHistoryTable td:nth-child(4) {
+  width: 15%;
+}
+
+#leaveHistoryTable th:nth-child(5),
+#leaveHistoryTable td:nth-child(5) {
+  width: 15%;
+}
+
+#leaveHistoryTable th:nth-child(6),
+#leaveHistoryTable td:nth-child(6) {
+  width: 8%;
+}
+
+#leaveHistoryTable th:nth-child(7),
+#leaveHistoryTable td:nth-child(7) {
+  width: 9%;
+}
+
+#leaveHistoryTable th:nth-child(8),
+#leaveHistoryTable td:nth-child(8) {
+  width: 10%;
+  white-space: nowrap;
+}
+
+#leaveHistoryTable th:nth-child(9),
+#leaveHistoryTable td:nth-child(9) {
+  width: 12%;
+  white-space: nowrap;
+}
