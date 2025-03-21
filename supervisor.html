@@ -1,196 +1,550 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
-    rel="stylesheet"
-  />
-  <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
-  <!-- jQuery first -->
-  <script src="js/jquery-3.6.3.min.js"></script>
-  <!-- Bootstrap CSS and JS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
-  <!-- Datepicker CSS and JS -->
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
-    rel="stylesheet"
-  />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
-  <!-- Your custom CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="dist/css/pages/supervisor.min.css" />
-</head>
-<body>
-<header>
-    <nav>
-        <div class="nav-brand">
-          <a href="#">
-            <img src="img/Melati.jfif" alt="Logo" />
-            <span class="tangerine-bold">Melati Gold Shop</span>
-          </a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <title>Status Pengajuan Izin - Melati Gold Shop</title>
+    <style>
+      .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      .status-badge.approved {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success-color);
+      }
+      .status-badge.rejected {
+        background-color: rgba(249, 65, 68, 0.1);
+        color: var(--danger-color);
+      }
+      .status-badge.pending {
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning-color);
+      }
+      .status-badge.completed {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success-color);
+      }
+      .status-badge.not-completed {
+        background-color: rgba(173, 181, 189, 0.1);
+        color: var(--gray-600);
+      }
+      .action-buttons .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+      .leave-detail-row {
+        background-color: rgba(248, 249, 250, 0.5);
+      }
+      .leave-detail-content {
+        padding: 15px;
+      }
+      .detail-label {
+        font-weight: 500;
+        color: var(--gray-700);
+      }
+      .detail-value {
+        color: var(--gray-800);
+      }
+      .table-responsive {
+        overflow-x: auto;
+      }
+      .table th {
+        white-space: nowrap;
+        background-color: var(--gray-100);
+      }
+      .table td {
+        vertical-align: middle;
+      }
+      .card-header-tabs {
+        margin-right: -1.25rem;
+        margin-bottom: -0.75rem;
+        margin-left: -1.25rem;
+        border-bottom: 0;
+      }
+      .nav-tabs .nav-link {
+        color: var(--gray-600);
+        font-weight: 500;
+      }
+      .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+      .tab-content {
+        padding-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold</h1>
         </div>
-        <div class="nav-list align-items-center mt-3">
-          <ul class="d-flex justify-content-center gap-3">
-            <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-users"></i> Pengajuan Staff <i class="fa-solid fa-chevron-down"></i>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="sistemAbsensi.html">
-                  <i class="fa-solid fa-file-contract"></i> Kehadiran
-                </a>
-                <a class="dropdown-item" href="pengajuan.html">
-                  <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
-                </a>
-                <a class="dropdown-item" href="supervisor.html">
-                  <i class="fa-solid fa-calendar-days"></i> Status Pengajuan
-                </a>
+            </li>
+            
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
+                </ul>
               </div>
             </li>
-            <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-gear"></i> Pengaturan <i class="fa-solid fa-chevron-down ms-1"></i>
+            
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="pengguna.html">
-                  <i class="fa-solid fa-file-contract"></i> Tambah User 
-                </a>
-              </div>
             </li>
-            <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-file-lines"></i> Laporan <i class="fa-solid fa-chevron-down ms-1"></i>
+            
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="pengguna.html.html">
-                  <i class="fa-solid fa-file-contract"></i> Laporan  Kehadiran
-                </a>
-                <a class="dropdown-item" href="pengguna.html.html">
-                  <i class="fa-solid fa-file-contract"></i> Laporan  Izin
-                </a>
+              <div class="collapse" id="absensiSubmenu">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link active" href="supervisor.html">
+                      <i class="fas fa-user-tie"></i>
+                      <span class="menu-text">Status Pengajuan</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="tambah-pengguna.html">
+                      <i class="fas fa-user-plus"></i>
+                      <span class="menu-text">Tambah Pengguna</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                </ul>
               </div>
             </li>
           </ul>
         </div>
-        <div class="left-nav">
-          <div class="hamburger-menu">
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+          <div class="menu-toggle">
             <i class="fas fa-bars"></i>
           </div>
-          <div class="date">
-            <span id="clock" class="font-weight-bold"></span>
-            <br />
-            <span id="tgl" class="font-weight-bold"></span>
+          <div class="nav-right">
+            <div class="date-time">
+              <div class="current-date" id="current-date"></div>
+              <div class="current-time" id="current-time"></div>
+            </div>
+            <div class="user-profile dropdown">
+              <div class="profile-img" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="user-avatar">K</span>
+              </div>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button class="dropdown-item" id="logoutBtn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
-        <div class="dropdown">
-          <button
-            class="btn btn-secondary dropdown-toggle akun"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            K
-          </button>
-          <ul class="dropdown-menu">
-            <li>
-              <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
-            </li>
-          </ul>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Status Pengajuan Izin</h1>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="sistemAbsensi.html">Absensi</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Status Pengajuan</li>
+              </ol>
+            </nav>
+          </div>
+
+          <!-- Alert Container -->
+          <div id="alertContainer" class="mb-3" style="display: none;"></div>
+
+          <!-- Stats Cards -->
+          <div class="stats-cards mb-4">
+            <div class="stat-card">
+              <div class="stat-card-icon bg-primary">
+                <i class="fas fa-clipboard-list"></i>
+              </div>
+              <div class="stat-card-info">
+                <h3 id="totalRequests">0</h3>
+                <p>Total Pengajuan</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-success">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="stat-card-info">
+                <h3 id="approvedRequests">0</h3>
+                <p>Disetujui</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-danger">
+                <i class="fas fa-times-circle"></i>
+              </div>
+              <div class="stat-card-info">
+                <h3 id="rejectedRequests">0</h3>
+                <p>Ditolak</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-icon bg-warning">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="stat-card-info">
+                <h3 id="pendingRequests">0</h3>
+                <p>Menunggu</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Card -->
+          <div class="card">
+            <div class="card-header">
+              <ul class="nav nav-tabs card-header-tabs" id="leaveRequestTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-requests" type="button" role="tab" aria-controls="pending-requests" aria-selected="true">
+                    <i class="fas fa-hourglass-half me-2"></i>Menunggu Persetujuan
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-requests" type="button" role="tab" aria-controls="all-requests" aria-selected="false">
+                    <i class="fas fa-list me-2"></i>Semua Pengajuan
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-3">
+                <div class="d-flex">
+                  <div class="input-group me-2" style="width: 300px;">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Cari nama atau ID karyawan...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                      <i class="fas fa-search"></i>
+                    </button>
+                  </div>
+                </div>
+                <button id="refreshButton" class="btn btn-primary">
+                  <i class="fas fa-sync-alt me-2"></i> Refresh Data
+                </button>
+              </div>
+
+              <div class="tab-content" id="leaveRequestTabContent">
+                <!-- Pending Requests Tab -->
+                <div class="tab-pane fade show active" id="pending-requests" role="tabpanel" aria-labelledby="pending-tab">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>ID Karyawan</th>
+                          <th>Nama</th>
+                          <th>Tanggal Pengajuan</th>
+                          <th>Tanggal Izin</th>
+                          <th>Alasan</th>
+                          <th>Jenis Pengganti</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="pendingRequestsList">
+                        <!-- Data will be populated by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty-state" id="emptyPendingRequests" style="display: none;">
+                    <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
+                    <p>Tidak ada pengajuan izin yang menunggu persetujuan</p>
+                  </div>
+                </div>
+
+                <!-- All Requests Tab -->
+                <div class="tab-pane fade" id="all-requests" role="tabpanel" aria-labelledby="all-tab">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>ID Karyawan</th>
+                          <th>Nama</th>
+                          <th>Tanggal Pengajuan</th>
+                          <th>Tanggal Izin</th>
+                          <th>Status</th>
+                          <th>Jenis Pengganti</th>
+                          <th>Status Penggantian</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="allRequestsList">
+                        <!-- Data will be populated by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty-state" id="emptyAllRequests" style="display: none;">
+                    <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
+                    <p>Belum ada data pengajuan izin</p>
+                  </div>
+                  
+                  <!-- Pagination -->
+                  <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination">
+                      <!-- Pagination will be populated by JavaScript -->
+                    </ul>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      </nav>
-</header>
-<main>
-    <div class="mainbar">
-        <div class="maintop">
-            <p>Status Penerimaan Izin</p>
+      </main>
+    </div>
+
+    <!-- Leave Request Detail Modal -->
+    <div class="modal fade" id="leaveDetailModal" tabindex="-1" aria-labelledby="leaveDetailModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="leaveDetailModalLabel">Detail Pengajuan Izin</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="detail-label">ID Karyawan:</label>
+                  <div class="detail-value" id="detailEmployeeId"></div>
+                </div>
+                <div class="mb-3">
+                  <label class="detail-label">Nama:</label>
+                  <div class="detail-value" id="detailName"></div>
+                </div>
+                <div class="mb-3">
+                  <label class="detail-label">Tipe Karyawan:</label>
+                  <div class="detail-value" id="detailType"></div>
+                </div>
+                <div class="mb-3">
+                  <label class="detail-label">Shift:</label>
+                  <div class="detail-value" id="detailShift"></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="detail-label">Tanggal Pengajuan:</label>
+                  <div class="detail-value" id="detailSubmitDate"></div>
+                </div>
+                <div class="mb-3">
+                  <label class="detail-label">Tanggal Izin:</label>
+                  <div class="detail-value" id="detailLeaveDate"></div>
+                </div>
+                <div class="mb-3">
+                  <label class="detail-label">Status:</label>
+                  <div id="detailStatus"></div>
+                </div>
+                <div class="mb-3" id="detailDecisionDateContainer">
+                  <label class="detail-label">Tanggal Keputusan:</label>
+                  <div class="detail-value" id="detailDecisionDate"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="detail-label">Alasan Izin:</label>
+              <div class="detail-value" id="detailReason"></div>
+            </div>
+            
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6 class="mb-0">Informasi Penggantian</h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="detail-label">Jenis Penggantian:</label>
+                      <div class="detail-value" id="detailReplacementType"></div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="detail-label">Detail Penggantian:</label>
+                      <div class="detail-value" id="detailReplacementDetails"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="detail-label">Status Penggantian:</label>
+                      <div id="detailReplacementStatus"></div>
+                    </div>
+                    <div class="mb-3" id="replacementCompletionContainer">
+                      <label class="detail-label">Tanggal Penyelesaian:</label>
+                      <div class="detail-value" id="detailCompletionDate">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div id="approvalSection" class="card">
+              <div class="card-header">
+                <h6 class="mb-0">Keputusan Pengajuan</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="approvalNotes" class="form-label">Catatan (opsional):</label>
+                  <textarea class="form-control" id="approvalNotes" rows="3" placeholder="Tambahkan catatan untuk keputusan ini..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                  <button type="button" class="btn btn-danger me-2" id="rejectRequestBtn">
+                    <i class="fas fa-times-circle me-2"></i> Tolak Pengajuan
+                  </button>
+                  <button type="button" class="btn btn-success" id="approveRequestBtn">
+                    <i class="fas fa-check-circle me-2"></i> Setujui Pengajuan
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div id="replacementCompletionSection" class="card mt-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">Konfirmasi Penggantian</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="completionNotes" class="form-label">Catatan Penggantian (opsional):</label>
+                  <textarea class="form-control" id="completionNotes" rows="2" placeholder="Tambahkan catatan untuk penggantian ini..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                  <button type="button" class="btn btn-success" id="markCompletedBtn">
+                    <i class="fas fa-check-circle me-2"></i> Tandai Sudah Diganti
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
         </div>
-    <div class="container">
-        <!-- Pending Leave Requests -->
-         <!-- Tambahkan di bagian atas tabel pendingLeaveList -->
-<div class="d-flex justify-content-between mb-3">
-  <h5>Daftar Pengajuan Izin</h5>
-  <button id="refreshButton" class="btn btn-primary">
-    <i class="fas fa-sync-alt"></i> Refresh Data
-  </button>
-</div>
-        <div class="pending-leaves-section">
-            <h5>Pengajuan Izin yang Menunggu Persetujuan</h5>
-            <table id="pendingLeaveTable">
-                <thead>
-                    <tr>
-                        <th>ID Karyawan</th>
-                        <th>Nama</th>
-                        <th>Tanggal Izin</th>
-                        <th>Alasan</th>
-                        <th>Tanggal Pengganti</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="pendingLeaveList"></tbody>
-            </table>
-        </div>
-        <!-- All Leave History -->
-        <div class="leave-history-section">
-          <h5>Riwayat Semua Izin</h5>
-          <table id="leaveHistoryTable">
-              <thead>
-                  <tr>
-                      <th>ID Staff</th>
-                      <th>Nama</th>
-                      <th>Tanggal Izin</th>
-                      <th>Alasan</th>
-                      <th>Tanggal Pengganti</th>
-                      <th>Status</th>
-                      <th>Tanggal Keputusan</th>
-                      <th>Status Ganti</th>
-                      <th>Aksi</th>
-                  </tr>
-              </thead>
-              <tbody id="leaveHistoryList"></tbody>
-          </table>
       </div>
     </div>
-</div>
-<aside class="sidebar">
-    <ul>
-      <li>
-        <a href="dashboard.html" class="dashboard">Dashboard</a>
-      </li>
-      <li>
-        <a href="admin.html" class="inpt-btn" data-target="inpt-show"
-          >Antrian</a>
-      </li>
-      <li>
-        <a href="buyback.html" class="sell-btn" data-target="sell-show"
-          >Buyback</a>
-      </li>
-      <li>
-        <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show"
-          >Absensi</a>
-      </li>
-      <li>
-        <a href="#" class="lprn-btn" data-target="lprn-show"
-          >Laporan<span class="fas fa-caret-down third"></span
-        ></a>
-        <ul class="lprn-show" id="lprn-show">
-          <li><a href="analisis.html">Analisis Antrian</a></li>
-          <li><a href="#">Laporan Kehadiran</a></li>
-          <li><a href="#">Laporan Izin</a></li>
-        </ul>
-      </li>
-    </ul>
-  </aside>
-</main>
-    <script type="module" src="js/supervisor.js"></script>
-</body>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" id="confirmationModalHeader">
+            <h5 class="modal-title" id="confirmationModalLabel">Konfirmasi</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="confirmationModalBody">
+            Apakah Anda yakin ingin melakukan tindakan ini?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary" id="confirmActionBtn">Ya, Lanjutkan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/melati.js"></script>
+    <script type="module" src="js/pages/supervisor.js"></script>
+    
+  </body>
 </html>
+

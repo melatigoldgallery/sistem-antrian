@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <!-- jQuery first -->
     <script src="js/jquery-3.6.3.min.js"></script>
     <!-- Bootstrap CSS and JS -->
@@ -14,335 +16,490 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- SheetJS (Excel Export) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <!-- jsPDF (PDF Export) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <!-- Your custom CSS -->
-    <link rel="stylesheet" href="css/Project1.css" />
-    <link rel="stylesheet" href="css/absensi.css"/>  
-    <title>Laporan Izin Bulanan - Melati Gold Shop</title>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <title>Laporan Izin - Melati Gold Shop</title>
     <style>
-        .report-controls {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .status-approved {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .status-rejected {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .status-pending {
-            color: #ffc107;
-            font-weight: bold;
-        }
-        .status-sudah-diganti {
-            color: #28a745;
-        }
-        .status-belum-diganti {
-            color: #6c757d;
-        }
-        .export-btn {
-            margin-right: 10px;
-        }
-        .delete-btn {
-            background-color: #dc3545;
-            color: white;
-        }
-        .month-selector {
-            max-width: 200px;
-        }
-        .year-selector {
-            max-width: 120px;
-        }
-        #leaveReportTable {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        #leaveReportTable th, #leaveReportTable td {
-            padding: 10px;
-            border: 1px solid #dee2e6;
-        }
-        #leaveReportTable th {
-            background-color: #f8f9fa;
-            position: sticky;
-            top: 0;
-        }
-        .table-container {
-            max-height: 500px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        .summary-card {
-            margin-bottom: 20px;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        .summary-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
+      .status-approved {
+        color: var(--success-color);
+        font-weight: 600;
+      }
+      .status-rejected {
+        color: var(--danger-color);
+        font-weight: 600;
+      }
+      .status-pending {
+        color: var(--warning-color);
+        font-weight: 600;
+      }
+      .status-sudah-diganti {
+        color: var(--success-color);
+      }
+      .status-belum-diganti {
+        color: var(--gray-600);
+      }
+      .report-controls {
+        background-color: var(--gray-100);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: var(--box-shadow);
+      }
+      .summary-card {
+        transition: transform 0.3s ease;
+      }
+      .summary-card:hover {
+        transform: translateY(-5px);
+      }
+      .summary-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0;
+      }
+      .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+      }
+      #leaveReportTable {
+        margin-bottom: 0;
+      }
+      #leaveReportTable th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
     </style>
-</head>
-<body>
-    <header>
-        <nav>
-            <div class="nav-brand">
-                <a href="#">
-                    <img src="img/Melati.jfif" alt="Logo" />
-                    <span class="tangerine-bold">Melati Gold Shop</span>
-                </a>
-            </div>
-            <div class="nav-list align-items-center mt-3">
-                <ul class="d-flex justify-content-center gap-3">
-                    <li class="dropdown">
-                        <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-users"></i> Pengajuan Staff <i class="fa-solid fa-chevron-down"></i>
-                        </a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="sistemAbsensi.html">
-                                <i class="fa-solid fa-file-contract"></i> Kehadiran
-                            </a>
-                            <a class="dropdown-item" href="pengajuan.html">
-                                <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
-                            </a>
-                            <a class="dropdown-item" href="supervisor.html">
-                                <i class="fa-solid fa-calendar-days"></i> Status Pengajuan
-                            </a>
-                        </div>
-                    </li>
-                    <li class="dropdown">
-                        <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-gear"></i> Pengaturan <i class="fa-solid fa-chevron-down ms-1"></i>
-                        </a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="pengguna.html">
-                                <i class="fa-solid fa-file-contract"></i> Tambah User 
-                            </a>
-                        </div>
-                    </li>
-                    <li class="dropdown">
-                        <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-file-lines"></i> Laporan <i class="fa-solid fa-chevron-down ms-1"></i>
-                        </a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="laporan-kehadiran.html">
-                                <i class="fa-solid fa-file-contract"></i> Laporan Kehadiran
-                            </a>
-                            <a class="dropdown-item" href="laporan-izin.html">
-                                <i class="fa-solid fa-file-contract"></i> Laporan Izin
-                            </a>
-                        </div>
-                    </li>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold</h1>
+        </div>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+              </a>
+            </li>
+
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
                 </ul>
+              </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
+
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="tambah-pengguna.html">
+                      <i class="fas fa-user-plus"></i>
+                      <span class="menu-text">Tambah Pengguna</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link active" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+          <div class="menu-toggle">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class="nav-right">
+            <div class="date-time">
+              <div class="current-date" id="current-date"></div>
+              <div class="current-time" id="current-time"></div>
             </div>
-            <div class="left-nav">
-                <div class="hamburger-menu">
-                    <i class="fas fa-bars"></i>
-                </div>
-                <div class="date">
-                    <span id="clock" class="font-weight-bold"></span>
-                    <br />
-                    <span id="tgl" class="font-weight-bold"></span>
-                </div>
-                <div class="dropdown">
-                    <button class="btn btn-secondary dropdown-toggle akun" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        K
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
-                        </li>
-                    </ul>
-                </div>
+            <div class="user-profile dropdown">
+              <div class="profile-img" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="user-avatar">K</span>
+              </div>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button class="dropdown-item" id="logoutBtn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                  </button>
+                </li>
+              </ul>
             </div>
-        </nav>
-    </header>
-    <main>
-        <div class="mainbar">
-            <div class="maintop">
-                <p><i class="fas fa-file-alt me-2"></i> Laporan Izin Bulanan</p>
-            </div>
-            <div class="container">
-                <!-- Alert for feedback -->
-                <div id="alertContainer" class="mb-3" style="display: none;"></div>
-                
-                <!-- Report Controls -->
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Laporan Izin Bulanan</h1>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="sistemAbsensi.html">Absensi</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Laporan Izin</li>
+              </ol>
+            </nav>
+          </div>
+
+          <div class="content-wrapper">
+            <!-- Alert Container -->
+            <div id="alertContainer" class="mb-3" style="display: none"></div>
+
+            <!-- Report Controls Card -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-filter"></i>
+                  Filter Laporan
+                </h2>
+              </div>
+              <div class="card-body">
                 <div class="report-controls">
-                    <div class="row align-items-end">
-                        <div class="col-md-3">
-                            <label for="monthSelector" class="form-label">Bulan</label>
-                            <select id="monthSelector" class="form-select month-selector">
-                                <option value="1">Januari</option>
-                                <option value="2">Februari</option>
-                                <option value="3">Maret</option>
-                                <option value="4">April</option>
-                                <option value="5">Mei</option>
-                                <option value="6">Juni</option>
-                                <option value="7">Juli</option>
-                                <option value="8">Agustus</option>
-                                <option value="9">September</option>
-                                <option value="10">Oktober</option>
-                                <option value="11">November</option>
-                                <option value="12">Desember</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="yearSelector" class="form-label">Tahun</label>
-                            <select id="yearSelector" class="form-select year-selector">
-                                <!-- Will be populated with JavaScript -->
-                            </select>
-                        </div>
-                        <div class="col-md-6 d-flex justify-content-end">
-                            <button id="generateReportBtn" class="btn btn-primary">
-                                <i class="fas fa-sync-alt me-2"></i> Generate Laporan
-                            </button>
-                        </div>
+                  <div class="row align-items-end mb-3">
+                    <div class="col-md-4">
+                      <label for="monthSelector" class="form-label">Bulan</label>
+                      <select id="monthSelector" class="form-select">
+                        <option value="1">Januari</option>
+                        <option value="2">Februari</option>
+                        <option value="3">Maret</option>
+                        <option value="4">April</option>
+                        <option value="5">Mei</option>
+                        <option value="6">Juni</option>
+                        <option value="7">Juli</option>
+                        <option value="8">Agustus</option>
+                        <option value="9">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                      </select>
                     </div>
+                    <div class="col-md-4">
+                      <label for="yearSelector" class="form-label">Tahun</label>
+                      <select id="yearSelector" class="form-select">
+                        <!-- Will be populated with JavaScript -->
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="replacementTypeFilter" class="form-label">Jenis Pengganti</label>
+                      <select id="replacementTypeFilter" class="form-select">
+                        <option value="all">Semua Jenis</option>
+                        <option value="libur">Izin Ganti Libur</option>
+                        <option value="jam">Izin Ganti Jam</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-8">
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="rejectedFilter" value="rejected" checked />
+                        <label class="form-check-label" for="rejectedFilter">
+                          <span class="badge bg-danger">Belum Diganti</span>
+                        </label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="replacedFilter" value="replaced" checked />
+                        <label class="form-check-label" for="replacedFilter">
+                          <span class="badge bg-success">Sudah Diganti</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div class="col-md-4 d-flex justify-content-end align-items-end">
+                      <button id="generateReportBtn" class="btn btn-primary">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Generate Laporan
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                
-                <!-- Summary Cards -->
-                <div class="row mb-4" id="summaryCards" style="display: none;">
-                    <div class="col-md-3">
-                        <div class="card summary-card bg-light">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Total Izin</h6>
-                                <p class="summary-value" id="totalLeaves">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card summary-card bg-success bg-opacity-10">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Disetujui</h6>
-                                <p class="summary-value text-success" id="approvedLeaves">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card summary-card bg-danger bg-opacity-10">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Ditolak</h6>
-                                <p class="summary-value text-danger" id="rejectedLeaves">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card summary-card bg-warning bg-opacity-10">
-                            <div class="card-body text-center">
-                                <h6 class="card-title text-muted">Pending</h6>
-                                <p class="summary-value text-warning" id="pendingLeaves">0</p>
-                            </div>
-                        </div>
-                    </div>
+              </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mb-4" id="summaryCards" style="display: none">
+              <div class="col-md-3">
+                <div class="stat-card summary-card">
+                  <div class="stat-card-icon bg-primary">
+                    <i class="fas fa-calendar-check"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h3 class="summary-value" id="totalLeaves">0</h3>
+                    <p>Total Izin</p>
+                  </div>
                 </div>
-                
-                <!-- Export & Delete Buttons -->
-                <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important;">
-                    <div>
-                        <button id="exportExcelBtn" class="btn btn-success export-btn">
-                            <i class="fas fa-file-excel me-2"></i> Export Excel
-                        </button>
-                        <button id="exportPdfBtn" class="btn btn-danger export-btn">
-                            <i class="fas fa-file-pdf me-2"></i> Export PDF
-                        </button>
-                    </div>
-                    <button id="deleteDataBtn" class="btn delete-btn">
-                        <i class="fas fa-trash-alt me-2"></i> Hapus Data Bulan Ini
+              </div>
+              <div class="col-md-3">
+                <div class="stat-card summary-card">
+                  <div class="stat-card-icon bg-success">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h3 class="summary-value" id="approvedLeaves">0</h3>
+                    <p>Disetujui</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="stat-card summary-card">
+                  <div class="stat-card-icon bg-danger">
+                    <i class="fas fa-times-circle"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h3 class="summary-value" id="rejectedLeaves">0</h3>
+                    <p>Ditolak</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="stat-card summary-card">
+                  <div class="stat-card-icon bg-warning">
+                    <i class="fas fa-clock"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h3 class="summary-value" id="pendingLeaves">0</h3>
+                    <p>Pending</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Export & Delete Buttons -->
+            <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important">
+              <div>
+                <button id="exportExcelBtn" class="btn btn-success me-2">
+                  <i class="fas fa-file-excel me-2"></i>
+                  Export Excel
+                </button>
+                <button id="exportPdfBtn" class="btn btn-danger me-2">
+                  <i class="fas fa-file-pdf me-2"></i>
+                  Export PDF
+                </button>
+              </div>
+              <button id="deleteDataBtn" class="btn btn-outline-danger">
+                <i class="fas fa-trash-alt me-2"></i>
+                Hapus Data Bulan Ini
+              </button>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card" id="tableContainer" style="display: none">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-list"></i>
+                  Data Izin Karyawan
+                </h2>
+                <div class="card-actions">
+                  <div class="dropdown me-2">
+                    <button
+                      class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                      type="button"
+                      id="statusFilterDropdown"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-filter"></i>
+                      Filter Status
                     </button>
+                    <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
+                      <li><a class="dropdown-item" href="#" data-status-filter="all">Semua Status</a></li>
+                      <li><a class="dropdown-item" href="#" data-status-filter="approved">Disetujui</a></li>
+                      <li><a class="dropdown-item" href="#" data-status-filter="rejected">Ditolak</a></li>
+                      <li><a class="dropdown-item" href="#" data-status-filter="pending">Pending</a></li>
+                    </ul>
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                      type="button"
+                      id="replacementFilterDropdown"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-exchange-alt"></i>
+                      Filter Pengganti
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="replacementFilterDropdown">
+                      <li><a class="dropdown-item" href="#" data-replacement-filter="all">Semua</a></li>
+                      <li><a class="dropdown-item" href="#" data-replacement-filter="sudah">Sudah Diganti</a></li>
+                      <li><a class="dropdown-item" href="#" data-replacement-filter="belum">Belum Diganti</a></li>
+                    </ul>
+                  </div>
                 </div>
-                
-                <!-- Table Container -->
-                <div class="table-container" id="tableContainer" style="display: none;">
-                    <table id="leaveReportTable">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID Staff</th>
-                                <th>Nama</th>
-                                <th>Tanggal Pengajuan</th>
-                                <th>Tanggal Izin</th>
-                                <th>Alasan</th>
-                                <th>Jenis Pengganti</th>
-                                <th>Detail Pengganti</th>
-                                <th>Status</th>
-                                <th>Tanggal Keputusan</th>
-                                <th>Status Ganti</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaveReportList"></tbody>
-                    </table>
+              </div>
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="table table-hover" id="leaveReportTable">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>ID Staff</th>
+                        <th>Nama</th>
+                        <th>Tanggal Pengajuan</th>
+                        <th>Tanggal Izin</th>
+                        <th>Alasan</th>
+                        <th>Jenis Pengganti</th>
+                        <th>Detail Pengganti</th>
+                        <th>Status</th>
+                        <th>Tanggal Keputusan</th>
+                        <th>Status Ganti</th>
+                      </tr>
+                    </thead>
+                    <tbody id="leaveReportList"></tbody>
+                  </table>
                 </div>
-                
-                                <!-- No Data Message -->
-                                <div id="noDataMessage" class="alert alert-info text-center" style="display: none;">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Tidak ada data izin untuk periode yang dipilih
-                                </div>
-                            </div>
-                        </div>
-                        <aside class="sidebar">
-                            <ul>
-                                <li>
-                                    <a href="dashboard.html" class="dashboard">Dashboard</a>
-                                </li>
-                                <li>
-                                    <a href="admin.html" class="inpt-btn" data-target="inpt-show">Antrian</a>
-                                </li>
-                                <li>
-                                    <a href="buyback.html" class="sell-btn" data-target="sell-show">Buyback</a>
-                                </li>
-                                <li>
-                                    <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show">Absensi</a>
-                                </li>
-                                <li>
-                                    <a href="#" class="lprn-btn" data-target="lprn-show">
-                                        Laporan<span class="fas fa-caret-down third"></span>
-                                    </a>
-                                    <ul class="lprn-show" id="lprn-show">
-                                        <li><a href="analisis.html">Analisis Antrian</a></li>
-                                        <li><a href="laporan-kehadiran.html">Laporan Kehadiran</a></li>
-                                        <li><a href="laporan-izin.html">Laporan Izin</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </aside>
-                    </main>
-                
-                    <!-- Confirmation Modal for Delete -->
-                    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-danger text-white">
-                                    <h5 class="modal-title" id="deleteConfirmModalLabel">Konfirmasi Hapus Data</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <strong>Perhatian!</strong> Tindakan ini tidak dapat dibatalkan.
-                                    </div>
-                                    <p>Anda yakin ingin menghapus semua data izin untuk bulan <span id="deleteMonthName" class="fw-bold"></span> <span id="deleteYear" class="fw-bold"></span>?</p>
-                                    <p>Data yang dihapus tidak dapat dikembalikan. Pastikan Anda telah mengekspor data sebelum menghapusnya.</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                                        <i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                
-                    <script type="module" src="js/melati.js"></script>
-                    <script type="module" src="js/laporan-izin.js"></script>
-                </body>
-                </html>
-                
+              </div>
+            </div>
+
+            <!-- No Data Message -->
+            <div id="noDataMessage" class="alert alert-info text-center" style="display: none">
+              <i class="fas fa-info-circle me-2"></i>
+              Tidak ada data izin untuk periode yang dipilih
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Confirmation Modal for Delete -->
+    <div
+      class="modal fade"
+      id="deleteConfirmModal"
+      tabindex="-1"
+      aria-labelledby="deleteConfirmModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteConfirmModalLabel">Konfirmasi Hapus Data</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <strong>Perhatian!</strong>
+              Tindakan ini tidak dapat dibatalkan.
+            </div>
+            <p>
+              Anda yakin ingin menghapus semua data izin untuk bulan
+              <span id="deleteMonthName" class="fw-bold"></span>
+              <span id="deleteYear" class="fw-bold"></span>
+              ?
+            </p>
+            <p>Data yang dihapus tidak dapat dikembalikan. Pastikan Anda telah mengekspor data sebelum menghapusnya.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              <i class="fas fa-trash-alt me-2"></i>
+              Ya, Hapus Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="js/melati.js"></script>
+    <script type="module" src="js/pages/laporan-izin.js"></script>
+  </body>
+</html>

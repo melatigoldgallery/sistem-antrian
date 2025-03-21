@@ -19,6 +19,82 @@ const monthNames = [
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
+  // Toggle sidebar collapse
+  const menuToggle = document.querySelector(".menu-toggle");
+  const appContainer = document.querySelector(".app-container");
+
+  if (menuToggle) {
+    menuToggle.addEventListener("click", function () {
+      appContainer.classList.toggle("sidebar-collapsed");
+    });
+  }
+
+  // Vanilla JS dropdown toggle
+  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
+
+  dropdownToggles.forEach((toggle) => {
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
+      const target = document.querySelector(targetId);
+
+      // If sidebar is not collapsed, implement accordion behavior
+      if (!appContainer.classList.contains("sidebar-collapsed")) {
+        // Close all other dropdowns
+        dropdownToggles.forEach((otherToggle) => {
+          if (otherToggle !== toggle) {
+            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
+            const other = document.querySelector(otherId);
+
+            if (other && other.classList.contains("show")) {
+              other.classList.remove("show");
+              otherToggle.classList.add("collapsed");
+              otherToggle.setAttribute("aria-expanded", "false");
+            }
+          }
+        });
+      }
+
+      // Toggle this dropdown
+      if (target) {
+        if (target.classList.contains("show")) {
+          target.classList.remove("show");
+          toggle.classList.add("collapsed");
+          toggle.setAttribute("aria-expanded", "false");
+        } else {
+          target.classList.add("show");
+          toggle.classList.remove("collapsed");
+          toggle.setAttribute("aria-expanded", "true");
+        }
+      }
+    });
+  });
+
+  // Set current date and time
+  function updateDateTime() {
+    const now = new Date();
+    const dateElement = document.getElementById("current-date");
+    const timeElement = document.getElementById("current-time");
+
+    if (dateElement) {
+      dateElement.textContent = now.toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    if (timeElement) {
+      timeElement.textContent = now.toLocaleTimeString("id-ID");
+    }
+  }
+
+  updateDateTime();
+  setInterval(updateDateTime, 1000);
+  
+  // Initialize report page
   setupYearSelector();
   setDefaultMonthAndYear();
   setupEventListeners();
@@ -59,6 +135,24 @@ function setupEventListeners() {
 
   // Confirm delete button in modal
   document.getElementById("confirmDeleteBtn").addEventListener("click", deleteMonthData);
+  
+  // Filter by status
+  document.querySelectorAll("[data-status-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      const filter = this.dataset.statusFilter;
+      filterLeaveData("status", filter);
+    });
+  });
+  
+  // Filter by replacement status
+  document.querySelectorAll("[data-replacement-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      const filter = this.dataset.replacementFilter;
+      filterLeaveData("replacement", filter);
+    });
+  });
 }
 
 // Generate report based on selected month and year
@@ -171,6 +265,50 @@ function hideReportElements() {
   document.getElementById("summaryCards").style.display = "none";
   document.getElementById("actionButtons").style.display = "none";
   document.getElementById("tableContainer").style.display = "none";
+}
+
+// Filter leave data
+function filterLeaveData(filterType, value) {
+  const rows = document.querySelectorAll("#leaveReportList tr");
+
+  rows.forEach((row) => {
+    let showRow = true;
+
+    if (value !== "all") {
+      if (filterType === "status") {
+        const statusCell = row.querySelector("td:nth-child(9)").textContent.toLowerCase();
+        showRow = (
+          (value === "approved" && statusCell === "approved") || 
+          (value === "rejected" && statusCell === "rejected") || 
+          (value === "pending" && statusCell === "pending")
+        );
+      } else if (filterType === "replacement") {
+        const replacementCell = row.querySelector("td:nth-child(11)").textContent.toLowerCase();
+        showRow = (
+          (value === "sudah" && replacementCell === "sudah diganti") || 
+          (value === "belum" && replacementCell === "belum diganti")
+        );
+      }
+    }
+
+    row.style.display = showRow ? "" : "none";
+  });
+
+  // Update dropdown button text
+  if (filterType === "status") {
+    let buttonText = "Filter Status";
+    if (value === "approved") buttonText = "Disetujui";
+    else if (value === "rejected") buttonText = "Ditolak";
+    else if (value === "pending") buttonText = "Pending";
+    
+    document.getElementById("statusFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
+  } else if (filterType === "replacement") {
+    let buttonText = "Filter Pengganti";
+    if (value === "sudah") buttonText = "Sudah Diganti";
+    else if (value === "belum") buttonText = "Belum Diganti";
+    
+    document.getElementById("replacementFilterDropdown").innerHTML = `<i class="fas fa-exchange-alt"></i> ${buttonText}`;
+  }
 }
 
 // Export data to Excel
@@ -344,7 +482,7 @@ function exportToPDF() {
         cellPadding: 3,
       },
       headStyles: {
-        fillColor: [66, 66, 66],
+        fillColor: [67, 97, 238], // Primary color
         textColor: 255,
         fontStyle: "bold",
       },
@@ -471,3 +609,4 @@ function hideAlert() {
   alertContainer.innerHTML = "";
   alertContainer.style.display = "none";
 }
+

@@ -6,173 +6,497 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- jQuery first -->
     <script src="js/jquery-3.6.3.min.js"></script>
     <!-- Bootstrap CSS and JS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
-    <!-- Datepicker CSS and JS -->
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
-      rel="stylesheet"
-    />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
-    <!-- Your custom CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="dist/css/pages/pengguna.min.css" />
-    <title>Sistem Absensi Karyawan</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <title>Kelola Pengguna - Melati Gold Shop</title>
+    <style>
+/* User Management specific styles */
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Form styling enhancements */
+#staffForm {
+  background-color: var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+#staffForm .form-label {
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+#staffForm .form-control:focus,
+#staffForm .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.1);
+}
+
+/* Table enhancements */
+.table th {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 500;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(67, 97, 238, 0.05);
+}
+
+/* Action buttons */
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-outline-danger {
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+/* Modal enhancements */
+.modal-header {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.modal-footer {
+  background-color: var(--gray-100);
+}
+
+/* Empty state styling */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-image {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 20px;
+  opacity: 0.7;
+}
+
+.empty-state p {
+  color: var(--gray-600);
+  font-size: 1rem;
+}
+    </style>
   </head>
   <body>
-    <header>
-      <nav>
-        <div class="nav-brand">
-          <a href="#">
-            <img src="img/Melati.jfif" alt="Logo" />
-            <span class="tangerine-bold">Melati Gold Shop</span>
-          </a>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold</h1>
         </div>
-        <div class="nav-list align-items-center mt-3">
-          <ul class="d-flex justify-content-center gap-3">
-            <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-users"></i> Pengajuan Staff <i class="fa-solid fa-chevron-down"></i>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="sistemAbsensi.html">
-                  <i class="fa-solid fa-file-contract"></i> Kehadiran
-                </a>
-                <a class="dropdown-item" href="pengajuan.html">
-                  <i class="fa-solid fa-file-contract"></i> Pengajuan Izin
-                </a>
-                <a class="dropdown-item" href="supervisor.html">
-                  <i class="fa-solid fa-calendar-days"></i> Status Pengajuan
-                </a>
+            </li>
+            
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
+                </ul>
               </div>
             </li>
-            <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-gear"></i> Pengaturan <i class="fa-solid fa-chevron-down ms-1"></i>
+            
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="pengguna.html">
-                  <i class="fa-solid fa-file-contract"></i> Tambah User 
-                </a>
-              </div>
             </li>
-            <li class="dropdown">
-              <a class="text-decoration-none text-dark dropdown-toggle" href="#" id="documentationLink" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-file-lines"></i> Laporan <i class="fa-solid fa-chevron-down ms-1"></i>
+            
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
               </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="pengguna.html.html">
-                  <i class="fa-solid fa-file-contract"></i> Laporan  Kehadiran
-                </a>
-                <a class="dropdown-item" href="pengguna.html.html">
-                  <i class="fa-solid fa-file-contract"></i> Laporan  Izin
-                </a>
+              <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link active" href="tambah-pengguna.html">
+                      <i class="fas fa-user-plus"></i>
+                      <span class="menu-text">Tambah Pengguna</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="supervisor.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Supervisor</span>
+                    </a>
+                  </li>
+                </ul>
               </div>
             </li>
           </ul>
         </div>
-        <div class="left-nav">
-          <div class="hamburger-menu">
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+          <div class="menu-toggle">
             <i class="fas fa-bars"></i>
           </div>
-          <div class="date">
-            <span id="clock" class="font-weight-bold"></span>
-            <br />
-            <span id="tgl" class="font-weight-bold"></span>
+          <div class="nav-right">
+            <div class="date-time">
+              <div class="current-date" id="current-date"></div>
+              <div class="current-time" id="current-time"></div>
+            </div>
+            <div class="user-profile dropdown">
+              <div class="profile-img" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="user-avatar">K</span>
+              </div>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button class="dropdown-item" id="logoutBtn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
-        <div class="dropdown">
-          <button
-            class="btn btn-secondary dropdown-toggle akun"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            K
-          </button>
-          <ul class="dropdown-menu">
-            <li>
-              <button class="btn btn-lg" id="logoutBtn" onclick="handleLogout()">Logout</button>
-            </li>
-          </ul>
-        </div>
-      </div>
-      </nav>
-    </header>
-    <main>
-      <div class="mainbar">
-        <div class="maintop">
-          <p>Sistem Absensi Karyawan</p>
-        </div>
-        <div class="container">
-            <div class="staff-management mt-4">
-                <h3>Kelola Data Staff</h3>
-                <form id="staffForm">
-                  <input type="text" id="staffId" placeholder="ID Karyawan" required>
-                  <input type="text" id="staffName" placeholder="Nama Karyawan" required>
-                  <input type="text" id="staffBarcode" placeholder="Kode Barcode" required>
-                  <button type="submit" class="btn btn-primary">Tambah Staff</button>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Kelola Pengguna</h1>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="sistemAbsensi.html">Absensi</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Kelola Pengguna</li>
+              </ol>
+            </nav>
+          </div>
+          
+          <div class="content-wrapper">
+            <!-- Add User Card -->
+            <div class="card">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-user-plus"></i>
+                  Tambah Pengguna Baru
+                </h2>
+              </div>
+              <div class="card-body">
+                <form id="staffForm" class="row g-3">
+                  <div class="col-md-4">
+                    <label for="staffId" class="form-label">ID Karyawan</label>
+                    <input type="text" class="form-control" id="staffId" placeholder="Masukkan ID karyawan" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="staffName" class="form-label">Nama Karyawan</label>
+                    <input type="text" class="form-control" id="staffName" placeholder="Masukkan nama karyawan" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="staffBarcode" class="form-label">Kode Barcode</label>
+                    <input type="text" class="form-control" id="staffBarcode" placeholder="Masukkan kode barcode" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="staffType" class="form-label">Tipe Karyawan</label>
+                    <select class="form-select" id="staffType" required>
+                      <option value="" selected disabled>Pilih tipe karyawan</option>
+                      <option value="staff">Staff</option>
+                      <option value="ob">Office Boy</option>
+                    </select>
+                  </div>
+                  <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-save"></i> Simpan Data
+                    </button>
+                    <button type="reset" class="btn btn-secondary">
+                      <i class="fas fa-undo"></i> Reset
+                    </button>
+                  </div>
                 </form>
-                
-                <div class="staff-list mt-3">
-                  <h4>Daftar Staff</h4>
-                  <table class="table">
+              </div>
+            </div>
+
+            <!-- User List Card -->
+            <div class="card">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-users"></i>
+                  Daftar Pengguna
+                </h2>
+               </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="staffTable">
                     <thead>
                       <tr>
-                        <th>ID</th>
+                        <th>ID Karyawan</th>
                         <th>Nama</th>
                         <th>Barcode</th>
+                        <th>Tipe</th>
+                        <th>Shift Default</th>
                         <th>Aksi</th>
                       </tr>
                     </thead>
-                    <tbody id="staffList"></tbody>
+                    <tbody id="staffList">
+                      <!-- Data will be populated by JavaScript -->
+                    </tbody>
                   </table>
+                </div>
+                <div class="empty-state" id="emptyStaff" style="display: none;">
+                  <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
+                  <p>Belum ada data karyawan</p>
                 </div>
               </div>
             </div>
+          </div>
         </div>
-        <aside class="sidebar">
-          <ul>
-            <li>
-              <a href="dashboard.html" class="dashboard">Dashboard</a>
-            </li>
-            <li>
-              <a href="admin.html" class="inpt-btn" data-target="inpt-show"
-                >Antrian</a>
-            </li>
-            <li>
-              <a href="buyback.html" class="sell-btn" data-target="sell-show"
-                >Buyback</a>
-            </li>
-            <li>
-              <a href="sistemAbsensi.html" class="utlt-btn" data-target="utlt-show"
-                >Absensi</a>
-            </li>
-            <li>
-              <a href="#" class="lprn-btn" data-target="lprn-show"
-                >Laporan<span class="fas fa-caret-down third"></span
-              ></a>
-              <ul class="lprn-show" id="lprn-show">
-                <li><a href="#">Analisis Antrian</a></li>
-                <li><a href="#">Perizinan</a></li>
-              </ul>
-            </li>
-          </ul>
-        </aside>
-    </main>
+      </main>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editUserModalLabel">Edit Data Pengguna</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editUserForm">
+              <input type="hidden" id="editUserId">
+              <div class="mb-3">
+                <label for="editStaffId" class="form-label">ID Karyawan</label>
+                <input type="text" class="form-control" id="editStaffId" required>
+              </div>
+              <div class="mb-3">
+                <label for="editStaffName" class="form-label">Nama Karyawan</label>
+                <input type="text" class="form-control" id="editStaffName" required>
+              </div>
+              <div class="mb-3">
+                <label for="editStaffBarcode" class="form-label">Kode Barcode</label>
+                <input type="text" class="form-control" id="editStaffBarcode" required>
+              </div>
+              <div class="mb-3">
+                <label for="editStaffType" class="form-label">Tipe Karyawan</label>
+                <select class="form-select" id="editStaffType" required>
+                  <option value="staff">Staff</option>
+                  <option value="ob">Office Boy</option>
+                </select>
+              </div>              
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary" id="saveUserChanges">Simpan Perubahan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmDeleteModalLabel">Konfirmasi Hapus</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Apakah Anda yakin ingin menghapus karyawan <span id="deleteUserName" class="fw-bold"></span>?</p>
+            <p class="text-danger">Tindakan ini tidak dapat dibatalkan.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-danger" id="confirmDelete">Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="js/melati.js"></script>
-    <script type="module" src="js/pengguna.js"></script>
+    <script type="module" src="js/pages/pengguna.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+  // Toggle sidebar collapse
+  const menuToggle = document.querySelector(".menu-toggle");
+  const appContainer = document.querySelector(".app-container");
+
+  if (menuToggle) {
+    menuToggle.addEventListener("click", function () {
+      appContainer.classList.toggle("sidebar-collapsed");
+    });
+  }
+
+  // Vanilla JS dropdown toggle
+  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
+
+  dropdownToggles.forEach((toggle) => {
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
+      const target = document.querySelector(targetId);
+
+      // If sidebar is not collapsed, implement accordion behavior
+      if (!appContainer.classList.contains("sidebar-collapsed")) {
+        // Close all other dropdowns
+        dropdownToggles.forEach((otherToggle) => {
+          if (otherToggle !== toggle) {
+            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
+            const other = document.querySelector(otherId);
+
+            if (other && other.classList.contains("show")) {
+              other.classList.remove("show");
+              otherToggle.classList.add("collapsed");
+              otherToggle.setAttribute("aria-expanded", "false");
+            }
+          }
+        });
+      }
+
+      // Toggle this dropdown
+      if (target) {
+        if (target.classList.contains("show")) {
+          target.classList.remove("show");
+          toggle.classList.add("collapsed");
+          toggle.setAttribute("aria-expanded", "false");
+        } else {
+          target.classList.add("show");
+          toggle.classList.remove("collapsed");
+          toggle.setAttribute("aria-expanded", "true");
+        }
+      }
+    });
+  });
+
+  // Set current date and time
+  function updateDateTime() {
+    const now = new Date();
+    const dateElement = document.getElementById("current-date");
+    const timeElement = document.getElementById("current-time");
+
+    if (dateElement) {
+      dateElement.textContent = now.toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    if (timeElement) {
+      timeElement.textContent = now.toLocaleTimeString("id-ID");
+    }
+  }
+
+  updateDateTime();
+  setInterval(updateDateTime, 1000);
+});
+    </script>
   </body>
 </html>
-
