@@ -78,6 +78,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize buyback form
   setupBuybackForm();
 });
+  // Tambahkan event listener untuk tombol print
+  const printButton = document.getElementById("printModalButton");
+  if (printButton) {
+    printButton.addEventListener("click", printModal);
+  }
 
 // Setup buyback form
 function setupBuybackForm() {
@@ -246,23 +251,14 @@ function calculateBuybackPrice(items) {
     
     // Determine buyback percentage based on store origin and condition
     if (item.asalToko === "Toko Melati") {
-      // For items from Melati store
-      if (item.kondisiBarang === "1") {
-        buybackPercentage = 95; // 95% for excellent condition
-      } else if (item.kondisiBarang === "2") {
-        buybackPercentage = 90; // 90% for good condition
-      } else {
-        buybackPercentage = 85; // 85% for fair condition
-      }
+      // For items from Melati store, use the new calculateMelatiPersentase function
+      // We need to pass the condition and the original purchase percentage
+      // Assuming hargaBeli is the original purchase price as a percentage of hargaHariIni
+      const persentaseBeli = (item.hargaBeli / item.hargaHariIni) * 100;
+      buybackPercentage = calculateMelatiPersentase(item.kondisiBarang, persentaseBeli);
     } else {
-      // For items from other stores
-      if (item.kondisiBarang === "1") {
-        buybackPercentage = 90; // 90% for excellent condition
-      } else if (item.kondisiBarang === "2") {
-        buybackPercentage = 85; // 85% for good condition
-      } else {
-        buybackPercentage = 80; // 80% for fair condition
-      }
+      // For items from other stores, use the new calculateLuarTokoPersentase function
+      buybackPercentage = calculateLuarTokoPersentase(item.kondisiBarang);
     }
     
     // Calculate buyback price based on current price
@@ -283,6 +279,63 @@ function calculateBuybackPrice(items) {
   
   return results;
 }
+
+// New helper functions for calculating percentages
+function calculateMelatiPersentase(kondisiBarang, persentaseBeli) {
+  if (persentaseBeli >= 95) {
+    const persentaseMap = {
+      1: 98,
+      2: 97,
+      3: 96
+    };
+    return persentaseMap[kondisiBarang];
+  } else if (persentaseBeli >= 90) {
+    const persentaseMap = {
+      1: 97,
+      2: 95,
+      3: 94
+    };
+    return persentaseMap[kondisiBarang];
+  } else if (persentaseBeli >= 85) {
+    const persentaseMap = {
+      1: 95,
+      2: 93,
+      3: 92
+    };
+    return persentaseMap[kondisiBarang];
+  } else if (persentaseBeli >= 80) {
+    const persentaseMap = {
+      1: 93,
+      2: 90,
+      3: 88
+    };
+    return persentaseMap[kondisiBarang];
+  } else if (persentaseBeli >= 75) {
+    const persentaseMap = {
+      1: 90,
+      2: 87,
+      3: 80
+    };
+    return persentaseMap[kondisiBarang];
+  } else {
+    const persentaseMap = {
+      1: 90,
+      2: 83,
+      3: 79
+    };
+    return persentaseMap[kondisiBarang];
+  }
+}
+
+function calculateLuarTokoPersentase(kondisiBarang) {
+  const persentaseMap = {
+    1: 72,
+    2: 70,
+    3: 65,
+  };
+  return persentaseMap[kondisiBarang] || 60;
+}
+
 
 // Show results in modal
 function showResults(results) {
@@ -410,71 +463,131 @@ function showAlert(message, type = 'warning') {
     bsAlert.close();
   }, 5000);
 }
+// Pastikan fungsi printModal tersedia secara global
+window.printModal = printModal;
 
-// Print modal content
+// Print modal content - simplified and direct approach
 function printModal() {
-  const modalContent = document.getElementById('modalMessage').innerHTML;
+  const modalContent = document.getElementById("modalMessage").innerHTML;
   
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank');
-  
-  // Add content to the new window
-  printWindow.document.write(`
+  // Create a simplified print window with direct content
+  const printContent = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Buyback Perhiasan - Melati Gold Shop</title>
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <title>Print</title>
       <style>
-        body {
-          font-family: 'Arial', sans-serif;
-          padding: 20px;
+        @page {
+          size: 75mm auto;  /* Width fixed, height auto */
+          margin: 2mm;
         }
-        .result-item {
-          padding: 15px;
-          border-radius: 8px;
-          background-color: white;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          margin-bottom: 15px;
-          border: 1px solid #dee2e6;
+        body { 
+          font-family: Arial, sans-serif;
+          width: 70mm;
+          font-size: 9pt;
+          line-height: 1.2;
+          margin: 0;
+          padding: 2mm;
         }
         .header {
           text-align: center;
-          margin-bottom: 20px;
-          padding-bottom: 15px;
-          border-bottom: 2px solid #4361ee;
+          font-weight: bold;
+          font-size: 10pt;
+          margin-bottom: 3mm;
         }
-        @media print {
-          .no-print {
-            display: none;
-          }
+        .divider {
+          border-top: 1px dashed #000;
+          margin: 2mm 0;
+        }
+        .result-item {
+          margin-bottom: 3mm;
+          border-bottom: 1px dashed #000;
+          padding-bottom: 2mm;
+        }
+        .result-item h5 {
+          font-size: 9pt;
+          margin: 1mm 0;
+          font-weight: bold;
+        }
+        .result-item p {
+          margin: 1mm 0;
+          font-size: 8pt;
+        }
+        .alert {
+          margin-top: 2mm;
+          padding: 1mm;
+        }
+        .alert h5 {
+          font-weight: bold;
+          margin: 1mm 0;
+        }
+        .footer {
+          text-align: center;
+          font-size: 8pt;
+          margin-top: 3mm;
+        }
+        /* Simplify the layout */
+        .row::after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+        .col-md-6 {
+          width: 100%;
+        }
+        /* Remove background colors and borders */
+        .alert-success, .alert-danger, .alert-info {
+          background: none !important;
+          border: none !important;
+        }
+        /* Remove icons */
+        .fas {
+          display: none;
         }
       </style>
     </head>
     <body>
       <div class="header">
-        <h3>Melati Gold Shop</h3>
-        <h5>Perhitungan Buyback Perhiasan</h5>
-        <p>${new Date().toLocaleDateString('id-ID', {
+        Melati Gold Shop
+      </div>
+      <div class="header">
+        Perhitungan Buyback
+      </div>
+      <div class="divider"></div>
+      
+      <!-- Insert modal content directly -->
+      ${modalContent}
+      
+      <div class="divider"></div>
+      <div class="footer">
+        ${new Date().toLocaleDateString('id-ID', {
           day: 'numeric',
-          month: 'long',
+          month: 'numeric',
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
-        })}</p>
-      </div>
-      ${modalContent}
-      <div class="text-center mt-4 no-print">
-        <button class="btn btn-primary" onclick="window.print()">Print</button>
-        <button class="btn btn-secondary" onclick="window.close()">Close</button>
+        })}
       </div>
     </body>
     </html>
-  `);
-  
-  // Focus on the new window
+  `;
+
+  // Open a new window with the content
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
   printWindow.document.close();
-  printWindow.focus();
+
+  // Print immediately when loaded
+  printWindow.onload = function() {
+    // Short delay to ensure content is rendered
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.onafterprint = function() {
+        printWindow.close();
+      };
+    }, 500);
+  };
 }
+
+
 
