@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <title>Pengajuan Izin - Melati Gold Shop</title>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold</h1>
+        </div>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+              </a>
+            </li>
+            
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
+            
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link active" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="tambah-pengguna.html">
+                      <i class="fas fa-user-plus"></i>
+                      <span class="menu-text">Tambah Pengguna</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+          <div class="menu-toggle">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class="nav-right">
+            <div class="date-time">
+              <div class="current-date" id="current-date"></div>
+              <div class="current-time" id="current-time"></div>
+            </div>
+            <div class="user-profile dropdown">
+              <div class="user-avatar" data-bs-toggle="dropdown" aria-expanded="false">K</div>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button class="dropdown-item" id="logoutBtn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Pengajuan Izin Staff</h1>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="sistemAbsensi.html">Absensi</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Pengajuan Izin</li>
+              </ol>
+            </nav>
+          </div>
+
+          <!-- Modern Main Content -->
+          <div class="content-wrapper">
+            <!-- Alert for feedback -->
+            <div id="formFeedback" style="display: none"></div>
+
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-card-icon bg-primary">
+                  <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3 id="pendingCount">0</h3>
+                  <p>Pengajuan Pending</p>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-card-icon bg-success">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3 id="approvedCount">0</h3>
+                  <p>Pengajuan Disetujui</p>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-card-icon bg-danger">
+                  <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3 id="rejectedCount">0</h3>
+                  <p>Pengajuan Ditolak</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-file-alt"></i>
+                  Form Pengajuan Izin
+                </h2>
+              </div>
+              <div class="card-body">
+                <form id="leaveForm" class="row g-3">
+                  <div class="col-md-6">
+                    <label for="employeeId" class="form-label">ID Karyawan</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="employeeId"
+                        placeholder="Masukkan ID Karyawan"
+                        required
+                      />
+                    </div>
+                    <div class="form-text">Masukkan ID karyawan yang terdaftar di sistem</div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="leaveDate" class="form-label">Tanggal Izin</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                      <input type="date" class="form-control" id="leaveDate" required />
+                    </div>
+                    <div class="form-text">Pilih tanggal saat Anda berencana untuk izin</div>
+                  </div>
+
+                  <div class="col-12">
+                    <label for="leaveReason" class="form-label">Alasan Izin</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-comment-alt"></i></span>
+                      <textarea
+                        class="form-control"
+                        id="leaveReason"
+                        rows="3"
+                        placeholder="Jelaskan alasan izin Anda secara detail"
+                        required
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="replacementType" class="form-label">Jenis Pengganti</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-exchange-alt"></i></span>
+                      <select class="form-select" id="replacementType" required>
+                        <option value="" selected disabled>Pilih Jenis Pengganti</option>
+                        <option value="libur">Ganti Libur</option>
+                        <option value="jam">Ganti Jam</option>
+                      </select>
+                    </div>
+                    <div class="form-text">Pilih bagaimana Anda akan mengganti waktu izin</div>
+                  </div>
+
+                  <div class="col-12">
+                    <div id="replacementLibur" class="replacement-detail card mt-3" style="display: none">
+                      <div class="card-body">
+                        <h6 class="mb-3">
+                          <i class="fas fa-calendar-day me-2"></i>
+                          Detail Ganti Libur
+                        </h6>
+                        <div class="mb-3">
+                          <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
+                          <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+                            <input type="date" class="form-control" id="replacementDate" />
+                          </div>
+                          <div class="form-text">Pilih tanggal libur yang akan Anda gunakan sebagai pengganti</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div id="replacementJam" class="replacement-detail card mt-3" style="display: none">
+                      <div class="card-body">
+                        <h6 class="mb-3">
+                          <i class="fas fa-clock me-2"></i>
+                          Detail Ganti Jam
+                        </h6>
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
+                            <div class="input-group">
+                              <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+                              <input type="date" class="form-control" id="replacementHourDate" />
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
+                            <div class="input-group">
+                              <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
+                              <input
+                                type="number"
+                                class="form-control"
+                                id="replacementHours"
+                                min="1"
+                                max="12"
+                                placeholder="Jumlah jam"
+                                />
+                                <span class="input-group-text">jam</span>
+                              </div>
+                              <div class="form-text">Masukkan jumlah jam yang akan Anda ganti (maksimal 12 jam)</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+  
+                    <div class="col-12 d-flex gap-2 mt-4">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Ajukan Izin
+                      </button>
+                      <button type="reset" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-2"></i>
+                        Reset Form
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+  
+              <!-- Information Card -->
+              <div class="card">
+                <div class="card-header">
+                  <h2>
+                    <i class="fas fa-info-circle"></i>
+                    Informasi Pengajuan Izin
+                  </h2>
+                </div>
+                <div class="card-body">
+                  <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                      <i class="fas fa-lightbulb me-2"></i>
+                      Petunjuk Pengajuan:
+                    </h6>
+                    <ul class="mb-0">
+                      <li>Pengajuan izin harus dilakukan minimal 1 hari sebelum tanggal izin</li>
+                      <li>Pastikan alasan izin dijelaskan dengan detail</li>
+                      <li>Pengajuan akan diproses oleh HRD dalam waktu 1x24 jam</li>
+                      <li>Status pengajuan dapat dilihat di menu "Kehadiran"</li>
+                    </ul>
+                  </div>
+                  
+                  <div class="row mt-4">
+                    <div class="col-md-6">
+                      <div class="card h-100">
+                        <div class="card-body">
+                          <h5 class="card-title">
+                            <i class="fas fa-calendar-day me-2 text-primary"></i>
+                            Ganti Libur
+                          </h5>
+                          <p class="card-text">
+                            Opsi ini memungkinkan Anda mengganti hari izin dengan bekerja di hari libur Anda. 
+                            Pastikan tanggal pengganti sudah dikonfirmasi dengan supervisor.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="card h-100">
+                        <div class="card-body">
+                          <h5 class="card-title">
+                            <i class="fas fa-clock me-2 text-primary"></i>
+                            Ganti Jam
+                          </h5>
+                          <p class="card-text">
+                            Opsi ini memungkinkan Anda mengganti jam kerja yang hilang dengan bekerja lebih lama 
+                            di hari yang ditentukan. Maksimal jam pengganti adalah 12 jam per hari.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+  
+              <!-- Recent Leave Requests -->
+              <div class="card">
+                <div class="card-header">
+                  <h2>
+                    <i class="fas fa-history"></i>
+                    Riwayat Pengajuan Izin Terbaru
+                  </h2>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover" id="leaveHistoryTable">
+                      <thead>
+                        <tr>
+                          <th>Tanggal Pengajuan</th>
+                          <th>Tanggal Izin</th>
+                          <th>Alasan</th>
+                          <th>Jenis Pengganti</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="leaveHistoryList">
+                        <!-- Data will be populated by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty-state" id="emptyLeaveHistory" style="display: none;">
+                    <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
+                    <p>Belum ada riwayat pengajuan izin</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+  
+      <script type="module" src="js/melati.js"></script>
+      <script type="module" src="js/pages/pengajuan.js"></script>
+    </body>
+  </html>
+  

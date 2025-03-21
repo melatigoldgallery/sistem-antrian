@@ -1,12 +1,12 @@
-import { db } from './configFirebase.js';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  deleteDoc, 
-  query, 
-  where 
+import { db } from "../configFirebase.js";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  deleteDoc,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 // Get all employees
@@ -14,9 +14,9 @@ export async function getEmployees() {
   try {
     const employeesCollection = collection(db, "employees");
     const snapshot = await getDocs(employeesCollection);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
   } catch (error) {
     console.error("Error getting employees:", error);
@@ -53,15 +53,15 @@ export async function findEmployeeByBarcode(barcode) {
     const employeesCollection = collection(db, "employees");
     const q = query(employeesCollection, where("barcode", "==", barcode));
     const snapshot = await getDocs(q);
-    
+
     if (snapshot.empty) {
       return null;
     }
-    
+
     const doc = snapshot.docs[0];
     return {
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     };
   } catch (error) {
     console.error("Error! Barcode Karyawan Tidak Ada atau Tidak Ditemukan:", error);

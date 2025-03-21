@@ -1,15 +1,15 @@
-import { db } from './configFirebase.js';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
+import { db } from "../configFirebase.js";
+import {
+  collection,
+  addDoc,
+  getDocs,
   doc,
   getDoc,
   updateDoc,
-  query, 
-  where, 
+  query,
+  where,
   Timestamp,
-  orderBy
+  orderBy,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 // Record attendance (check-in)
@@ -17,13 +17,13 @@ export async function recordAttendance(attendance) {
   try {
     // Add timestamps
     attendance.timeIn = attendance.timeIn || Timestamp.now();
-    attendance.date = attendance.date || new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+    attendance.date = attendance.date || new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+
     // Convert Date objects to Firestore Timestamps
     if (attendance.timeIn instanceof Date) {
       attendance.timeIn = Timestamp.fromDate(attendance.timeIn);
     }
-    
+
     const attendanceCollection = collection(db, "attendance");
     const docRef = await addDoc(attendanceCollection, attendance);
     return { id: docRef.id, ...attendance };
@@ -37,14 +37,14 @@ export async function recordAttendance(attendance) {
 export async function updateAttendanceOut(id, timeOut) {
   try {
     const attendanceRef = doc(db, "attendance", id);
-    
+
     // Convert Date to Firestore Timestamp
     const timeOutTimestamp = timeOut instanceof Date ? Timestamp.fromDate(timeOut) : Timestamp.now();
-    
+
     await updateDoc(attendanceRef, {
-      timeOut: timeOutTimestamp
+      timeOut: timeOutTimestamp,
     });
-    
+
     return true;
   } catch (error) {
     console.error("Error updating attendance check-out:", error);
@@ -55,21 +55,17 @@ export async function updateAttendanceOut(id, timeOut) {
 // Get today's attendance
 export async function getTodayAttendance() {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
     const attendanceCollection = collection(db, "attendance");
-    const q = query(
-      attendanceCollection, 
-      where("date", "==", today),
-      orderBy("timeIn", "desc")
-    );
-    
+    const q = query(attendanceCollection, where("date", "==", today), orderBy("timeIn", "desc"));
+
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       timeIn: doc.data().timeIn.toDate(),
-      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null
+      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting today's attendance:", error);
@@ -88,14 +84,14 @@ export async function getAttendanceByDateRange(startDate, endDate) {
       orderBy("date", "desc"),
       orderBy("timeIn", "desc")
     );
-    
+
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       timeIn: doc.data().timeIn.toDate(),
-      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null
+      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting attendance by date range:", error);
@@ -113,14 +109,14 @@ export async function getAttendanceByEmployee(employeeId) {
       orderBy("date", "desc"),
       orderBy("timeIn", "desc")
     );
-    
+
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       timeIn: doc.data().timeIn.toDate(),
-      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null
+      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting attendance by employee:", error);
@@ -133,7 +129,7 @@ export async function getAttendanceById(id) {
   try {
     const attendanceRef = doc(db, "attendance", id);
     const docSnap = await getDoc(attendanceRef);
-    
+
     if (docSnap.exists()) {
       const data = docSnap.data();
       return {
@@ -141,7 +137,7 @@ export async function getAttendanceById(id) {
         ...data,
         // Convert Firestore Timestamp to JS Date
         timeIn: data.timeIn.toDate(),
-        timeOut: data.timeOut ? data.timeOut.toDate() : null
+        timeOut: data.timeOut ? data.timeOut.toDate() : null,
       };
     } else {
       throw new Error("Attendance record not found");

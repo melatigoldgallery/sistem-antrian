@@ -17,12 +17,7 @@ import {
   announceQueueNumber,
   announceVehicleMessage,
 } from "./audioHandlers.js";
-// Sidebar functionality
-try {
-  sidebarToggle();
-} catch (error) {
-  console.log("Sidebar toggle:", error);
-}
+
 document.addEventListener('DOMContentLoaded', function() {
   const printButton = document.querySelector('.modal-footer .btn-primary');
   if (printButton) {

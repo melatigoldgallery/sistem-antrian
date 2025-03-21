@@ -1,14 +1,14 @@
-import { db } from './configFirebase.js';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  query, 
-  where, 
+import { db } from "../configFirebase.js";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  query,
+  where,
   orderBy,
-  Timestamp 
+  Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 // Submit leave request
@@ -16,9 +16,9 @@ export async function submitLeaveRequest(leaveRequest) {
   try {
     // Add timestamps and default values
     leaveRequest.submitDate = Timestamp.now();
-    leaveRequest.status = 'Pending';
-    leaveRequest.replacementStatus = 'Belum Diganti';
-    
+    leaveRequest.status = "Pending";
+    leaveRequest.replacementStatus = "Belum Diganti";
+
     const leaveCollection = collection(db, "leaveRequests");
     const docRef = await addDoc(leaveCollection, leaveRequest);
     return { id: docRef.id, ...leaveRequest };
@@ -33,15 +33,15 @@ export async function getAllLeaveRequests() {
   try {
     const leaveCollection = collection(db, "leaveRequests");
     const q = query(leaveCollection, orderBy("submitDate", "desc"));
-    
+
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       submitDate: doc.data().submitDate.toDate(),
       decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null
+      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting leave requests:", error);
@@ -52,20 +52,16 @@ export async function getAllLeaveRequests() {
 // Get pending leave requests
 export async function getPendingLeaveRequests() {
   try {
-    const leaveCollection = collection(db, 'leaveRequests');
-    const q = query(
-      leaveCollection, 
-      where('status', '==', 'Pending'), 
-      orderBy('submitDate', 'desc')
-    );
-    
+    const leaveCollection = collection(db, "leaveRequests");
+    const q = query(leaveCollection, where("status", "==", "Pending"), orderBy("submitDate", "desc"));
+
     const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+
+    return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate()
+      submitDate: doc.data().submitDate.toDate(),
     }));
   } catch (error) {
     console.error("Error getting pending leave requests:", error);
@@ -76,22 +72,18 @@ export async function getPendingLeaveRequests() {
 // Get leave requests by employee
 export async function getLeaveRequestsByEmployee(employeeId) {
   try {
-    const leaveCollection = collection(db, 'leaveRequests');
-    const q = query(
-      leaveCollection, 
-      where('employeeId', '==', employeeId), 
-      orderBy('submitDate', 'desc')
-    );
-    
+    const leaveCollection = collection(db, "leaveRequests");
+    const q = query(leaveCollection, where("employeeId", "==", employeeId), orderBy("submitDate", "desc"));
+
     const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+
+    return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       submitDate: doc.data().submitDate.toDate(),
       decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null
+      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting leave requests by employee:", error);
@@ -105,7 +97,7 @@ export async function updateLeaveRequestStatus(id, status) {
     const leaveDoc = doc(db, "leaveRequests", id);
     await updateDoc(leaveDoc, {
       status: status,
-      decisionDate: Timestamp.now()
+      decisionDate: Timestamp.now(),
     });
     return true;
   } catch (error) {
@@ -117,13 +109,13 @@ export async function updateLeaveRequestStatus(id, status) {
 // Update replacement status
 export async function updateReplacementStatus(id, status) {
   try {
-    const leaveRef = doc(db, 'leaveRequests', id);
-    
+    const leaveRef = doc(db, "leaveRequests", id);
+
     await updateDoc(leaveRef, {
       replacementStatus: status,
-      replacementStatusDate: Timestamp.now()
+      replacementStatusDate: Timestamp.now(),
     });
-    
+
     return true;
   } catch (error) {
     console.error("Error updating replacement status:", error);
@@ -134,24 +126,24 @@ export async function updateReplacementStatus(id, status) {
 // Get leave requests by date range
 export async function getLeaveRequestsByDateRange(startDate, endDate) {
   try {
-    const leaveCollection = collection(db, 'leaveRequests');
+    const leaveCollection = collection(db, "leaveRequests");
     const q = query(
       leaveCollection,
-      where('rawLeaveDate', '>=', startDate),
-      where('rawLeaveDate', '<=', endDate),
-      orderBy('rawLeaveDate', 'desc'),
-      orderBy('submitDate', 'desc')
+      where("rawLeaveDate", ">=", startDate),
+      where("rawLeaveDate", "<=", endDate),
+      orderBy("rawLeaveDate", "desc"),
+      orderBy("submitDate", "desc")
     );
-    
+
     const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+
+    return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       submitDate: doc.data().submitDate.toDate(),
       decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null
+      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting leave requests by date range:", error);
@@ -162,27 +154,22 @@ export async function getLeaveRequestsByDateRange(startDate, endDate) {
 // Get approved leave requests for today
 export async function getTodayApprovedLeaves() {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
-    const leaveCollection = collection(db, 'leaveRequests');
-    const q = query(
-      leaveCollection,
-      where('rawLeaveDate', '==', today),
-      where('status', '==', 'Disetujui')
-    );
-    
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+
+    const leaveCollection = collection(db, "leaveRequests");
+    const q = query(leaveCollection, where("rawLeaveDate", "==", today), where("status", "==", "Disetujui"));
+
     const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+
+    return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null
+      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
     }));
   } catch (error) {
     console.error("Error getting today's approved leaves:", error);
     throw error;
   }
 }
-
