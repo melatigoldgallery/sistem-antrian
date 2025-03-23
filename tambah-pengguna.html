@@ -19,6 +19,8 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- Custom CSS -->
+     <!-- SheetJS (untuk export Excel) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Kelola Pengguna - Melati Gold Shop</title>
     <style>
@@ -234,7 +236,10 @@
       <main class="main-content">
         <!-- Top Navigation -->
         <header class="top-nav">
-          <div class="menu-toggle">
+          <div class="menu-toggle d-md-flex d-none">
+            <i class="fa-solid fa-minimize"></i>
+          </div>
+          <div class="hamburger d-md-none d-flex">
             <i class="fas fa-bars"></i>
           </div>
           <div class="nav-right">
@@ -279,67 +284,85 @@
           </div>
           
           <div class="content-wrapper">
-            <!-- Add User Card -->
-            <div class="card">
+            <!-- Add Staff Card -->
+            <div class="card mb-4">
               <div class="card-header">
-                <h2>
-                  <i class="fas fa-user-plus"></i>
-                  Tambah Pengguna Baru
-                </h2>
+                <h2><i class="fas fa-user-plus"></i> Tambah Karyawan Baru</h2>
               </div>
               <div class="card-body">
-                <form id="staffForm" class="row g-3">
-                  <div class="col-md-4">
-                    <label for="staffId" class="form-label">ID Karyawan</label>
-                    <input type="text" class="form-control" id="staffId" placeholder="Masukkan ID karyawan" required>
+                <form id="staffForm">
+                  <div class="row">
+                    <div class="col-md-3 mb-3">
+                      <label for="staffId" class="form-label">ID Karyawan</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="staffId" placeholder="Auto-generated" readonly>
+                        <button class="btn btn-outline-secondary refresh-id" type="button" title="Refresh ID">
+                          <i class="fas fa-sync-alt"></i>
+                        </button>
+                      </div>
+                      <small class="form-text text-muted">ID akan dibuat otomatis</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label for="staffName" class="form-label">Nama Karyawan</label>
+                      <input type="text" class="form-control" id="staffName" placeholder="Masukkan nama karyawan" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label for="staffBarcode" class="form-label">Barcode</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="staffBarcode" placeholder="Auto-generated" readonly>
+                        <button class="btn btn-outline-secondary refresh-barcode" type="button" title="Refresh Barcode">
+                          <i class="fas fa-sync-alt"></i>
+                        </button>
+                      </div>
+                      <small class="form-text text-muted">Barcode akan dibuat otomatis</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label for="staffType" class="form-label">Tipe Karyawan</label>
+                      <select class="form-select" id="staffType" required>
+                        <option value="" selected disabled>Pilih tipe karyawan</option>
+                        <option value="staff">Staff</option>
+                        <option value="ob">Office Boy</option>
+                      </select>
+                    </div>
                   </div>
-                  <div class="col-md-4">
-                    <label for="staffName" class="form-label">Nama Karyawan</label>
-                    <input type="text" class="form-control" id="staffName" placeholder="Masukkan nama karyawan" required>
-                  </div>
-                  <div class="col-md-4">
-                    <label for="staffBarcode" class="form-label">Kode Barcode</label>
-                    <input type="text" class="form-control" id="staffBarcode" placeholder="Masukkan kode barcode" required>
-                  </div>
-                  <div class="col-md-4">
-                    <label for="staffType" class="form-label">Tipe Karyawan</label>
-                    <select class="form-select" id="staffType" required>
-                      <option value="" selected disabled>Pilih tipe karyawan</option>
-                      <option value="staff">Staff</option>
-                      <option value="ob">Office Boy</option>
-                    </select>
-                  </div>
-                  <div class="col-12 mt-4">
-                    <button type="submit" class="btn btn-primary">
-                      <i class="fas fa-save"></i> Simpan Data
-                    </button>
-                    <button type="reset" class="btn btn-secondary">
-                      <i class="fas fa-undo"></i> Reset
-                    </button>
+                    <div class="col-md-6 mb-3">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan
+                      </button>
                   </div>
                 </form>
               </div>
             </div>
-
-            <!-- User List Card -->
+            
+            <!-- Staff List Card -->
             <div class="card">
-              <div class="card-header">
-                <h2>
-                  <i class="fas fa-users"></i>
-                  Daftar Pengguna
-                </h2>
-               </div>
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-users"></i> Daftar Karyawan</h2>
+                <div class="card-actions">
+                  <div class="dropdown me-2">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="employeeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fas fa-user-tag"></i> Filter Tipe
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="employeeFilterDropdown">
+                      <li><a class="dropdown-item" href="#" data-employee-filter="all">Semua</a></li>
+                      <li><a class="dropdown-item" href="#" data-employee-filter="staff">Staff</a></li>
+                      <li><a class="dropdown-item" href="#" data-employee-filter="ob">Office Boy</a></li>
+                    </ul>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary" id="exportUsers">
+                    <i class="fas fa-download"></i> Export
+                  </button>
+                </div>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-hover" id="staffTable">
+                  <table class="table table-hover">
                     <thead>
                       <tr>
                         <th>ID Karyawan</th>
                         <th>Nama</th>
                         <th>Barcode</th>
                         <th>Tipe</th>
-                        <th>Shift Default</th>
                         <th>Aksi</th>
                       </tr>
                     </thead>
@@ -349,7 +372,7 @@
                   </table>
                 </div>
                 <div class="empty-state" id="emptyStaff" style="display: none;">
-                  <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
+                  <img src="img/empty-data.svg" alt="No Data" class="empty-image">
                   <p>Belum ada data karyawan</p>
                 </div>
               </div>
@@ -358,13 +381,13 @@
         </div>
       </main>
     </div>
-
+  
     <!-- Edit User Modal -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="editUserModalLabel">Edit Data Pengguna</h5>
+            <h5 class="modal-title" id="editUserModalLabel">Edit Data Karyawan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -379,7 +402,7 @@
                 <input type="text" class="form-control" id="editStaffName" required>
               </div>
               <div class="mb-3">
-                <label for="editStaffBarcode" class="form-label">Kode Barcode</label>
+                <label for="editStaffBarcode" class="form-label">Barcode</label>
                 <input type="text" class="form-control" id="editStaffBarcode" required>
               </div>
               <div class="mb-3">
@@ -388,7 +411,8 @@
                   <option value="staff">Staff</option>
                   <option value="ob">Office Boy</option>
                 </select>
-              </div>              
+              </div>
+            </form>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -397,7 +421,7 @@
         </div>
       </div>
     </div>
-
+  
     <!-- Confirm Delete Modal -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -407,7 +431,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p>Apakah Anda yakin ingin menghapus karyawan <span id="deleteUserName" class="fw-bold"></span>?</p>
+            <p>Apakah Anda yakin ingin menghapus karyawan <strong id="deleteUserName"></strong>?</p>
             <p class="text-danger">Tindakan ini tidak dapat dibatalkan.</p>
           </div>
           <div class="modal-footer">
@@ -417,86 +441,9 @@
         </div>
       </div>
     </div>
-
-    <script type="module" src="js/melati.js"></script>
+    <!-- Custom JS -->
+    <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/pengguna.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-  // Toggle sidebar collapse
-  const menuToggle = document.querySelector(".menu-toggle");
-  const appContainer = document.querySelector(".app-container");
-
-  if (menuToggle) {
-    menuToggle.addEventListener("click", function () {
-      appContainer.classList.toggle("sidebar-collapsed");
-    });
-  }
-
-  // Vanilla JS dropdown toggle
-  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
-
-  dropdownToggles.forEach((toggle) => {
-    toggle.addEventListener("click", function (e) {
-      e.preventDefault();
-
-      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
-      const target = document.querySelector(targetId);
-
-      // If sidebar is not collapsed, implement accordion behavior
-      if (!appContainer.classList.contains("sidebar-collapsed")) {
-        // Close all other dropdowns
-        dropdownToggles.forEach((otherToggle) => {
-          if (otherToggle !== toggle) {
-            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
-            const other = document.querySelector(otherId);
-
-            if (other && other.classList.contains("show")) {
-              other.classList.remove("show");
-              otherToggle.classList.add("collapsed");
-              otherToggle.setAttribute("aria-expanded", "false");
-            }
-          }
-        });
-      }
-
-      // Toggle this dropdown
-      if (target) {
-        if (target.classList.contains("show")) {
-          target.classList.remove("show");
-          toggle.classList.add("collapsed");
-          toggle.setAttribute("aria-expanded", "false");
-        } else {
-          target.classList.add("show");
-          toggle.classList.remove("collapsed");
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    });
-  });
-
-  // Set current date and time
-  function updateDateTime() {
-    const now = new Date();
-    const dateElement = document.getElementById("current-date");
-    const timeElement = document.getElementById("current-time");
-
-    if (dateElement) {
-      dateElement.textContent = now.toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-
-    if (timeElement) {
-      timeElement.textContent = now.toLocaleTimeString("id-ID");
-    }
-  }
-
-  updateDateTime();
-  setInterval(updateDateTime, 1000);
-});
-    </script>
   </body>
-</html>
+  </html>
+  

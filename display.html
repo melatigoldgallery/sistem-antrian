@@ -17,230 +17,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="css/pages/display.css">
     <title>Display Antrian - Melati Gold Shop</title>
-    <style>
-      :root {
-        --primary-color: #4361ee;
-        --primary-light: #4895ef;
-        --primary-dark: #3f37c9;
-        --secondary-color: #f72585;
-        --success-color: #4cc9f0;
-        --warning-color: #f8961e;
-        --danger-color: #f94144;
-        --light-color: #f8f9fa;
-        --dark-color: #212529;
-      }
-      
-      body {
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        min-height: 100vh;
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-      }
-      
-      .header {
-        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
-        color: white;
-        padding: 1rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      
-      .logo-container {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-      }
-      
-      .logo {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-      
-      .brand-name {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0;
-      }
-      
-      .date-time {
-        text-align: right;
-      }
-      
-      .current-date {
-        font-size: 0.9rem;
-        opacity: 0.9;
-      }
-      
-      .current-time {
-        font-size: 1.2rem;
-        font-weight: 600;
-      }
-      
-      .page-title {
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 1.5rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        text-align: center;
-      }
-      
-      .page-title h1 {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--primary-dark);
-        margin: 0;
-      }
-      
-      .queue-card {
-        background-color: white;
-        border-radius: 15px;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        height: 100%;
-        transition: all 0.3s ease;
-      }
-      
-      .queue-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-      }
-      
-      .queue-card-header {
-        padding: 1.5rem;
-        text-align: center;
-        color: white;
-        font-weight: 600;
-      }
-      
-      .queue-card-body {
-        padding: 2rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .queue-number {
-        font-size: 5rem;
-        font-weight: 700;
-        margin: 1rem 0;
-        padding: 1rem 2rem;
-        border-radius: 15px;
-        min-width: 200px;
-        text-align: center;
-      }
-      
-      .delayed-queue {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 1rem 0;
-        padding: 1rem 2rem;
-        border-radius: 15px;
-        min-width: 200px;
-        text-align: center;
-      }
-      
-      .card-delayed .queue-card-header {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-      }
-      
-      .card-delayed .delayed-queue {
-        color: #ff6b6b;
-        background-color: rgba(255, 107, 107, 0.1);
-      }
-      
-      .card-current .queue-card-header {
-        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
-      }
-      
-      .card-current .queue-number {
-        color: var(--primary-color);
-        background-color: rgba(67, 97, 238, 0.1);
-      }
-      
-      .card-next .queue-card-header {
-        background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
-      }
-      
-      .card-next .queue-number {
-        color: #43cea2;
-        background-color: rgba(67, 206, 162, 0.1);
-      }
-      
-      .card-count .queue-card-header {
-        background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%);
-      }
-      
-      .card-count .queue-number {
-        color: #ffb347;
-        background-color: rgba(255, 179, 71, 0.1);
-      }
-      
-      .queue-label {
-        font-size: 1.2rem;
-        color: var(--gray-600);
-        margin-top: 0.5rem;
-        text-align: center;
-      }
-      
-      .footer {
-        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
-        color: white;
-        padding: 1rem 0;
-        text-align: center;
-        margin-top: 2rem;
-      }
-      
-      .footer p {
-        margin: 0;
-        font-size: 0.9rem;
-        opacity: 0.9;
-      }
-      
-      /* Animation for current queue number */
-      @keyframes pulse {
-        0% {
-          transform: scale(1);
-          box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7);
-        }
-        
-        70% {
-          transform: scale(1.05);
-          box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
-        }
-        
-        100% {
-          transform: scale(1);
-          box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
-        }
-      }
-      
-      .card-current .queue-number {
-        animation: pulse 2s infinite;
-      }
-      
-      /* Responsive adjustments */
-      @media (max-width: 768px) {
-        .queue-number {
-          font-size: 3.5rem;
-          min-width: 150px;
-        }
-        
-        .delayed-queue {
-          font-size: 2rem;
-          min-width: 150px;
-        }
-        
-        .page-title h1 {
-          font-size: 1.5rem;
-        }
-      }
-    </style>
   </head>
   <body>
     <!-- Header -->
@@ -267,7 +45,7 @@
     <main class="container">
       <!-- Page Title -->
       <div class="page-title">
-        <h1>DISPLAY ANTRIAN PELAYANAN MELATI GOLD SHOP</h1>
+        <h1>TERIMA KASIH TELAH BERBELANJA DI MELATI GOLD SHOP, HAPPY SHOPPING</h1>
       </div>
 
       <!-- Queue Cards -->
@@ -280,7 +58,7 @@
             </div>
             <div class="queue-card-body">
               <div class="delayed-queue" id="delayQueueNumber">-</div>
-              <p class="queue-label">Mohon bersabar, nomor Anda akan dipanggil kembali</p>
+              <p class="queue-label">Silahkan langsung menyerahkan nomor antrian kepada staff</p>
             </div>
           </div>
         </div>
@@ -293,7 +71,7 @@
             </div>
             <div class="queue-card-body">
               <div class="queue-number" id="queueNumber">-</div>
-              <p class="queue-label">Sedang dilayani</p>
+              <p class="queue-label">Akan dipanggil</p>
             </div>
           </div>
         </div>
@@ -324,19 +102,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Announcement Section -->
-      <div class="row mt-4">
-        <div class="col-12">
-          <div class="alert alert-info d-flex align-items-center" role="alert">
-            <i class="fas fa-info-circle me-3 fa-2x"></i>
-            <div>
-              <h4 class="alert-heading">Informasi Pelayanan</h4>
-              <p class="mb-0">Terima kasih telah menggunakan layanan kami. Mohon perhatikan nomor antrian Anda dan harap menunggu hingga nomor Anda dipanggil.</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </main>
 
     <!-- Footer -->
@@ -345,68 +110,13 @@
         <p>&copy; 2025 Melati Gold Shop. All rights reserved.</p>
       </div>
     </footer>
-
-    <!-- Scripts -->
+    <script type="module" src="js/melati.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
       import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
       import { database } from "./js/configFirebase.js";
     </script>
-      <script>
-      document.addEventListener("DOMContentLoaded", function () {
-  // Toggle sidebar collapse
-  const menuToggle = document.querySelector(".menu-toggle");
-  const appContainer = document.querySelector(".app-container");
-
-  if (menuToggle) {
-    menuToggle.addEventListener("click", function () {
-      appContainer.classList.toggle("sidebar-collapsed");
-    });
-  }
-
-  // Vanilla JS dropdown toggle
-  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
-
-  dropdownToggles.forEach((toggle) => {
-    toggle.addEventListener("click", function (e) {
-      e.preventDefault();
-
-      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
-      const target = document.querySelector(targetId);
-
-      // If sidebar is not collapsed, implement accordion behavior
-      if (!appContainer.classList.contains("sidebar-collapsed")) {
-        // Close all other dropdowns
-        dropdownToggles.forEach((otherToggle) => {
-          if (otherToggle !== toggle) {
-            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
-            const other = document.querySelector(otherId);
-
-            if (other && other.classList.contains("show")) {
-              other.classList.remove("show");
-              otherToggle.classList.add("collapsed");
-              otherToggle.setAttribute("aria-expanded", "false");
-            }
-          }
-        });
-      }
-
-      // Toggle this dropdown
-      if (target) {
-        if (target.classList.contains("show")) {
-          target.classList.remove("show");
-          toggle.classList.add("collapsed");
-          toggle.setAttribute("aria-expanded", "false");
-        } else {
-          target.classList.add("show");
-          toggle.classList.remove("collapsed");
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    });
-  });
-
-  // Set current date and time
+    <script>      
   function updateDateTime() {
     const now = new Date();
     const dateElement = document.getElementById("current-date");
@@ -420,15 +130,12 @@
         day: "numeric",
       });
     }
-
     if (timeElement) {
       timeElement.textContent = now.toLocaleTimeString("id-ID");
     }
   }
-
   updateDateTime();
   setInterval(updateDateTime, 1000);
-});
     </script>
   </body>
 </html>

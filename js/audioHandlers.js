@@ -1,163 +1,220 @@
 import { AUDIO_PATHS } from "./audioConfig.js";
 
-export async function playWaitMessageSequence(language = 'id') {
-  const openingChime = new Audio(AUDIO_PATHS.informasi);
-  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
-  
-  // Wait message texts
-  const waitTexts = {
-    id: "Kepada Pelanggan Melati yang belum dilayani, kami mohon kesabarannya untuk menunggu giliran pelayanan. Terima kasih atas perhatiannya",
-    en: "To Melati customers who have not been served, we ask for patience to wait for their turn. Thank you for your attention"
-  };
+// Variabel untuk melacak status pemutaran audio
+let isAudioPlaying = false;
 
-  // Play opening chime
-  await new Promise((resolve) => {
-    openingChime.addEventListener("ended", resolve);
-    openingChime.play();
-  });
-
-  // Play text-to-speech message
-  await new Promise((resolve) => {
-    const utterance = new SpeechSynthesisUtterance(waitTexts[language]);
-    utterance.lang = language === 'id' ? "id-ID" : "en-US";
-    utterance.rate = 0.85;
-    utterance.pitch = 1.2;
-    utterance.onend = resolve;
-    
-    speechSynthesis.speak(utterance);
-  });
-  // Play closing chime
-  await new Promise((resolve) => {
-    closingChime.addEventListener("ended", resolve);
-    closingChime.play();
-  });
+// Fungsi untuk memeriksa status audio
+export function isAudioBusy() {
+  return isAudioPlaying;
 }
 
-export async function playTakeQueueMessage(language = 'id') {
-  const openingChime = new Audio(AUDIO_PATHS.informasi);
-  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
-  
-  // Reminder message texts
-  const reminderTexts = {
-    id: "Kepada pelanggan yang belum mendapat nomor antrian, harap meminta nomor antrian terlebih dahulu kepada staff Melati. Terima kasih atas perhatiannya",
-    en: "To customers who haven't received a queue number, please request a queue number first from Melati staff. Thank you for your attention"
-  };
-
-  // Play opening chime
-  await new Promise((resolve) => {
-    openingChime.addEventListener("ended", resolve);
-    openingChime.play();
-  });
-
-  // Play voice message
-  await new Promise((resolve) => {
-    const utterance = new SpeechSynthesisUtterance(reminderTexts[language]);
-    utterance.lang = language === 'id' ? "id-ID" : "en-US";
-    utterance.rate = 0.85;
-    utterance.pitch = 1.12;
-    utterance.onend = resolve;
-
-    speechSynthesis.speak(utterance);
-  });
-   // Play closing chime
-   await new Promise((resolve) => {
-    closingChime.addEventListener("ended", resolve);
-    closingChime.play();
-  });
-}
-
-export function announceQueueNumber(queueNumber, language = 'id') {
-  const letter = queueNumber.charAt(0);
-  const numbers = queueNumber.substring(1);
-
-  const texts = {
-    id: `Nomor antrian, ${letter}, ${numbers.split("").join("")}`,
-    en: `Queue number, ${letter}, ${numbers.split("").join("")}`
-  };
-
-  const utterance = new SpeechSynthesisUtterance(texts[language]);
-
-  // Get available voices
-  const voices = window.speechSynthesis.getVoices();
-
-  // Set voice preferences based on language
-  utterance.lang = language === 'id' ? "id-ID" : "en-US";
-  utterance.rate = 0.85;
-  utterance.pitch = 1.2;
-
-  speechSynthesis.speak(utterance);
-}
-
-
-export async function playQueueAnnouncement(queueNumber, language = 'id') {
-  const introRingtone = new Audio(AUDIO_PATHS.antrian);
-  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
-
-  const playRingtone = () => {
-    return new Promise((resolve) => {
-      introRingtone.addEventListener("ended", resolve);
-      introRingtone.play();
-    });
-  };
-
-  // Play sequence: ringtone first, then queue announcement
-  await playRingtone();
-  await announceQueueNumber(queueNumber, language);
-  
-}
-
-export async function announceVehicleMessage(carType, plateNumber, language = 'id') {
-  const openingChime = new Audio(AUDIO_PATHS.informasi);
-  const closingChime = new Audio(AUDIO_PATHS.informasiEnd);
-
-  // Vehicle message texts
-  const messages = {
-    id: `Mohon kepada pemilik ${carType} dengan nomor polisi, ${plateNumber}, untuk memindahkan kendaraan karena ada kendaraan yang akan keluar. Terima kasih atas perhatiannya`,
-    en: `To the owner of ${carType} with license plate ${plateNumber}, please move your vehicle as there is a vehicle in front that needs to exit. Thank you for your attention`
-  };
-
-  // Cancel any existing speech
+// Fungsi untuk membatalkan semua audio
+export function cancelAllAudio() {
   window.speechSynthesis.cancel();
+  isAudioPlaying = false;
+}
 
-  // Play opening chime
-  await new Promise((resolve) => {
-    openingChime.addEventListener("ended", resolve, { once: true });
-    openingChime.play();
-  });
-
-  // Split message into smaller parts for better reliability
-  const messageParts = messages[language].split('. ');
-
-  // Play each part of the message
-  for (const part of messageParts) {
-    await new Promise((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(part.trim() + '.');
-      utterance.lang = language === 'id' ? 'id-ID' : 'en-US';
-      utterance.rate = 0.85;
-      utterance.pitch = 1.2;
-      utterance.onend = resolve;
-      utterance.onerror = resolve; // Handle errors gracefully
-      
-      // Add small pause between parts
-      utterance.addEventListener('end', () => {
-        setTimeout(resolve, 300);
-      }, { once: true });
-
-      window.speechSynthesis.speak(utterance);
+// Fungsi untuk memutar file audio
+async function playAudio(audioPath) {
+  return new Promise((resolve) => {
+    const audio = new Audio(audioPath);
+    audio.addEventListener("ended", resolve, { once: true });
+    audio.play().catch(err => {
+      console.error(`Error playing audio ${audioPath}:`, err);
+      resolve(); // Lanjutkan meskipun ada error
     });
+  });
+}
+
+// Fungsi untuk text-to-speech
+async function speak(text, rate = 0.85, pitch = 1.2) {
+  if (!('speechSynthesis' in window)) {
+    console.warn("Text-to-speech tidak didukung");
+    return Promise.resolve();
   }
-
-  // Play closing chime
-  await new Promise((resolve) => {
-    closingChime.addEventListener("ended", resolve, { once: true });
-    closingChime.play();
+  
+  window.speechSynthesis.cancel(); // Bersihkan antrian
+  
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "id-ID";
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    
+    // Coba dapatkan suara Indonesia
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang.includes('id'));
+    if (idVoice) utterance.voice = idVoice;
+    
+    utterance.onend = resolve;
+    utterance.onerror = () => {
+      console.error("TTS error");
+      resolve();
+    };
+    
+    window.speechSynthesis.speak(utterance);
   });
+}
 
-  // Clear any remaining speech
-  window.speechSynthesis.cancel();
+// Fungsi-fungsi ekspor
+export async function playWaitMessageSequence() {
+  if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar
+  
+  try {
+    isAudioPlaying = true;
+    
+    // Putar nada pembuka
+    await playAudio(AUDIO_PATHS.informasi);
+    
+    // Putar pesan
+    const message = "Kepada Pelanggan Melati yang belum dilayani, kami mohon kesabarannya untuk menunggu giliran pelayanan. Terima kasih atas perhatiannya";
+    await speak(message);
+    
+    // Putar nada penutup
+    await playAudio(AUDIO_PATHS.informasiEnd);
+    
+    isAudioPlaying = false;
+    return true; // Berhasil
+  } catch (error) {
+    console.error("Error playing wait message:", error);
+    isAudioPlaying = false;
+    return false; // Gagal
+  }
+}
+
+export async function playTakeQueueMessage() {
+  if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar
+  
+  try {
+    isAudioPlaying = true;
+    
+    // Putar nada pembuka
+    await playAudio(AUDIO_PATHS.informasi);
+    
+    // Putar pesan
+    const message = "Kepada pelanggan yang belum mendapat nomor antrian, harap meminta nomor antrian terlebih dahulu kepada staff Melati. Terima kasih atas perhatiannya";
+    await speak(message);
+    
+    // Putar nada penutup
+    await playAudio(AUDIO_PATHS.informasiEnd);
+    
+    isAudioPlaying = false;
+    return true; // Berhasil
+  } catch (error) {
+    console.error("Error playing take queue message:", error);
+    isAudioPlaying = false;
+    return false; // Gagal
+  }
+}
+
+export async function announceQueueNumber(queueNumber) {
+  if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar
+  
+  try {
+    isAudioPlaying = true;
+    
+    const letter = queueNumber.charAt(0);
+    const numbers = queueNumber.substring(1);
+    const text = `Nomor antrian, ${letter}, ${numbers.split("").join("")}`;
+    
+    await speak(text);
+    
+    isAudioPlaying = false;
+    return true; // Berhasil
+  } catch (error) {
+    console.error("Error announcing queue number:", error);
+    isAudioPlaying = false;
+    return false; // Gagal
+  }
+}
+
+export async function playQueueAnnouncement(queueNumber) {
+  if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar
+  
+  try {
+    isAudioPlaying = true;
+    
+    // Putar nada pembuka
+    await playAudio(AUDIO_PATHS.antrian);
+    
+    // Umumkan nomor antrian
+    const letter = queueNumber.charAt(0);
+    const numbers = queueNumber.substring(1);
+    const text = `Nomor antrian, ${letter}, ${numbers.split("").join("")}`;
+    
+    await speak(text);
+    
+    isAudioPlaying = false;
+    return true; // Berhasil
+  } catch (error) {
+    console.error("Error announcing queue:", error);
+    isAudioPlaying = false;
+    return false; // Gagal
+  }
+}
+
+export async function announceVehicleMessage(carType, plateNumber, vehicleColor = '') {
+  if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar
+  
+  try {
+    isAudioPlaying = true;
+    
+    // Putar nada pembuka
+    await playAudio(AUDIO_PATHS.informasi);
+    
+    // Buat pesan dengan kondisional untuk warna kendaraan
+    const colorInfo = vehicleColor ? `warna ${vehicleColor}` : '';
+    const message = `Mohon kepada pemilik ${carType} ${colorInfo} dengan nomor polisi, ${plateNumber}, untuk memindahkan kendaraan karena ada kendaraan yang akan keluar. Terima kasih atas perhatiannya`;
+    
+    await speak(message);
+    
+    // Putar nada penutup
+    await playAudio(AUDIO_PATHS.informasiEnd);
+    
+    isAudioPlaying = false;
+    return true; // Berhasil
+  } catch (error) {
+    console.error("Error announcing vehicle message:", error);
+    isAudioPlaying = false;
+    return false; // Gagal
+  }
 }
 
 export function playNotificationSound() {
-  const notifSound = new Audio(AUDIO_PATHS.notifOn);
-  notifSound.play();
+  if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar
+  
+  try {
+    const audio = new Audio(AUDIO_PATHS.notifOn);
+    audio.play().catch(err => console.error("Error playing notification:", err));
+    return true; // Berhasil
+  } catch (error) {
+    console.error("Error playing notification sound:", error);
+    return false; // Gagal
+  }
 }
+
+// Inisialisasi
+(function init() {
+  // Preload audio files
+  Object.values(AUDIO_PATHS).forEach(path => {
+    const audio = new Audio();
+    audio.src = path;
+    audio.preload = 'auto';
+  });
+  
+  // Fix untuk speechSynthesis yang "macet"
+  setInterval(() => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }
+  }, 5000);
+  
+  // Reset saat halaman tidak aktif/aktif kembali
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      window.speechSynthesis.cancel();
+      isAudioPlaying = false;
+    }
+  });
+})();

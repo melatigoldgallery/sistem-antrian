@@ -1,80 +1,5 @@
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
-  // Toggle sidebar collapse
-  const menuToggle = document.querySelector(".menu-toggle");
-  const appContainer = document.querySelector(".app-container");
-
-  if (menuToggle) {
-    menuToggle.addEventListener("click", function () {
-      appContainer.classList.toggle("sidebar-collapsed");
-    });
-  }
-
-  // Vanilla JS dropdown toggle
-  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
-
-  dropdownToggles.forEach((toggle) => {
-    toggle.addEventListener("click", function (e) {
-      e.preventDefault();
-
-      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
-      const target = document.querySelector(targetId);
-
-      // If sidebar is not collapsed, implement accordion behavior
-      if (!appContainer.classList.contains("sidebar-collapsed")) {
-        // Close all other dropdowns
-        dropdownToggles.forEach((otherToggle) => {
-          if (otherToggle !== toggle) {
-            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
-            const other = document.querySelector(otherId);
-
-            if (other && other.classList.contains("show")) {
-              other.classList.remove("show");
-              otherToggle.classList.add("collapsed");
-              otherToggle.setAttribute("aria-expanded", "false");
-            }
-          }
-        });
-      }
-
-      // Toggle this dropdown
-      if (target) {
-        if (target.classList.contains("show")) {
-          target.classList.remove("show");
-          toggle.classList.add("collapsed");
-          toggle.setAttribute("aria-expanded", "false");
-        } else {
-          target.classList.add("show");
-          toggle.classList.remove("collapsed");
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    });
-  });
-
-  // Set current date and time
-  function updateDateTime() {
-    const now = new Date();
-    const dateElement = document.getElementById("current-date");
-    const timeElement = document.getElementById("current-time");
-
-    if (dateElement) {
-      dateElement.textContent = now.toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-
-    if (timeElement) {
-      timeElement.textContent = now.toLocaleTimeString("id-ID");
-    }
-  }
-
-  updateDateTime();
-  setInterval(updateDateTime, 1000);
-  
   // Initialize buyback form
   setupBuybackForm();
 });
@@ -207,6 +132,7 @@ function calculateBuyback(e) {
   let isValid = true;
   
   rows.forEach(row => {
+    const namaBarangInput = row.querySelector('input[name="namaBarang"]');
     const kadar = row.querySelector("[name='kadar']").value;
     const asalToko = row.querySelector("[name='asalToko']").value;
     const namaBarang = row.querySelector("[name='namaBarang']")?.value || "";
@@ -241,7 +167,7 @@ function calculateBuyback(e) {
   showResults(results);
 }
 
-// Calculate buyback price
+/// Calculate buyback price
 function calculateBuybackPrice(items) {
   const results = [];
   
@@ -249,19 +175,28 @@ function calculateBuybackPrice(items) {
     let buybackPercentage = 0;
     let buybackPrice = 0;
     
-    // Determine buyback percentage based on store origin and condition
-    if (item.asalToko === "Toko Melati") {
-      // For items from Melati store, use the new calculateMelatiPersentase function
-      // We need to pass the condition and the original purchase percentage
-      // Assuming hargaBeli is the original purchase price as a percentage of hargaHariIni
-      const persentaseBeli = (item.hargaBeli / item.hargaHariIni) * 100;
-      buybackPercentage = calculateMelatiPersentase(item.kondisiBarang, persentaseBeli);
+    // Bandingkan harga per gram saat beli dengan harga per gram saat ini
+    const hargaPerGramBeli = item.hargaBeli; // Asumsikan ini sudah dalam format per gram
+    const hargaPerGramHariIni = item.hargaHariIni; // Asumsikan ini sudah dalam format per gram
+    
+    if (hargaPerGramBeli <= hargaPerGramHariIni) {
+      // Kasus 1: Harga beli lebih rendah dari harga hari ini
+      // Gunakan logika perhitungan yang sudah ada berdasarkan kondisi dan asal toko
+      if (item.asalToko === "Toko Melati") {
+        // For items from Melati store, use the calculateMelatiPersentase function
+        const persentaseBeli = (item.hargaBeli / item.hargaHariIni) * 100;
+        buybackPercentage = calculateMelatiPersentase(item.kondisiBarang, persentaseBeli);
+      } else {
+        // For items from other stores, use the calculateLuarTokoPersentase function
+        buybackPercentage = calculateLuarTokoPersentase(item.kondisiBarang);
+      }
     } else {
-      // For items from other stores, use the new calculateLuarTokoPersentase function
-      buybackPercentage = calculateLuarTokoPersentase(item.kondisiBarang);
+      // Kasus 2: Harga beli lebih tinggi dari harga hari ini
+      // Gunakan persentase 100% (harga penuh hari ini)
+      buybackPercentage = 100;
     }
     
-    // Calculate buyback price based on current price
+    // Calculate buyback price based on current price and percentage
     buybackPrice = (item.hargaHariIni * buybackPercentage) / 100;
     
     // Calculate price difference
@@ -270,15 +205,18 @@ function calculateBuybackPrice(items) {
     
     results.push({
       ...item,
-      buybackPercentage,
+      buybackPercentage: parseFloat(buybackPercentage.toFixed(2)), // Format to 2 decimal places
       buybackPrice,
       priceDifference,
-      percentageDifference
+      percentageDifference,
+      isHigherPurchasePrice: hargaPerGramBeli > hargaPerGramHariIni // Flag untuk UI
     });
   });
   
   return results;
 }
+
+
 
 // New helper functions for calculating percentages
 function calculateMelatiPersentase(kondisiBarang, persentaseBeli) {
@@ -321,7 +259,7 @@ function calculateMelatiPersentase(kondisiBarang, persentaseBeli) {
     const persentaseMap = {
       1: 90,
       2: 83,
-      3: 79
+      3: 77
     };
     return persentaseMap[kondisiBarang];
   }
@@ -343,7 +281,7 @@ function showResults(results) {
   let content = `
     <div class="alert alert-info mb-4">
       <i class="fas fa-info-circle me-2"></i>
-      Berikut adalah hasil perhitungan buyback berdasarkan data yang dimasukkan.
+      Berikut adalah hasil perhitungan buyback perhiasan.
     </div>
   `;
   
@@ -354,88 +292,68 @@ function showResults(results) {
     const priceStatus = result.priceDifference >= 0 ? "text-success" : "text-danger";
     const priceIcon = result.priceDifference >= 0 ? "fa-arrow-up" : "fa-arrow-down";
     
-    content += `
-      <div class="result-item">
-        <h5 class="fw-bold mb-3">Item #${index + 1}: ${result.namaBarang || "Perhiasan"}</h5>
-        <div class="row mb-2">
-          <div class="col-md-6">
-            <p class="mb-1"><strong>Kadar:</strong> ${result.kadar}</p>
-            <p class="mb-1"><strong>Asal Toko:</strong> ${result.asalToko}</p>
-            <p class="mb-1"><strong>Kondisi:</strong> ${conditionText}</p>
-          </div>
-          <div class="col-md-6">
-            <p class="mb-1"><strong>Harga Beli:</strong> Rp ${formatNumber(result.hargaBeli)}</p>
-            <p class="mb-1"><strong>Harga Hari Ini:</strong> Rp ${formatNumber(result.hargaHariIni)}</p>
-            <p class="mb-1"><strong>Persentase Buyback:</strong> ${result.buybackPercentage}%</p>
-          </div>
+    // Tambahkan notifikasi khusus jika harga beli lebih tinggi
+    let specialNotice = '';
+    if (result.isHigherPurchasePrice) {
+      specialNotice = `
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Perhatian:</strong> Harga beli lebih tinggi dari harga hari ini. 
+          Harga penerimaan menggunakan 100% dari harga hari ini.
         </div>
-                <div class="alert ${result.priceDifference >= 0 ? 'alert-success' : 'alert-danger'} mb-0">
-          <div class="row">
-            <div class="col-md-6">
-              <h5 class="mb-0">Harga Buyback: Rp ${formatNumber(result.buybackPrice)}</h5>
-            </div>
-            <div class="col-md-6">
-              <p class="mb-0 ${priceStatus}">
-                <i class="fas ${priceIcon} me-1"></i>
-                ${result.priceDifference >= 0 ? 'Untung' : 'Rugi'} Rp ${formatNumber(Math.abs(result.priceDifference))}
-                (${Math.abs(result.percentageDifference)}%)
-              </p>
-            </div>
-          </div>
+      `;
+    }
+    const namaBarang = result.namaBarang || "Perhiasan";
+    content += `
+    <div class="result-item">
+      <h5 class="fw-bold mb-3">Item #${index + 1}: Perhiasan </h5>
+      ${specialNotice}
+      <div class="row mb-2">
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Nama Barang:</strong> ${namaBarang}</p>
+          <p class="mb-1"><strong>Kadar:</strong> ${result.kadar}</p>
+          <p class="mb-1"><strong>Asal Toko:</strong> ${result.asalToko}</p>
+          <p class="mb-1"><strong>Kondisi:</strong> ${conditionText}</p>
+        </div>
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Harga Beli:</strong> Rp ${formatNumber(result.hargaBeli)}</p>
+          <p class="mb-1"><strong>Harga Hari Ini:</strong> Rp ${formatNumber(result.hargaHariIni)}</p>
+          <p class="mb-1"><strong>Persentase Buyback:</strong> ${result.buybackPercentage}%</p>
         </div>
       </div>
-    `;
-  });
-  
-  // Add summary if there are multiple items
-  if (results.length > 1) {
-    const totalBuyback = results.reduce((sum, item) => sum + item.buybackPrice, 0);
-    const totalOriginal = results.reduce((sum, item) => sum + item.hargaBeli, 0);
-    const totalDifference = totalBuyback - totalOriginal;
-    const totalPercentage = ((totalDifference / totalOriginal) * 100).toFixed(2);
-    
-    content += `
-      <div class="result-item bg-light">
-        <h5 class="fw-bold mb-3">Ringkasan Total</h5>
+      <div class="alert ${result.priceDifference >= 0 ? 'alert-success' : 'alert-danger'} mb-0">
         <div class="row">
           <div class="col-md-6">
-            <p class="mb-1"><strong>Total Harga Beli:</strong> Rp ${formatNumber(totalOriginal)}</p>
-            <p class="mb-1"><strong>Total Harga Buyback:</strong> Rp ${formatNumber(totalBuyback)}</p>
-          </div>
-          <div class="col-md-6">
-            <p class="mb-1 ${totalDifference >= 0 ? 'text-success' : 'text-danger'}">
-              <strong>Total ${totalDifference >= 0 ? 'Keuntungan' : 'Kerugian'}:</strong> 
-              Rp ${formatNumber(Math.abs(totalDifference))}
-            </p>
-            <p class="mb-1 ${totalDifference >= 0 ? 'text-success' : 'text-danger'}">
-              <strong>Persentase:</strong> ${Math.abs(totalPercentage)}%
-            </p>
+            <h5 class="mb-0">Harga Buyback: Rp ${formatNumber(result.buybackPrice)}</h5>
           </div>
         </div>
       </div>
-    `;
-  }
-  
-  // Add timestamp
-  const now = new Date();
-  content += `
-    <div class="text-end text-muted mt-3">
-      <small>Dihitung pada: ${now.toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}</small>
     </div>
   `;
-  
-  modalBody.innerHTML = content;
-  
-  // Show modal
-  const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
-  resultModal.show();
+});
+
+// Add timestamp
+const now = new Date();
+content += `
+  <div class="text-end text-muted mt-3">
+    <small>Dihitung pada: ${now.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</small>
+  </div>
+`;
+
+modalBody.innerHTML = content;
+
+// Show modal
+const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+resultModal.show();
 }
+
+
 
 // Format number to currency format
 function formatNumber(number) {
@@ -479,7 +397,7 @@ function printModal() {
       <style>
         @page {
           size: 75mm auto;  /* Width fixed, height auto */
-          margin: 2mm;
+          margin: 7mm;
         }
         body { 
           font-family: Arial, sans-serif;
@@ -551,7 +469,7 @@ function printModal() {
         Melati Gold Shop
       </div>
       <div class="header">
-        Perhitungan Buyback
+        Perhitungan Buyback Perhiasan
       </div>
       <div class="divider"></div>
       
@@ -559,15 +477,6 @@ function printModal() {
       ${modalContent}
       
       <div class="divider"></div>
-      <div class="footer">
-        ${new Date().toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'numeric',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })}
-      </div>
     </body>
     </html>
   `;

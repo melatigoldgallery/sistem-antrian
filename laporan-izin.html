@@ -85,26 +85,25 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <img src="img/Melati.jfif" alt="Logo" class="logo" />
-          <h1 class="brand-name">Melati Gold</h1>
+          <h1 class="brand-name">Melati Gold Shop</h1>
         </div>
         <div class="sidebar-menu">
-          <ul class="nav flex-column">
+          <ul class="nav flex-column" id="sidebarAccordion">
             <li class="nav-item">
-              <a class="nav-link" href="dashboard.html">
+              <a class="nav-link active" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
               </a>
             </li>
-
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
-              <a
-                class="nav-link collapsed"
-                href="#"
-                data-bs-toggle="collapse"
-                data-bs-target="#antrianSubmenu"
-                aria-expanded="false"
-              >
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
                 <i class="fas fa-ticket-alt"></i>
                 <span class="menu-text">Antrian</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -132,23 +131,9 @@
                 </ul>
               </div>
             </li>
-
-            <li class="nav-item">
-              <a class="nav-link" href="buyback.html">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="menu-text">Buyback</span>
-              </a>
-            </li>
-
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
-              <a
-                class="nav-link collapsed"
-                href="#"
-                data-bs-toggle="collapse"
-                data-bs-target="#absensiSubmenu"
-                aria-expanded="false"
-              >
+              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
                 <i class="fas fa-clipboard-check"></i>
                 <span class="menu-text">Absensi</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -180,9 +165,15 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link active" href="laporan-izin.html">
+                    <a class="nav-link" href="laporan-izin.html">
                       <i class="fas fa-file-medical"></i>
                       <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="supervisor.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Supervisor</span>
                     </a>
                   </li>
                 </ul>
@@ -199,7 +190,10 @@
       <main class="main-content">
         <!-- Top Navigation -->
         <header class="top-nav">
-          <div class="menu-toggle">
+          <div class="menu-toggle d-md-flex d-none">
+            <i class="fa-solid fa-minimize"></i>
+          </div>
+          <div class="hamburger d-md-none d-flex">
             <i class="fas fa-bars"></i>
           </div>
           <div class="nav-right">
@@ -499,7 +493,7 @@
         </div>
       </div>
     </div>
-    <script type="module" src="js/melati.js"></script>
+    <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/laporan-izin.js"></script>
   </body>
 </html>

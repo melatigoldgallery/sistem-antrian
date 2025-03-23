@@ -27,17 +27,22 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <img src="img/Melati.jfif" alt="Logo" class="logo" />
-          <h1 class="brand-name">Melati Gold</h1>
+          <h1 class="brand-name">Melati Gold Shop</h1>
         </div>
         <div class="sidebar-menu">
-          <ul class="nav flex-column">
+          <ul class="nav flex-column" id="sidebarAccordion">
             <li class="nav-item">
-              <a class="nav-link" href="dashboard.html">
+              <a class="nav-link active" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
               </a>
             </li>
-            
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
               <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
@@ -68,14 +73,6 @@
                 </ul>
               </div>
             </li>
-            
-            <li class="nav-item">
-              <a class="nav-link" href="buyback.html">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="menu-text">Buyback</span>
-              </a>
-            </li>
-            
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
               <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
@@ -92,7 +89,7 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link active" href="pengajuan-izin.html">
+                    <a class="nav-link" href="pengajuan-izin.html">
                       <i class="fas fa-calendar-plus"></i>
                       <span class="menu-text">Pengajuan Izin</span>
                     </a>
@@ -115,6 +112,12 @@
                       <span class="menu-text">Laporan Izin</span>
                     </a>
                   </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="supervisor.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Supervisor</span>
+                    </a>
+                  </li>
                 </ul>
               </div>
             </li>
@@ -129,7 +132,10 @@
       <main class="main-content">
         <!-- Top Navigation -->
         <header class="top-nav">
-          <div class="menu-toggle">
+          <div class="menu-toggle d-md-flex d-none">
+            <i class="fa-solid fa-minimize"></i>
+          </div>
+          <div class="hamburger d-md-none d-flex">
             <i class="fas fa-bars"></i>
           </div>
           <div class="nav-right">
@@ -185,7 +191,7 @@
               </div>
               <div class="card-body">
                 <form id="leaveForm" class="row g-3">
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label for="employeeId" class="form-label">ID Karyawan</label>
                     <div class="input-group">
                       <span class="input-group-text"><i class="fas fa-id-card"></i></span>
@@ -200,13 +206,22 @@
                     <div class="form-text">Masukkan ID karyawan yang terdaftar di sistem</div>
                   </div>
 
-                  <div class="col-md-6">
-                    <label for="leaveDate" class="form-label">Tanggal Izin</label>
+                  <div class="col-md-4">
+                    <label for="leaveStartDate" class="form-label">Tanggal Mulai Izin</label>
                     <div class="input-group">
                       <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                      <input type="date" class="form-control" id="leaveDate" required />
+                      <input type="date" class="form-control" id="leaveStartDate" required />
                     </div>
-                    <div class="form-text">Pilih tanggal saat Anda berencana untuk izin</div>
+                    <div class="form-text">Untuk izin 1 hari, isi tanggal yang sama</div>
+                  </div>
+                  
+                  <div class="col-md-4">
+                    <label for="leaveEndDate" class="form-label">Tanggal Selesai Izin</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                      <input type="date" class="form-control" id="leaveEndDate" required />
+                    </div>
+                    
                   </div>
 
                   <div class="col-12">
@@ -224,18 +239,91 @@
                   </div>
 
                   <div class="col-md-6">
+                    <label for="leaveType" class="form-label">Jenis Izin</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                      <select class="form-select" id="leaveType" required>
+                        <option value="" selected disabled>Pilih Jenis Izin</option>
+                        <option value="normal">Izin Normal</option>
+                        <option value="sakit">Izin Sakit</option>
+                        <option value="cuti">Cuti</option>
+                      </select>
+                    </div>
+                    <div class="form-text">Pilih jenis izin yang sesuai</div>
+                  </div>
+                  
+                  <div class="col-md-6">
                     <label for="replacementType" class="form-label">Jenis Pengganti</label>
                     <div class="input-group">
                       <span class="input-group-text"><i class="fas fa-exchange-alt"></i></span>
-                      <select class="form-select" id="replacementType" required>
+                      <select class="form-select" id="replacementType">
                         <option value="" selected disabled>Pilih Jenis Pengganti</option>
                         <option value="libur">Ganti Libur</option>
                         <option value="jam">Ganti Jam</option>
+                        <option value="tidak">Tidak Perlu Diganti</option>
                       </select>
                     </div>
                     <div class="form-text">Pilih bagaimana Anda akan mengganti waktu izin</div>
                   </div>
-
+                  
+                  <!-- Tambahkan section untuk surat sakit -->
+                  <div class="col-12">
+                    <div id="sickLeaveSection" class="replacement-detail card mt-3" style="display: none">
+                      <div class="card-body">
+                        <h6 class="mb-3">
+                          <i class="fas fa-file-medical me-2"></i>
+                          Detail Surat Keterangan Sakit
+                        </h6>
+                        <div class="mb-3">
+                          <label for="hasMedicalCertificate" class="form-label">Surat Keterangan Sakit</label>
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="hasMedicalCertificate">
+                            <label class="form-check-label" for="hasMedicalCertificate">
+                              Saya memiliki surat keterangan sakit
+                            </label>
+                          </div>
+                        </div>
+                        <div class="mb-3" id="medicalCertificateUpload" style="display: none;">
+                          <label for="medicalCertificateFile" class="form-label">Unggah Surat Keterangan Sakit</label>
+                          <input class="form-control" type="file" id="medicalCertificateFile" accept="image/*,.pdf">
+                          <div class="form-text">Format yang diterima: JPG, PNG, PDF (Maks. 2MB)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Tambahkan section untuk cuti -->
+                  <div class="col-12">
+                    <div id="leaveSection" class="replacement-detail card mt-1" style="display: none">
+                      <div class="card-body">
+                        <h6 class="mb-3">
+                          <i class="fas fa-umbrella-beach me-2"></i>
+                          Detail Cuti
+                        </h6>
+                        <div class="mb-3">
+                          <label class="form-label">Jenis Cuti</label>
+                          <div class="form-check">
+                            <input class="form-check-input" type="radio" name="leaveTypeRadio" id="specialLeave" value="special">
+                            <label class="form-check-label" for="specialLeave">
+                              Cuti Khusus
+                            </label>
+                          </div>
+                        </div>
+                        <div class="mb-3" id="specialLeaveReason" style="display: none;">
+                          <label for="specialLeaveDetail" class="form-label">Alasan Cuti Khusus</label>
+                          <select class="form-select" id="specialLeaveDetail">
+                            <option value="" selected disabled>Pilih Alasan Cuti Khusus</option>
+                            <option value="marriage">Pernikahan</option>
+                            <option value="childbirth">Kelahiran Anak</option>
+                            <option value="bereavement">Kedukaan</option>
+                            <option value="other">Lainnya</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Ubah section ganti libur untuk mendukung multiple dates -->
                   <div class="col-12">
                     <div id="replacementLibur" class="replacement-detail card mt-3" style="display: none">
                       <div class="card-body">
@@ -243,51 +331,26 @@
                           <i class="fas fa-calendar-day me-2"></i>
                           Detail Ganti Libur
                         </h6>
-                        <div class="mb-3">
-                          <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
-                          <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                            <input type="date" class="form-control" id="replacementDate" />
-                          </div>
-                          <div class="form-text">Pilih tanggal libur yang akan Anda gunakan sebagai pengganti</div>
+                        <div id="multiDateWarning" class="alert alert-info" style="display: none;">
+                          <i class="fas fa-info-circle me-2"></i>
+                          Anda mengajukan izin untuk <span id="totalDaysCount">0</span> hari. Silakan pilih tanggal ganti libur untuk setiap hari.
                         </div>
-                      </div>
-                    </div>
-
-                    <div id="replacementJam" class="replacement-detail card mt-3" style="display: none">
-                      <div class="card-body">
-                        <h6 class="mb-3">
-                          <i class="fas fa-clock me-2"></i>
-                          Detail Ganti Jam
-                        </h6>
-                        <div class="row g-3">
-                          <div class="col-md-6">
-                            <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
+                        <div id="replacementDatesContainer">
+                          <!-- Tanggal ganti libur akan ditambahkan secara dinamis di sini -->
+                          <div class="mb-3 replacement-date-item">
+                            <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
                             <div class="input-group">
                               <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                              <input type="date" class="form-control" id="replacementHourDate" />
-                            </div>
-                          </div>
-                          <div class="col-md-6">
-                            <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
-                            <div class="input-group">
-                              <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
-                              <input
-                                type="number"
-                                class="form-control"
-                                id="replacementHours"
-                                min="1"
-                                max="12"
-                                placeholder="Jumlah jam"
-                                />
-                                <span class="input-group-text">jam</span>
-                              </div>
-                              <div class="form-text">Masukkan jumlah jam yang akan Anda ganti (maksimal 12 jam)</div>
+                              <input type="date" class="form-control" id="replacementDate" />
                             </div>
                           </div>
                         </div>
+                        <button type="button" id="addMoreDates" class="btn btn-sm btn-outline-primary mt-2" style="display: none;">
+                          <i class="fas fa-plus me-1"></i> Tambah Tanggal Ganti
+                        </button>
                       </div>
                     </div>
+                  </div>
   
                     <div class="col-12 d-flex gap-2 mt-4">
                       <button type="submit" class="btn btn-primary">
@@ -392,9 +455,9 @@
             </div>
           </div>
         </main>
-      </div>
-  
-      <script type="module" src="js/melati.js"></script>
+      </div>  
+      <script type="module" src="js/configFirebase.js"></script>
+      <script type="module" src="js/main.js"></script>
       <script type="module" src="js/pages/pengajuan.js"></script>
     </body>
   </html>

@@ -102,17 +102,22 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <img src="img/Melati.jfif" alt="Logo" class="logo" />
-          <h1 class="brand-name">Melati Gold</h1>
+          <h1 class="brand-name">Melati Gold Shop</h1>
         </div>
         <div class="sidebar-menu">
-          <ul class="nav flex-column">
+          <ul class="nav flex-column" id="sidebarAccordion">
             <li class="nav-item">
-              <a class="nav-link" href="dashboard.html">
+              <a class="nav-link active" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
               </a>
             </li>
-            
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
               <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
@@ -143,14 +148,6 @@
                 </ul>
               </div>
             </li>
-            
-            <li class="nav-item">
-              <a class="nav-link" href="buyback.html">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="menu-text">Buyback</span>
-              </a>
-            </li>
-            
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
               <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
@@ -179,7 +176,7 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link active" href="kehadiran.html">
+                    <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
                     </a>
@@ -188,6 +185,12 @@
                     <a class="nav-link" href="laporan-izin.html">
                       <i class="fas fa-file-medical"></i>
                       <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="supervisor.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Supervisor</span>
                     </a>
                   </li>
                 </ul>
@@ -204,7 +207,10 @@
       <main class="main-content">
         <!-- Top Navigation -->
         <header class="top-nav">
-          <div class="menu-toggle">
+          <div class="menu-toggle d-md-flex d-none">
+            <i class="fa-solid fa-minimize"></i>
+          </div>
+          <div class="hamburger d-md-none d-flex">
             <i class="fas fa-bars"></i>
           </div>
           <div class="nav-right">
@@ -528,86 +534,8 @@
         </div>
       </div>
   
-      <script type="module" src="js/melati.js"></script>
+      <script type="module" src="js/main.js"></script>
       <script type="module" src="js/pages/kehadiran.js"></script>
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-    // Toggle sidebar collapse
-    const menuToggle = document.querySelector(".menu-toggle");
-    const appContainer = document.querySelector(".app-container");
-  
-    if (menuToggle) {
-      menuToggle.addEventListener("click", function () {
-        appContainer.classList.toggle("sidebar-collapsed");
-      });
-    }
-  
-    // Vanilla JS dropdown toggle
-    const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
-  
-    dropdownToggles.forEach((toggle) => {
-      toggle.addEventListener("click", function (e) {
-        e.preventDefault();
-  
-        const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
-        const target = document.querySelector(targetId);
-  
-        // If sidebar is not collapsed, implement accordion behavior
-        if (!appContainer.classList.contains("sidebar-collapsed")) {
-          // Close all other dropdowns
-          dropdownToggles.forEach((otherToggle) => {
-            if (otherToggle !== toggle) {
-              const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
-              const other = document.querySelector(otherId);
-  
-              if (other && other.classList.contains("show")) {
-                other.classList.remove("show");
-                otherToggle.classList.add("collapsed");
-                otherToggle.setAttribute("aria-expanded", "false");
-              }
-            }
-          });
-        }
-  
-        // Toggle this dropdown
-        if (target) {
-          if (target.classList.contains("show")) {
-            target.classList.remove("show");
-            toggle.classList.add("collapsed");
-            toggle.setAttribute("aria-expanded", "false");
-          } else {
-            target.classList.add("show");
-            toggle.classList.remove("collapsed");
-            toggle.setAttribute("aria-expanded", "true");
-          }
-        }
-      });
-    });
-  
-    // Set current date and time
-    function updateDateTime() {
-      const now = new Date();
-      const dateElement = document.getElementById("current-date");
-      const timeElement = document.getElementById("current-time");
-  
-      if (dateElement) {
-        dateElement.textContent = now.toLocaleDateString("id-ID", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-      }
-  
-      if (timeElement) {
-        timeElement.textContent = now.toLocaleTimeString("id-ID");
-      }
-    }
-  
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-  });
-      </script>
     </body>
   </html>
   

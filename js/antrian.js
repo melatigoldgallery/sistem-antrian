@@ -80,6 +80,32 @@ export class QueueManager {
         const number = parseInt(this.currentNumber);
         return `${this.letters[this.currentLetter]}${this.formatNumber(number)}`;
     }
+    // Tambahkan fungsi ini ke class QueueManager
+previousQueue() {
+    // Simpan nomor antrian saat ini
+    const currentQueue = this.getCurrentQueue();
+    
+    // Kurangi nomor antrian
+    this.currentNumber--;
+    
+    // Jika nomor antrian menjadi kurang dari 1, kembali ke nomor maksimum dan kurangi huruf
+    if (this.currentNumber < 1) {
+        this.currentNumber = 50;
+        this.currentLetter--;
+        
+        // Jika huruf menjadi kurang dari 0, kembali ke huruf terakhir
+        if (this.currentLetter < 0) {
+            this.currentLetter = this.letters.length - 1;
+        }
+    }
+    
+    // Simpan perubahan ke Firebase
+    this.saveState();
+    
+    // Kembalikan nomor antrian yang baru
+    return this.getCurrentQueue();
+}
+
     saveState() {
         const queueRef = ref(database, 'queue');
         set(queueRef, {

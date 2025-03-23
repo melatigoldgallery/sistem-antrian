@@ -1,104 +1,30 @@
-import { getEmployees, addEmployee, deleteEmployee, updateEmployee } from '../services/employee-service.js';
+import { 
+  getEmployees, 
+  addEmployee, 
+  deleteEmployee, 
+  updateEmployee, 
+  getNextEmployeeId, 
+  getNextBarcode 
+} from '../services/employee-service.js';
 
 // Initialize data
 let employees = [];
 let currentUserId = null;
 
-// Document ready function
-document.addEventListener("DOMContentLoaded", function () {
-  // Toggle sidebar collapse
-  const menuToggle = document.querySelector(".menu-toggle");
-  const appContainer = document.querySelector(".app-container");
 
-  if (menuToggle) {
-    menuToggle.addEventListener("click", function () {
-      appContainer.classList.toggle("sidebar-collapsed");
-    });
-  }
-
-  // Vanilla JS dropdown toggle
-  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
-
-  dropdownToggles.forEach((toggle) => {
-    toggle.addEventListener("click", function (e) {
-      e.preventDefault();
-
-      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
-      const target = document.querySelector(targetId);
-
-      // If sidebar is not collapsed, implement accordion behavior
-      if (!appContainer.classList.contains("sidebar-collapsed")) {
-        // Close all other dropdowns
-        dropdownToggles.forEach((otherToggle) => {
-          if (otherToggle !== toggle) {
-            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
-            const other = document.querySelector(otherId);
-
-            if (other && other.classList.contains("show")) {
-              other.classList.remove("show");
-              otherToggle.classList.add("collapsed");
-              otherToggle.setAttribute("aria-expanded", "false");
-            }
-          }
-        });
-      }
-
-      // Toggle this dropdown
-      if (target) {
-        if (target.classList.contains("show")) {
-          target.classList.remove("show");
-          toggle.classList.add("collapsed");
-          toggle.setAttribute("aria-expanded", "false");
-        } else {
-          target.classList.add("show");
-          toggle.classList.remove("collapsed");
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    });
-  });
-
- // Perbaikan untuk memastikan fungsi updateDateTime() berjalan dengan benar
-function updateDateTime() {
-  const now = new Date();
-  const dateElement = document.getElementById("current-date");
-  const timeElement = document.getElementById("current-time");
-
-  if (dateElement) {
-    dateElement.textContent = now.toLocaleDateString("id-ID", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  if (timeElement) {
-    timeElement.textContent = now.toLocaleTimeString("id-ID");
+// Tambahkan fungsi untuk mengisi ID dan barcode otomatis
+async function populateAutoFields() {
+  try {
+    const nextId = await getNextEmployeeId();
+    const nextBarcode = await getNextBarcode();
+    
+    document.getElementById('staffId').value = nextId;
+    document.getElementById('staffBarcode').value = nextBarcode;
+  } catch (error) {
+    console.error("Error populating auto fields:", error);
+    showNotification("error", "Gagal menghasilkan ID otomatis");
   }
 }
-
-// Perbaikan untuk menu toggle
-function setupMenuToggle() {
-  const menuToggle = document.querySelector(".menu-toggle");
-  const appContainer = document.querySelector(".app-container");
-
-  if (menuToggle && appContainer) {
-    menuToggle.addEventListener("click", function() {
-      appContainer.classList.toggle("sidebar-collapsed");
-    });
-  }
-}
-
-  updateDateTime();
-  setInterval(updateDateTime, 1000);
-
-  // Load employees
-  loadEmployees();
-
-  // Set up event listeners
-  setupEventListeners();
-});
 
 // Load employees
 async function loadEmployees() {
@@ -134,7 +60,6 @@ function updateStaffTable() {
       <td>${employee.name || '-'}</td>
       <td>${employee.barcode || '-'}</td>
       <td>${formatEmployeeType(employee.type) || '-'}</td>
-      <td>${formatShift(employee.defaultShift) || '-'}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary edit-staff" data-id="${employee.id}" data-bs-toggle="tooltip" title="Edit">
           <i class="fas fa-edit"></i>
@@ -162,11 +87,10 @@ function formatEmployeeType(type) {
   return type === "staff" ? "Staff" : "Office Boy";
 }
 
-
 // Set up event listeners
 function setupEventListeners() {
   // Add form submission handler
-  document.getElementById('staffForm').addEventListener('submit', handleAddEmployee);
+  document.getElementById('staffForm')?.addEventListener('submit', handleAddEmployee);
   
   // Filter by employee type
   document.querySelectorAll("[data-employee-filter]").forEach((item) => {
@@ -177,7 +101,24 @@ function setupEventListeners() {
     });
   });
   
- 
+  // Tambahkan event listener untuk tombol refresh ID dan barcode
+  document.querySelector('.refresh-id')?.addEventListener('click', async function() {
+    try {
+      const nextId = await getNextEmployeeId();
+      document.getElementById('staffId').value = nextId;
+    } catch (error) {
+      console.error("Error refreshing ID:", error);
+    }
+  });
+  
+  document.querySelector('.refresh-barcode')?.addEventListener('click', async function() {
+    try {
+      const nextBarcode = await getNextBarcode();
+      document.getElementById('staffBarcode').value = nextBarcode;
+    } catch (error) {
+      console.error("Error refreshing barcode:", error);
+    }
+  });
   
   // Export users
   document.getElementById('exportUsers')?.addEventListener('click', exportUsersToExcel);
@@ -211,17 +152,20 @@ async function handleAddEmployee(e) {
     name: document.getElementById('staffName').value,
     barcode: document.getElementById('staffBarcode').value,
     type: document.getElementById('staffType').value,
-    defaultShift: document.getElementById('staffShift').value
   };
   
   try {
     await addEmployee(newStaff);
     this.reset();
-    await loadEmployees(); // Reload the list
+    
+    // Reload employees dan generate ID baru
+    await loadEmployees();
+    await populateAutoFields();
+    
     showNotification("success", "Karyawan berhasil ditambahkan!");
   } catch (error) {
     console.error("Error adding employee:", error);
-    showNotification("error", "Terjadi kesalahan saat menambahkan karyawan");
+    showNotification("error", error.message || "Terjadi kesalahan saat menambahkan karyawan");
   }
 }
 
@@ -238,8 +182,7 @@ function handleEditClick() {
   document.getElementById('editStaffName').value = employee.name || '';
   document.getElementById('editStaffBarcode').value = employee.barcode || '';
   document.getElementById('editStaffType').value = employee.type || 'staff';
-  document.getElementById('editStaffShift').value = employee.defaultShift || 'morning';
-  
+   
   // Show modal
   const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
   editModal.show();
@@ -266,12 +209,10 @@ async function handleUpdateEmployee() {
   const id = document.getElementById('editUserId').value;
   
   const updatedEmployee = {
-    id: id,
     employeeId: document.getElementById('editStaffId').value,
     name: document.getElementById('editStaffName').value,
     barcode: document.getElementById('editStaffBarcode').value,
-    type: document.getElementById('editStaffType').value,
-    defaultShift: document.getElementById('editStaffShift').value
+    type: document.getElementById('editStaffType').value
   };
   
   try {
@@ -350,8 +291,7 @@ function exportUsersToExcel() {
     'ID Karyawan': emp.employeeId,
     'Nama': emp.name,
     'Barcode': emp.barcode,
-    'Tipe': emp.type === 'staff' ? 'Staff' : 'Office Boy',
-    'Shift Default': emp.defaultShift === 'morning' ? 'Pagi' : 'Sore'
+    'Tipe': emp.type === 'staff' ? 'Staff' : 'Office Boy'
   }));
   
   // Create worksheet
@@ -410,7 +350,7 @@ function showNotification(type, message) {
   }, 10);
 }
 
-// Add CSS for notifications if not already in the CSS file
+// Add notification styles if not already in CSS file
 function addNotificationStyles() {
   if (!document.getElementById('notification-styles')) {
     const style = document.createElement('style');
@@ -440,11 +380,11 @@ function addNotificationStyles() {
       }
       
       .notification.success .notification-icon {
-        color: var(--success-color);
+        color: var(--success-color, #28a745);
       }
       
       .notification.error .notification-icon {
-        color: var(--danger-color);
+        color: var(--danger-color, #dc3545);
       }
       
       .notification-icon {
@@ -459,55 +399,44 @@ function addNotificationStyles() {
       .notification-content p {
         margin: 0;
         font-size: 14px;
-        color: var(--gray-700);
+        color: var(--gray-700, #495057);
       }
       
       .notification-close {
         background: none;
         border: none;
-        color: var(--gray-500);
+        color: var(--gray-500, #adb5bd);
         cursor: pointer;
         font-size: 16px;
         padding: 0;
       }
       
       .notification-close:hover {
-        color: var(--gray-700);
+        color: var(--gray-700, #495057);
       }
     `;
     document.head.appendChild(style);
   }
 }
 
-// Call this function when the page loads
-document.addEventListener('DOMContentLoaded', addNotificationStyles);
+// Expose logout function to window object for HTML access
+window.handleLogout = function() {
+  console.log("Logout clicked");
+  // Implementasi logout - bisa disesuaikan dengan kebutuhan
+  window.location.href = "index.html";
+};
 
-// Create a service for employee operations
-export function updateEmployee(id, updatedEmployee) {
-  return new Promise((resolve, reject) => {
-    try {
-      // Get existing employees from localStorage
-      const storedEmployees = localStorage.getItem('employees');
-      let employees = storedEmployees ? JSON.parse(storedEmployees) : [];
-      
-      // Find the employee to update
-      const index = employees.findIndex(emp => emp.id === id);
-      
-      if (index !== -1) {
-        // Update the employee
-        employees[index] = {
-          ...employees[index],
-          ...updatedEmployee
-        };
-        
-        // Save back to localStorage
-        localStorage.setItem('employees', JSON.stringify(employees));
-        resolve(employees[index]);
-      } else {
-        reject(new Error('Employee not found'));
-      }
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
+// Document ready function - PENTING: Ini harus berada di akhir file
+document.addEventListener("DOMContentLoaded", async function () {
+  // Add notification styles
+  addNotificationStyles();
+  
+  // Load employees
+  await loadEmployees();
+  
+  // Populate auto-generated fields
+  await populateAutoFields();
+  
+  // Set up event listeners
+  setupEventListeners();
+});
