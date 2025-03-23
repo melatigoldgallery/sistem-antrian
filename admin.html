@@ -19,6 +19,52 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <style>
+      /* Modify the existing button styles to make them smaller */
+.btn {
+  padding: 6px 12px; /* Reduced from 8px 16px */
+  font-weight: 500;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  font-size: 0.85rem; /* Added smaller font size */
+}
+
+/* Adjust the action buttons in queue cards */
+.action-buttons .btn {
+  padding: 0.5rem 0.75rem; /* Reduced from 0.75rem 1rem */
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem; /* Reduced from 0.5rem */
+  font-size: 0.85rem; /* Added smaller font size */
+}
+
+/* Adjust the announcement buttons */
+.announcement-btn {
+  width: 100%;
+  padding: 0.5rem; /* Reduced from 1rem */
+  font-size: 0.95rem; /* Reduced from 1.1rem */
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem; /* Reduced from 0.5rem */
+}
+
+/* Adjust the vehicle announcement button */
+#panggilInformasi {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* Make icons in buttons slightly smaller */
+.btn i {
+  font-size: 0.9em;
+}
+
+    </style>
     <title>Sistem Antrian - Melati Gold Shop</title>
   </head>
   <body>
@@ -179,7 +225,7 @@
           </div>
 
           <!-- Announcement Section -->
-          <div class="row mb-4">
+          <div class="row mb-2">
             <div class="col-md-6">
               <button class="btn btn-danger announcement-btn" id="waitMessage">
                 <i class="fas fa-info-circle"></i> Informasi Tunggu
@@ -197,7 +243,7 @@
             <!-- Delayed Queue Card -->
             <div class="col-md-4 mb-4">
               <div class="card queue-card">
-                <div class="card-header d-flex justify-content-center">
+                <div class="card-header d-flex justify-content-center p-2">
                   <h6 class="card-title mb-0">
                     <i class="fas fa-pause-circle me-2"></i>Nomor Antrian Tertunda
                   </h6>
@@ -219,7 +265,7 @@
             <!-- Current Queue Card -->
             <div class="col-md-4 mb-4">
               <div class="card queue-card">
-                <div class="card-header d-flex justify-content-center">
+                <div class="card-header d-flex justify-content-center p-2">
                   <h6 class="card-title mb-0 ">
                     <i class="fas fa-user-clock me-2"></i>Nomor Antrian Saat Ini
                   </h6>
@@ -253,7 +299,7 @@
             <!-- Customer Count Card -->
             <div class="col-md-4 mb-4">
               <div class="card queue-card">
-                <div class="card-header d-flex justify-content-center">
+                <div class="card-header d-flex justify-content-center p-2">
                   <h6 class="card-title mb-0">
                     <i class="fas fa-users me-2"></i>Jumlah Pelanggan
                   </h6>

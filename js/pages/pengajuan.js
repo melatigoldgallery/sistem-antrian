@@ -176,7 +176,8 @@ document.getElementById('leaveType')?.addEventListener('change', function() {
   const sickLeaveSection = document.getElementById('sickLeaveSection');
   const leaveSection = document.getElementById('leaveSection');
   const replacementTypeSelect = document.getElementById('replacementType');
-  
+  const hasMedicalCert = document.getElementById('hasMedicalCertificate');
+
   // Hide all sections first
   if (sickLeaveSection) sickLeaveSection.style.display = 'none';
   if (leaveSection) leaveSection.style.display = 'none';
@@ -186,14 +187,28 @@ document.getElementById('leaveType')?.addEventListener('change', function() {
     replacementTypeSelect.value = '';
     replacementTypeSelect.disabled = false;
   }
+  // Enable all options first
+    Array.from(replacementTypeSelect.options).forEach(option => {
+      option.disabled = false;
+    });
   
-  // Show relevant sections based on leave type
-  switch(this.value) {
+   // Show relevant sections based on leave type
+   switch(this.value) {
     case 'sakit':
       if (sickLeaveSection) sickLeaveSection.style.display = 'block';
+      
       if (replacementTypeSelect) {
-        replacementTypeSelect.value = 'tidak';
-        replacementTypeSelect.disabled = true;
+        if (hasMedicalCert && hasMedicalCert.checked) {
+          // If medical certificate is checked, set to "Tidak Perlu Diganti"
+          replacementTypeSelect.value = 'tidak';
+          replacementTypeSelect.disabled = true;
+        } else {
+          // If not checked, disable "Tidak Perlu Diganti" option
+          const noReplacementOption = Array.from(replacementTypeSelect.options).find(option => option.value === 'tidak');
+          if (noReplacementOption) {
+            noReplacementOption.disabled = true;
+          }
+        }
       }
       break;
     case 'cuti':
@@ -204,8 +219,12 @@ document.getElementById('leaveType')?.addEventListener('change', function() {
       }
       break;
     case 'normal':
+      // For "Izin Lainnya", disable "Tidak Perlu Diganti" option
       if (replacementTypeSelect) {
-        replacementTypeSelect.disabled = false;
+        const noReplacementOption = Array.from(replacementTypeSelect.options).find(option => option.value === 'tidak');
+        if (noReplacementOption) {
+          noReplacementOption.disabled = true;
+        }
       }
       break;
   }
@@ -217,11 +236,37 @@ document.getElementById('leaveType')?.addEventListener('change', function() {
   }
 });
 
-// Event listener untuk checkbox surat keterangan sakit
+// Modify the event listener for hasMedicalCertificate
 document.getElementById('hasMedicalCertificate')?.addEventListener('change', function() {
   const uploadSection = document.getElementById('medicalCertificateUpload');
+  const replacementTypeSelect = document.getElementById('replacementType');
+  const leaveType = document.getElementById('leaveType')?.value;
+  
   if (uploadSection) {
     uploadSection.style.display = this.checked ? 'block' : 'none';
+  }
+  
+  // Only apply this logic if leave type is "sakit"
+  if (leaveType === 'sakit' && replacementTypeSelect) {
+    if (this.checked) {
+      // If medical certificate is checked, set to "Tidak Perlu Diganti" and disable
+      replacementTypeSelect.value = 'tidak';
+      replacementTypeSelect.disabled = true;
+    } else {
+      // If unchecked, enable replacement selection but disable "Tidak Perlu Diganti" option
+      replacementTypeSelect.disabled = false;
+      replacementTypeSelect.value = '';
+      
+      // Disable "Tidak Perlu Diganti" option
+      const noReplacementOption = Array.from(replacementTypeSelect.options).find(option => option.value === 'tidak');
+      if (noReplacementOption) {
+        noReplacementOption.disabled = true;
+      }
+    }
+    
+    // Trigger change event to update UI
+    const event = new Event('change');
+    replacementTypeSelect.dispatchEvent(event);
   }
 });
 

@@ -133,8 +133,8 @@ section .signin .content .inputBox i
   transition: 0.5s;
   pointer-events: none;
 }
-.signin .content .inputBox input:focus ~ i,
-.signin .content .inputBox input:valid ~ i
+.signin .content .form input:focus ~ i,
+.signin .content .form input:valid ~ i
 {
   transform: translateY(-7.5px);
   font-size: 0.8em;
