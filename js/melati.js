@@ -306,6 +306,61 @@ function initializeButtons(queueAnalytics) {
     });
   }
 
+// Tambahkan event listener untuk tombol skip
+const skipQueueButton = document.getElementById("skipQueueButton");
+const confirmSkipQueue = document.getElementById("confirmSkipQueue");
+
+if (skipQueueButton) {
+  skipQueueButton.addEventListener("click", () => {
+    // Persiapkan informasi untuk modal
+    const currentQueue = queueManager.getCurrentQueue();
+    
+    // Update teks di modal
+    document.getElementById("currentQueueText").textContent = currentQueue;
+    
+    // Set default value untuk select letter berdasarkan huruf saat ini
+    const letterSelect = document.getElementById("skipQueueLetter");
+    letterSelect.value = queueManager.letters[queueManager.currentLetter];
+    
+    // Tampilkan modal
+    const modal = new bootstrap.Modal(document.getElementById("skipQueueModal"));
+    modal.show();
+  });
+}
+
+if (confirmSkipQueue) {
+  confirmSkipQueue.addEventListener("click", () => {
+    try {
+      const letter = document.getElementById("skipQueueLetter").value;
+      const number = parseInt(document.getElementById("skipQueueNumberInput").value);
+      
+      if (isNaN(number) || number < 1 || number > 50) {
+        alert("Masukkan nomor antrian yang valid (1-50)");
+        return;
+      }
+      
+      // Tambahkan ke skipList
+      if (queueManager.addToSkipList(letter, number)) {
+        // Tutup modal
+        bootstrap.Modal.getInstance(document.getElementById("skipQueueModal")).hide();
+        
+        // Bersihkan input
+        document.getElementById("skipQueueNumberInput").value = "";
+        
+        // Tampilkan pesan sukses
+        alert(`Nomor antrian ${letter}${queueManager.formatNumber(number)} akan dilewati.`);
+        
+        console.log("Nomor antrian berhasil ditambahkan ke skip list");
+      } else {
+        alert("Nomor antrian ini sudah ada dalam daftar skip");
+      }
+    } catch (error) {
+      console.error("Error saat menambahkan nomor ke skip list:", error);
+    }
+  });
+}
+
+
   // Add event listeners for custom queue
   const customQueueButton = document.getElementById("customQueueButton");
   if (customQueueButton) {

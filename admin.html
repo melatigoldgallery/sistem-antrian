@@ -279,7 +279,10 @@
                     <button class="btn btn-outline-success" id="handleButton">
                       <i class="fas fa-check-circle"></i>Sudah Dilayani
                     </button>
-                    <button class="btn btn-outline-warning text-dark" id="previousNumber">
+                    <button class="btn btn-outline-warning" id="skipQueueButton">
+                      <i class="fas fa-forward"></i>Skip Nomor Antrian
+                    </button>                    
+                    <button class="btn btn-outline-warning text-dark d-none" id="previousNumber">
                       <i class="fas fa-step-backward"></i>Nomor Antrian Sebelumnya
                     </button>
                     <button class="btn btn-outline-secondary" id="delayQueueButton">
@@ -409,6 +412,50 @@
     </div>
   </div>
 </div>
+
+<!-- Modal untuk Skip Nomor Antrian -->
+<div class="modal fade" id="skipQueueModal" tabindex="-1" aria-labelledby="skipQueueModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-white">
+        <h5 class="modal-title" id="skipQueueModalLabel">
+          <i class="fas fa-forward me-2"></i>Skip Nomor Antrian
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <span>Anda akan melewati nomor antrian tertentu.</span>
+        </div>
+        <p>Nomor antrian saat ini: <strong id="currentQueueText">-</strong></p>
+        
+        <div class="mb-3">
+          <label for="skipQueueLetter" class="form-label">Huruf Antrian (A-D)</label>
+          <select class="form-select" id="skipQueueLetter">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="skipQueueNumberInput" class="form-label">Nomor Antrian yang Akan Dilewati (1-50)</label>
+          <input type="number" class="form-control" id="skipQueueNumberInput" min="1" max="50" placeholder="Masukkan nomor antrian">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-2"></i>Batal
+        </button>
+        <button type="button" class="btn btn-warning" id="confirmSkipQueue">
+          <i class="fas fa-check me-2"></i>Tambahkan ke Skip List
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Modern Modal for "Nomor Antrian Sebelumnya" button -->
 <div class="modal fade" id="previousNumberModal" tabindex="-1" aria-labelledby="previousNumberModalLabel" aria-hidden="true">

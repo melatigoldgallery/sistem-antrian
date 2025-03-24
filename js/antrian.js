@@ -7,6 +7,7 @@ export class QueueManager {
         this.initializeFromFirebase();
         this.customerRef = ref(database, 'customerCount');
         this.initializeCustomerCount();
+        this.skipList = [];
     }
 
     async initializeFromFirebase() {
@@ -18,10 +19,12 @@ export class QueueManager {
                 this.currentLetter = data.currentLetter;
                 this.currentNumber = data.currentNumber;
                 this.delayedQueue = data.delayedQueue || [];
+                this.skipList = data.skipList || [];
             } else {
                 this.currentLetter = 0;
                 this.currentNumber = 1;
                 this.delayedQueue = [];
+                this.skipList = [];
                 await this.saveState();
             }
         } catch (error) {
@@ -29,6 +32,7 @@ export class QueueManager {
             this.currentLetter = 0;
             this.currentNumber = 1;
             this.delayedQueue = [];
+            this.skipList = [];
             await this.saveState();
         }
     }
@@ -80,6 +84,33 @@ export class QueueManager {
         const number = parseInt(this.currentNumber);
         return `${this.letters[this.currentLetter]}${this.formatNumber(number)}`;
     }
+    
+    skipQueue() {
+        // Simpan nomor antrian saat ini
+        const currentQueue = this.getCurrentQueue();
+        
+        // Tambahkan 1 ke nomor antrian (untuk mendapatkan nomor berikutnya)
+        this.currentNumber++;
+        
+        // Jika nomor antrian melebihi batas, atur ke nomor awal dan tambah huruf
+        if (this.currentNumber > 50) {
+            this.currentNumber = 1;
+            this.currentLetter++;
+            
+            // Jika huruf melebihi batas, kembali ke huruf pertama
+            if (this.currentLetter >= this.letters.length) {
+                this.currentLetter = 0;
+            }
+        }
+        
+        // Simpan perubahan ke Firebase
+        this.saveState();
+        
+        // Kembalikan nomor antrian yang baru
+        return this.getCurrentQueue();
+    }
+    
+    
     // Tambahkan fungsi ini ke class QueueManager
 previousQueue() {
     // Simpan nomor antrian saat ini
@@ -111,10 +142,25 @@ previousQueue() {
         set(queueRef, {
             currentLetter: this.currentLetter,
             currentNumber: this.currentNumber,
-            delayedQueue: this.delayedQueue
+            delayedQueue: this.delayedQueue,
+            skipList: this.skipList
         });
     }
+// Tambahkan method untuk menambahkan nomor ke skipList
+addToSkipList(letter, number) {
+    const skipItem = `${letter}${this.formatNumber(number)}`;
+    if (!this.skipList.includes(skipItem)) {
+        this.skipList.push(skipItem);
+        this.saveState();
+        return true;
+    }
+    return false;
+}
 
+// Tambahkan method untuk mendapatkan skipList
+getSkipList() {
+    return this.skipList;
+}
     addToDelayedQueue(queueNumber) {
         if (!this.delayedQueue.includes(queueNumber)) {
             this.delayedQueue.push(queueNumber);
@@ -144,6 +190,15 @@ previousQueue() {
                 this.currentLetter = 0;
             }
         }
+         // Periksa apakah nomor berikutnya ada di skipList
+    const nextQueue = this.getCurrentQueue();
+    if (this.skipList.includes(nextQueue)) {
+        // Jika ada di skipList, hapus dari skipList dan panggil next lagi
+        const index = this.skipList.indexOf(nextQueue);
+        this.skipList.splice(index, 1);
+        this.saveState();
+        return this.next(); // Rekursif untuk mendapatkan nomor berikutnya yang tidak di-skip
+    }
         this.saveState();
         return this.getCurrentQueue();
     }
