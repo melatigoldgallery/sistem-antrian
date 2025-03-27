@@ -323,7 +323,7 @@
                     </div>
                   </div>
                   
-                  <!-- Ubah section ganti libur untuk mendukung multiple dates -->
+                  <!-- Section Ganti Libur - UPDATED -->
                   <div class="col-12">
                     <div id="replacementLibur" class="replacement-detail card mt-3" style="display: none">
                       <div class="card-body">
@@ -336,12 +336,12 @@
                           Anda mengajukan izin untuk <span id="totalDaysCount">0</span> hari. Silakan pilih tanggal ganti libur untuk setiap hari.
                         </div>
                         <div id="replacementDatesContainer">
-                          <!-- Tanggal ganti libur akan ditambahkan secara dinamis di sini -->
+                          <!-- First date input field with the correct class -->
                           <div class="mb-3 replacement-date-item">
-                            <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
+                            <label for="replacementDate0" class="form-label">Tanggal Ganti Libur 1</label>
                             <div class="input-group">
                               <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                              <input type="date" class="form-control" id="replacementDate" />
+                              <input type="date" class="form-control replacement-date" id="replacementDate0" />
                             </div>
                           </div>
                         </div>
@@ -351,142 +351,142 @@
                       </div>
                     </div>
                   </div>
-                  <!-- Section Ganti Jam -->
-<div class="col-12">
-  <div id="replacementJam" class="replacement-detail card mt-3" style="display: none">
-    <div class="card-body">
-      <h6 class="mb-3">
-        <i class="fas fa-clock me-2"></i>
-        Detail Ganti Jam
-      </h6>
-      <div class="mb-3">
-        <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-          <input type="date" class="form-control" id="replacementHourDate" />
-        </div>
-      </div>
-      <div class="mb-3">
-        <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
-          <input type="number" class="form-control" id="replacementHours" min="1" max="12" placeholder="Masukkan jumlah jam" />
-          <span class="input-group-text">jam</span>
-        </div>
-        <div class="form-text">Maksimal 12 jam per hari</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-  
-                    <div class="col-12 d-flex gap-2 mt-4">
-                      <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane me-2"></i>
-                        Ajukan Izin
-                      </button>
-                      <button type="reset" class="btn btn-outline-secondary">
-                        <i class="fas fa-undo me-2"></i>
-                        Reset Form
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-  
-              <!-- Information Card -->
-              <div class="card">
-                <div class="card-header">
-                  <h2>
-                    <i class="fas fa-info-circle"></i>
-                    Informasi Pengajuan Izin
-                  </h2>
-                </div>
-                <div class="card-body">
-                  <div class="alert alert-info">
-                    <h6 class="alert-heading">
-                      <i class="fas fa-lightbulb me-2"></i>
-                      Petunjuk Pengajuan:
-                    </h6>
-                    <ul class="mb-0">
-                      <li>Pengajuan izin harus dilakukan minimal 1 hari sebelum tanggal izin</li>
-                      <li>Pastikan alasan izin dijelaskan dengan detail</li>
-                      <li>Pengajuan akan diproses oleh HRD dalam waktu 1x24 jam</li>
-                      <li>Status pengajuan dapat dilihat di menu "Kehadiran"</li>
-                    </ul>
-                  </div>
                   
-                  <div class="row mt-4">
-                    <div class="col-md-6">
-                      <div class="card h-100">
-                        <div class="card-body">
-                          <h5 class="card-title">
-                            <i class="fas fa-calendar-day me-2 text-primary"></i>
-                            Ganti Libur
-                          </h5>
-                          <p class="card-text">
-                            Opsi ini memungkinkan Anda mengganti hari izin dengan bekerja di hari libur Anda. 
-                            Pastikan tanggal pengganti sudah dikonfirmasi dengan supervisor.
-                          </p>
+                  <!-- Section Ganti Jam -->
+                  <div class="col-12">
+                    <div id="replacementJam" class="replacement-detail card mt-3" style="display: none">
+                      <div class="card-body">
+                        <h6 class="mb-3">
+                          <i class="fas fa-clock me-2"></i>
+                          Detail Ganti Jam
+                        </h6>
+                        <div class="mb-3">
+                          <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
+                          <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+                            <input type="date" class="form-control" id="replacementHourDate" />
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="card h-100">
-                        <div class="card-body">
-                          <h5 class="card-title">
-                            <i class="fas fa-clock me-2 text-primary"></i>
-                            Ganti Jam
-                          </h5>
-                          <p class="card-text">
-                            Opsi ini memungkinkan Anda mengganti jam kerja yang hilang dengan bekerja lebih lama 
-                            di hari yang ditentukan. Maksimal jam pengganti adalah 12 jam per hari.
-                          </p>
+                        <div class="mb-3">
+                          <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
+                          <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
+                            <input type="number" class="form-control" id="replacementHours" min="1" max="12" placeholder="Masukkan jumlah jam" />
+                            <span class="input-group-text">jam</span>
+                          </div>
+                          <div class="form-text">Maksimal 12 jam per hari</div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+
+                  <div class="col-12 d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-paper-plane me-2"></i>
+                      Ajukan Izin
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary">
+                      <i class="fas fa-undo me-2"></i>
+                      Reset Form
+                    </button>
+                  </div>
+                </form>
               </div>
+            </div>
   
-              <!-- Recent Leave Requests -->
-              <div class="card">
-                <div class="card-header">
-                  <h2>
-                    <i class="fas fa-history"></i>
-                    Riwayat Pengajuan Izin Terbaru
-                  </h2>
+            <!-- Information Card -->
+            <div class="card">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-info-circle"></i>
+                  Informasi Pengajuan Izin
+                </h2>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-info">
+                  <h6 class="alert-heading">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Petunjuk Pengajuan:
+                  </h6>
+                  <ul class="mb-0">
+                    <li>Pengajuan izin harus dilakukan minimal 1 hari sebelum tanggal izin</li>
+                    <li>Pastikan alasan izin dijelaskan dengan detail</li>
+                    <li>Pengajuan akan diproses oleh HRD dalam waktu 1x24 jam</li>
+                    <li>Status pengajuan dapat dilihat di menu "Kehadiran"</li>
+                  </ul>
                 </div>
-                <div class="card-body">
-                  <div class="table-responsive">
-                    <table class="table table-hover" id="leaveHistoryTable">
-                      <thead>
-                        <tr>
-                          <th>Tanggal Pengajuan</th>
-                          <th>Tanggal Izin</th>
-                          <th>Alasan</th>
-                          <th>Jenis Pengganti</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody id="leaveHistoryList">
-                        <!-- Data will be populated by JavaScript -->
-                      </tbody>
-                    </table>
+                
+                <div class="row mt-4">
+                  <div class="col-md-6">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-calendar-day me-2 text-primary"></i>
+                          Ganti Libur
+                        </h5>
+                        <p class="card-text">
+                          Opsi ini memungkinkan Anda mengganti hari izin dengan bekerja di hari libur Anda. 
+                          Pastikan tanggal pengganti sudah dikonfirmasi dengan supervisor.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div class="empty-state" id="emptyLeaveHistory" style="display: none;">
-                    <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
-                    <p>Belum ada riwayat pengajuan izin</p>
+                  <div class="col-md-6">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-clock me-2 text-primary"></i>
+                          Ganti Jam
+                        </h5>
+                        <p class="card-text">
+                          Opsi ini memungkinkan Anda mengganti jam kerja yang hilang dengan bekerja lebih lama 
+                          di hari yang ditentukan. Maksimal jam pengganti adalah 12 jam per hari.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>  
-      <script type="module" src="js/configFirebase.js"></script>
-      <script type="module" src="js/main.js"></script>
-      <script type="module" src="js/pages/pengajuan.js"></script>
-    </body>
-  </html>
   
+            <!-- Recent Leave Requests -->
+            <div class="card">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-history"></i>
+                  Riwayat Pengajuan Izin Terbaru
+                </h2>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="leaveHistoryTable">
+                    <thead>
+                      <tr>
+                        <th>Tanggal Pengajuan</th>
+                        <th>Tanggal Izin</th>
+                        <th>Alasan</th>
+                        <th>Jenis Pengganti</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="leaveHistoryList">
+                      <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+                <div class="empty-state" id="emptyLeaveHistory" style="display: none;">
+                  <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
+                  <p>Belum ada riwayat pengajuan izin</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>  
+    <script type="module" src="js/configFirebase.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/pages/pengajuan.js"></script>
+  </body>
+</html>
+
