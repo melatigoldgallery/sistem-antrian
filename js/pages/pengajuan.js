@@ -13,164 +13,6 @@ import { submitLeaveRequest, getLeaveRequestsByEmployee } from '../services/leav
 let employees = [];
 let leaveHistory = [];
 
-// Tambahkan variabel untuk menyimpan jumlah hari izin
-let leaveDaysCount = 1;
-
-// Initialize date inputs dengan tambahan validasi rentang tanggal
-function initDateInputs() {
-  const today = new Date().toISOString().split("T")[0];
-  
-  // Set min date untuk semua input tanggal
-  const dateInputs = document.querySelectorAll('input[type="date"]');
-  dateInputs.forEach(input => {
-    if (input.id === "leaveStartDate" || input.id === "leaveEndDate" || 
-        input.id === "replacementDate" || input.id.startsWith("replacementDate_") || 
-        input.id === "replacementHourDate") {
-      input.min = today;
-    }
-  });
-  
-  // Event listener untuk tanggal mulai izin
-  const startDateInput = document.getElementById('leaveStartDate');
-  const endDateInput = document.getElementById('leaveEndDate');
-  
-  if (startDateInput && endDateInput) {
-    startDateInput.addEventListener('change', function() {
-      // Set tanggal minimal untuk end date = start date
-      endDateInput.min = this.value;
-      
-      // Jika end date sudah diisi dan lebih kecil dari start date, reset
-      if (endDateInput.value && endDateInput.value < this.value) {
-        endDateInput.value = this.value;
-      }
-      
-      // Update jumlah hari jika kedua tanggal sudah diisi
-      if (this.value && endDateInput.value) {
-        calculateLeaveDays();
-      }
-    });
-    
-    endDateInput.addEventListener('change', function() {
-      if (this.value && startDateInput.value) {
-        calculateLeaveDays();
-      }
-    });
-  }
-}
-
-// Fungsi untuk menghitung jumlah hari izin
-function calculateLeaveDays() {
-  const startDate = new Date(document.getElementById('leaveStartDate').value);
-  const endDate = new Date(document.getElementById('leaveEndDate').value);
-  
-  // Reset time part to compare dates only
-  startDate.setHours(0, 0, 0, 0);
-  endDate.setHours(0, 0, 0, 0);
-  
-  // Calculate difference in days
-  const diffTime = Math.abs(endDate - startDate);
-  leaveDaysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  
-  // Update UI
-  const multiDateWarning = document.getElementById('multiDateWarning');
-  const totalDaysCount = document.getElementById('totalDaysCount');
-  const addMoreDatesBtn = document.getElementById('addMoreDates');
-  
-  if (multiDateWarning && totalDaysCount) {
-    totalDaysCount.textContent = leaveDaysCount;
-    
-    if (leaveDaysCount > 1) {
-      multiDateWarning.style.display = 'block';
-      if (addMoreDatesBtn) addMoreDatesBtn.style.display = 'inline-block';
-      updateReplacementDatesUI();
-    } else {
-      multiDateWarning.style.display = 'none';
-      if (addMoreDatesBtn) addMoreDatesBtn.style.display = 'none';
-      // Reset to single date input
-      const container = document.getElementById('replacementDatesContainer');
-      if (container) {
-        container.innerHTML = `
-          <div class="mb-3 replacement-date-item">
-            <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-              <input type="date" class="form-control" id="replacementDate" min="${new Date().toISOString().split('T')[0]}" />
-            </div>
-          </div>
-        `;
-      }
-    }
-  }
-}
-
-// Fungsi untuk memperbarui UI tanggal ganti libur
-function updateReplacementDatesUI() {
-  const container = document.getElementById('replacementDatesContainer');
-  if (!container) return;
-  
-  // Clear container
-  container.innerHTML = '';
-  
-  // Add date inputs based on leave days count
-  for (let i = 0; i < leaveDaysCount; i++) {
-    const dateItem = document.createElement('div');
-    dateItem.className = 'mb-3 replacement-date-item';
-    
-    const startDate = new Date(document.getElementById('leaveStartDate').value);
-    startDate.setDate(startDate.getDate() + i);
-    const dateLabel = startDate.toLocaleDateString('id-ID', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    dateItem.innerHTML = `
-      <label for="replacementDate_${i}" class="form-label">
-        Tanggal Ganti untuk ${dateLabel}
-      </label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-        <input type="date" class="form-control" id="replacementDate_${i}" min="${new Date().toISOString().split('T')[0]}" />
-      </div>
-    `;
-    
-    container.appendChild(dateItem);
-  }
-}
-
-// Event listener untuk tombol tambah tanggal ganti
-document.getElementById('addMoreDates')?.addEventListener('click', function() {
-  const container = document.getElementById('replacementDatesContainer');
-  if (!container) return;
-  
-  const dateItems = container.querySelectorAll('.replacement-date-item');
-  const newIndex = dateItems.length;
-  
-  const dateItem = document.createElement('div');
-  dateItem.className = 'mb-3 replacement-date-item';
-  
-  dateItem.innerHTML = `
-    <label for="replacementDate_${newIndex}" class="form-label">
-      Tanggal Ganti Tambahan
-    </label>
-    <div class="input-group">
-      <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-      <input type="date" class="form-control" id="replacementDate_${newIndex}" min="${new Date().toISOString().split('T')[0]}" />
-      <button type="button" class="btn btn-outline-danger remove-date">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  `;
-  
-  container.appendChild(dateItem);
-  
-  // Add event listener to remove button
-  dateItem.querySelector('.remove-date').addEventListener('click', function() {
-    container.removeChild(dateItem);
-  });
-});
-
 // Event listener untuk jenis izin
 document.getElementById('leaveType')?.addEventListener('change', function() {
   const sickLeaveSection = document.getElementById('sickLeaveSection');
@@ -294,13 +136,6 @@ document.getElementById('replacementType')?.addEventListener('change', function(
     liburSection.style.display = 'block';
     liburSection.classList.add('active');
     jamSection.classList.remove('active');
-    
-    // Update UI for multiple dates if needed
-    if (leaveDaysCount > 1) {
-      document.getElementById('multiDateWarning').style.display = 'block';
-      document.getElementById('addMoreDates').style.display = 'inline-block';
-      updateReplacementDatesUI();
-    }
   } else if (this.value === 'jam') {
     jamSection.style.display = 'block';
     jamSection.classList.add('active');
@@ -356,27 +191,7 @@ document.getElementById('leaveForm')?.addEventListener('submit', async function(
       submitBtn.disabled = false;
       return;
     }
-    
-    // Hitung jumlah hari izin
-    const diffTime = Math.abs(endDate - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    // Buat array tanggal izin
-    const leaveDates = [];
-    for (let i = 0; i < diffDays; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(currentDate.getDate() + i);
-      leaveDates.push({
-        date: currentDate.toISOString().split('T')[0],
-        formatted: currentDate.toLocaleDateString('id-ID', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      });
-    }
-    
+        
     let replacementDetails = {};
     
     // Proses berdasarkan jenis izin dan pengganti
@@ -426,13 +241,7 @@ document.getElementById('leaveForm')?.addEventListener('submit', async function(
           }
         }
         
-        // Check if all days have replacement dates
-        if (replacementDates.length < diffDays) {
-          showFeedback("error", "Silakan isi semua tanggal ganti libur!");
-          submitBtn.innerHTML = originalBtnText;
-          submitBtn.disabled = false;
-          return;
-        }
+     
       } else {
         // Single day
         const replacementDate = document.getElementById('replacementDate').value;
@@ -442,17 +251,6 @@ document.getElementById('leaveForm')?.addEventListener('submit', async function(
           submitBtn.disabled = false;
           return;
         }
-        
-        const repDate = new Date(replacementDate);
-        replacementDates.push({
-          date: replacementDate,
-          formatted: repDate.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })
-        });
       }
 
       replacementDetails = {
@@ -490,28 +288,7 @@ document.getElementById('leaveForm')?.addEventListener('submit', async function(
       };
     }
     
-    const newLeave = {
-      employeeId: employee.employeeId,
-      name: employee.name,
-      type: employee.type || 'staff',
-      shift: employee.defaultShift || 'morning',
-      leaveType: leaveType,
-      leaveStartDate: leaveStartDate,
-      leaveEndDate: leaveEndDate,
-      leaveDays: diffDays,
-      leaveDates: leaveDates,
-      // Untuk kompatibilitas dengan kode lama
-      leaveDate: leaveDates[0].formatted,
-      rawLeaveDate: leaveStartDate,
-      reason: leaveReason,
-      replacementType: replacementType,
-      replacementDetails: replacementDetails,
-      status: 'Pending',
-      replacementStatus: replacementDetails.needReplacement ? 'Belum Diganti' : 'Tidak Perlu Diganti',
-      submissionDate: new Date()
-    };
-    
-    await submitLeaveRequest(newLeave);
+ 
     
     showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
     this.reset();

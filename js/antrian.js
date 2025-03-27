@@ -110,7 +110,6 @@ export class QueueManager {
         return this.getCurrentQueue();
     }
     
-    
     // Tambahkan fungsi ini ke class QueueManager
 previousQueue() {
     // Simpan nomor antrian saat ini
@@ -146,9 +145,12 @@ previousQueue() {
             skipList: this.skipList
         });
     }
-// Tambahkan method untuk menambahkan nomor ke skipList
-addToSkipList(letter, number) {
-    const skipItem = `${letter}${this.formatNumber(number)}`;
+ // Tambahkan method untuk menambahkan nomor ke skipList
+ addToSkipList(letter, number) {
+    // Format nomor dengan leading zero
+    const formattedNumber = this.formatNumber(number);
+    const skipItem = `${letter}${formattedNumber}`;
+    
     if (!this.skipList.includes(skipItem)) {
         this.skipList.push(skipItem);
         this.saveState();

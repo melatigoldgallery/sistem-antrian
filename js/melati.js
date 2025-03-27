@@ -29,10 +29,18 @@ function updateDisplays() {
   const currentQueue = queueManager?.getCurrentQueue() || "A01";
   const nextQueue = queueManager?.getNextQueue() || "A02";
   const delayedQueue = queueManager?.getDelayedQueue() || [];
+  const skipList = queueManager?.getSkipList() || []; // Tambahkan ini
 
   if (queueDisplay) queueDisplay.textContent = currentQueue;
   if (nextQueueDisplay) nextQueueDisplay.textContent = nextQueue;
   if (delayQueueDisplay) delayQueueDisplay.textContent = delayedQueue.join(", ") || "-";
+  // Perbarui tampilan skipList
+  const skipListDisplay = document.getElementById("skipListDisplay");
+  if (skipListDisplay) {
+    skipListDisplay.textContent = skipList.length > 0 ? skipList.join(", ") : "-";
+  } else {
+    console.warn("Element skipListDisplay not found");
+  }
 }
 
 // Main initialization function
