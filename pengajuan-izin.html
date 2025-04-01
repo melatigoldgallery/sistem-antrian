@@ -285,9 +285,13 @@
                         </div>
                         <div class="mb-3" id="medicalCertificateUpload" style="display: none;">
                           <label for="medicalCertificateFile" class="form-label">Unggah Surat Keterangan Sakit</label>
-                          <input class="form-control" type="file" id="medicalCertificateFile" accept="image/*,.pdf">
+                          <input class="form-control" type="file" id="medicalCertificateFile" accept="image/jpeg,image/png,image/jpg,application/pdf" max-size="2097152">
                           <div class="form-text">Format yang diterima: JPG, PNG, PDF (Maks. 2MB)</div>
+                          <div class="progress mt-2" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                          </div>
                         </div>
+                        
                       </div>
                     </div>
                   </div>
@@ -411,7 +415,7 @@
                   <ul class="mb-0">
                     <li>Pastikan alasan izin dijelaskan dengan detail</li>
                     <li>Pengajuan akan diproses oleh HRD dalam waktu 1x24 jam</li>
-                    <li>Status pengajuan dapat dilihat di menu "Kehadiran"</li>
+                    <li>Status pengajuan dapat dilihat di menu "Laporan Izin"</li>
                   </ul>
                 </div>
                 
@@ -444,38 +448,6 @@
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-  
-            <!-- Recent Leave Requests -->
-            <div class="card">
-              <div class="card-header">
-                <h2>
-                  <i class="fas fa-history"></i>
-                  Riwayat Pengajuan Izin Terbaru
-                </h2>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-hover" id="leaveHistoryTable">
-                    <thead>
-                      <tr>
-                        <th>Tanggal Pengajuan</th>
-                        <th>Tanggal Izin</th>
-                        <th>Alasan</th>
-                        <th>Jenis Pengganti</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody id="leaveHistoryList">
-                      <!-- Data will be populated by JavaScript -->
-                    </tbody>
-                  </table>
-                </div>
-                <div class="empty-state" id="emptyLeaveHistory" style="display: none;">
-                  <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
-                  <p>Belum ada riwayat pengajuan izin</p>
                 </div>
               </div>
             </div>

@@ -191,3 +191,56 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tambahkan refresh otomatis setiap 30 detik
   setInterval(refreshData, 30000);
 });
+
+// Fungsi untuk menampilkan surat keterangan sakit
+function viewMedicalCertificate(fileInfo) {
+  if (!fileInfo || !fileInfo.url) {
+    showAlert("warning", "Tidak ada surat keterangan sakit yang tersedia");
+    return;
+  }
+  
+  const modal = new bootstrap.Modal(document.getElementById('medicalCertModal'));
+  const modalTitle = document.getElementById('medicalCertModalLabel');
+  const modalBody = document.getElementById('medicalCertModalBody');
+  
+  modalTitle.textContent = 'Surat Keterangan Sakit';
+  
+  // Clear previous content
+  modalBody.innerHTML = '';
+  
+  if (fileInfo.type.startsWith('image/')) {
+    // If it's an image, display it
+    const img = document.createElement('img');
+    img.src = fileInfo.url;
+    img.className = 'img-fluid';
+    img.alt = 'Surat Keterangan Sakit';
+    modalBody.appendChild(img);
+  } else if (fileInfo.type === 'application/pdf') {
+    // If it's a PDF, embed it
+    const embed = document.createElement('embed');
+    embed.src = fileInfo.url;
+    embed.type = 'application/pdf';
+    embed.width = '100%';
+    embed.height = '500px';
+    modalBody.appendChild(embed);
+    
+    // Also add a direct link
+    const link = document.createElement('a');
+    link.href = fileInfo.url;
+    link.target = '_blank';
+    link.className = 'btn btn-primary mt-2';
+    link.innerHTML = '<i class="fas fa-external-link-alt me-2"></i>Buka di Tab Baru';
+    modalBody.appendChild(link);
+  } else {
+    // For other file types, just show a download link
+    const link = document.createElement('a');
+    link.href = fileInfo.url;
+    link.target = '_blank';
+    link.className = 'btn btn-primary';
+    link.innerHTML = '<i class="fas fa-download me-2"></i>Unduh File';
+    modalBody.appendChild(link);
+  }
+  
+  modal.show();
+}
+

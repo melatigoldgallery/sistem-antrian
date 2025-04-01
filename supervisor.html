@@ -118,7 +118,13 @@
             </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-ticket-alt"></i>
                 <span class="menu-text">Antrian</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -148,7 +154,13 @@
             </li>
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-clipboard-check"></i>
                 <span class="menu-text">Absensi</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -253,7 +265,7 @@
           </div>
 
           <!-- Alert Container -->
-          <div id="alertContainer" class="mb-3" style="display: none;"></div>
+          <div id="alertContainer" class="mb-3" style="display: none"></div>
 
           <!-- Stats Cards -->
           <div class="stats-cards mb-4">
@@ -303,13 +315,33 @@
             <div class="card-header">
               <ul class="nav nav-tabs card-header-tabs" id="leaveRequestTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                  <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-requests" type="button" role="tab" aria-controls="pending-requests" aria-selected="true">
-                    <i class="fas fa-hourglass-half me-2"></i>Menunggu Persetujuan
+                  <button
+                    class="nav-link active"
+                    id="pending-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#pending-requests"
+                    type="button"
+                    role="tab"
+                    aria-controls="pending-requests"
+                    aria-selected="true"
+                  >
+                    <i class="fas fa-hourglass-half me-2"></i>
+                    Menunggu Persetujuan
                   </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                  <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-requests" type="button" role="tab" aria-controls="all-requests" aria-selected="false">
-                    <i class="fas fa-list me-2"></i>Semua Pengajuan
+                  <button
+                    class="nav-link"
+                    id="all-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#all-requests"
+                    type="button"
+                    role="tab"
+                    aria-controls="all-requests"
+                    aria-selected="false"
+                  >
+                    <i class="fas fa-list me-2"></i>
+                    Semua Pengajuan
                   </button>
                 </li>
               </ul>
@@ -317,21 +349,32 @@
             <div class="card-body">
               <div class="d-flex justify-content-between mb-3">
                 <div class="d-flex">
-                  <div class="input-group me-2" style="width: 300px;">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Cari nama atau ID karyawan...">
+                  <div class="input-group me-2" style="width: 300px">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="searchInput"
+                      placeholder="Cari nama atau ID karyawan..."
+                    />
                     <button class="btn btn-outline-secondary" type="button" id="searchBtn">
                       <i class="fas fa-search"></i>
                     </button>
                   </div>
                 </div>
                 <button id="refreshButton" class="btn btn-primary">
-                  <i class="fas fa-sync-alt me-2"></i> Refresh Data
+                  <i class="fas fa-sync-alt me-2"></i>
+                  Refresh Data
                 </button>
               </div>
 
               <div class="tab-content" id="leaveRequestTabContent">
                 <!-- Pending Requests Tab -->
-                <div class="tab-pane fade show active" id="pending-requests" role="tabpanel" aria-labelledby="pending-tab">
+                <div
+                  class="tab-pane fade show active"
+                  id="pending-requests"
+                  role="tabpanel"
+                  aria-labelledby="pending-tab"
+                >
                   <div class="table-responsive">
                     <table class="table table-hover">
                       <thead>
@@ -350,7 +393,7 @@
                       </tbody>
                     </table>
                   </div>
-                  <div class="empty-state" id="emptyPendingRequests" style="display: none;">
+                  <div class="empty-state" id="emptyPendingRequests" style="display: none">
                     <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
                     <p>Tidak ada pengajuan izin yang menunggu persetujuan</p>
                   </div>
@@ -377,11 +420,11 @@
                       </tbody>
                     </table>
                   </div>
-                  <div class="empty-state" id="emptyAllRequests" style="display: none;">
+                  <div class="empty-state" id="emptyAllRequests" style="display: none">
                     <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
                     <p>Belum ada data pengajuan izin</p>
                   </div>
-                  
+
                   <!-- Pagination -->
                   <nav aria-label="Page navigation" class="mt-4">
                     <ul class="pagination justify-content-center" id="pagination">
@@ -397,7 +440,13 @@
     </div>
 
     <!-- Leave Request Detail Modal -->
-    <div class="modal fade" id="leaveDetailModal" tabindex="-1" aria-labelledby="leaveDetailModalLabel" aria-hidden="true">
+    <div
+      class="modal fade"
+      id="leaveDetailModal"
+      tabindex="-1"
+      aria-labelledby="leaveDetailModalLabel"
+      aria-hidden="true"
+    >
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -443,12 +492,12 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="mb-3">
               <label class="detail-label">Alasan Izin:</label>
               <div class="detail-value" id="detailReason"></div>
             </div>
-            
+
             <div class="card mb-3">
               <div class="card-header">
                 <h6 class="mb-0">Informasi Penggantian</h6>
@@ -478,7 +527,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div id="approvalSection" class="card">
               <div class="card-header">
                 <h6 class="mb-0">Keputusan Pengajuan</h6>
@@ -486,31 +535,44 @@
               <div class="card-body">
                 <div class="mb-3">
                   <label for="approvalNotes" class="form-label">Catatan (opsional):</label>
-                  <textarea class="form-control" id="approvalNotes" rows="3" placeholder="Tambahkan catatan untuk keputusan ini..."></textarea>
+                  <textarea
+                    class="form-control"
+                    id="approvalNotes"
+                    rows="3"
+                    placeholder="Tambahkan catatan untuk keputusan ini..."
+                  ></textarea>
                 </div>
                 <div class="d-flex justify-content-end">
                   <button type="button" class="btn btn-danger me-2" id="rejectRequestBtn">
-                    <i class="fas fa-times-circle me-2"></i> Tolak Pengajuan
+                    <i class="fas fa-times-circle me-2"></i>
+                    Tolak Pengajuan
                   </button>
                   <button type="button" class="btn btn-success" id="approveRequestBtn">
-                    <i class="fas fa-check-circle me-2"></i> Setujui Pengajuan
+                    <i class="fas fa-check-circle me-2"></i>
+                    Setujui Pengajuan
                   </button>
                 </div>
               </div>
             </div>
-            
-            <div id="replacementCompletionSection" class="card mt-3" style="display: none;">
+
+            <div id="replacementCompletionSection" class="card mt-3" style="display: none">
               <div class="card-header">
                 <h6 class="mb-0">Konfirmasi Penggantian</h6>
               </div>
               <div class="card-body">
                 <div class="mb-3">
                   <label for="completionNotes" class="form-label">Catatan Penggantian (opsional):</label>
-                  <textarea class="form-control" id="completionNotes" rows="2" placeholder="Tambahkan catatan untuk penggantian ini..."></textarea>
+                  <textarea
+                    class="form-control"
+                    id="completionNotes"
+                    rows="2"
+                    placeholder="Tambahkan catatan untuk penggantian ini..."
+                  ></textarea>
                 </div>
                 <div class="d-flex justify-content-end">
                   <button type="button" class="btn btn-success" id="markCompletedBtn">
-                    <i class="fas fa-check-circle me-2"></i> Tandai Sudah Diganti
+                    <i class="fas fa-check-circle me-2"></i>
+                    Tandai Sudah Diganti
                   </button>
                 </div>
               </div>
@@ -524,16 +586,20 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div
+      class="modal fade"
+      id="confirmationModal"
+      tabindex="-1"
+      aria-labelledby="confirmationModalLabel"
+      aria-hidden="true"
+    >
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header" id="confirmationModalHeader">
             <h5 class="modal-title" id="confirmationModalLabel">Konfirmasi</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body" id="confirmationModalBody">
-            Apakah Anda yakin ingin melakukan tindakan ini?
-          </div>
+          <div class="modal-body" id="confirmationModalBody">Apakah Anda yakin ingin melakukan tindakan ini?</div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
             <button type="button" class="btn btn-primary" id="confirmActionBtn">Ya, Lanjutkan</button>
@@ -541,7 +607,29 @@
         </div>
       </div>
     </div>
-    <script type="module" src="js/main.js"></script>    
+    <!-- Modal untuk menampilkan surat keterangan sakit -->
+    <div
+      class="modal fade"
+      id="medicalCertModal"
+      tabindex="-1"
+      aria-labelledby="medicalCertModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="medicalCertModalLabel">Surat Keterangan Sakit</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="medicalCertModalBody">
+            <!-- Content will be inserted here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>
-

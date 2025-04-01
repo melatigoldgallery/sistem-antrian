@@ -1,7 +1,11 @@
-import { getLeaveRequestsByMonth, deleteLeaveRequestsByMonth } from "../services/report-service.js";
+import { getLeaveRequestsByMonth, clearLeaveRequestsCache } from "../services/leave-service.js";
+import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 
 // Global variables
 let currentLeaveData = [];
+let lastVisibleDoc = null;
+let hasMoreData = false;
+const itemsPerPage = 50;
 const monthNames = [
   "Januari",
   "Februari",
@@ -93,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateDateTime();
   setInterval(updateDateTime, 1000);
-  
+
   // Initialize report page
   setupYearSelector();
   setDefaultMonthAndYear();
@@ -135,7 +139,7 @@ function setupEventListeners() {
 
   // Confirm delete button in modal
   document.getElementById("confirmDeleteBtn").addEventListener("click", deleteMonthData);
-  
+
   // Filter by status
   document.querySelectorAll("[data-status-filter]").forEach((item) => {
     item.addEventListener("click", function (e) {
@@ -144,7 +148,7 @@ function setupEventListeners() {
       filterLeaveData("status", filter);
     });
   });
-  
+
   // Filter by replacement status
   document.querySelectorAll("[data-replacement-filter]").forEach((item) => {
     item.addEventListener("click", function (e) {
@@ -153,6 +157,20 @@ function setupEventListeners() {
       filterLeaveData("replacement", filter);
     });
   });
+
+  // Load more button (if added to HTML)
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", loadMoreData);
+  }
+
+  // Replacement type filter
+  const replacementTypeFilter = document.getElementById("replacementTypeFilter");
+  if (replacementTypeFilter) {
+    replacementTypeFilter.addEventListener("change", function () {
+      filterByReplacementType(this.value);
+    });
+  }
 }
 
 // Generate report based on selected month and year
@@ -161,11 +179,21 @@ async function generateReport() {
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
 
+    // Reset pagination variables
+    lastVisibleDoc = null;
+    hasMoreData = false;
+    currentLeaveData = [];
+
     // Show loading state
     showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Memuat data izin...', false);
 
-    // Fetch data
-    currentLeaveData = await getLeaveRequestsByMonth(month, year);
+    // Fetch data with pagination
+    const result = await getLeaveRequestsByMonth(month, year, null, itemsPerPage);
+
+    // Update pagination variables
+    currentLeaveData = result.leaveRequests || [];
+    lastVisibleDoc = result.lastDoc;
+    hasMoreData = result.hasMore;
 
     // Hide alert
     hideAlert();
@@ -175,6 +203,12 @@ async function generateReport() {
       updateSummaryCards();
       populateLeaveTable();
       showReportElements();
+
+      // Show/hide load more button
+      const loadMoreBtn = document.getElementById("loadMoreBtn");
+      if (loadMoreBtn) {
+        loadMoreBtn.style.display = hasMoreData ? "block" : "none";
+      }
     } else {
       hideReportElements();
       document.getElementById("noDataMessage").style.display = "block";
@@ -188,11 +222,66 @@ async function generateReport() {
   }
 }
 
+// Load more data (pagination)
+async function loadMoreData() {
+  if (!hasMoreData || !lastVisibleDoc) return;
+
+  try {
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+
+    // Show loading state on the button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
+      loadMoreBtn.disabled = true;
+    }
+
+    // Fetch next batch of data
+    const result = await getLeaveRequestsByMonth(month, year, lastVisibleDoc, itemsPerPage);
+
+    // Update pagination variables
+    const newData = result.leaveRequests || [];
+    lastVisibleDoc = result.lastDoc;
+    hasMoreData = result.hasMore;
+
+    // Append new data to current data
+    currentLeaveData = [...currentLeaveData, ...newData];
+
+    // Update UI
+    populateLeaveTable();
+
+    // Reset button state
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.style.display = hasMoreData ? "block" : "none";
+    }
+  } catch (error) {
+    console.error("Error loading more data:", error);
+    showAlert(
+      "danger",
+      '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memuat data tambahan: ' + error.message
+    );
+
+    // Reset button state
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+    }
+  }
+}
+
 // Update summary cards with counts
 function updateSummaryCards() {
   const totalLeaves = currentLeaveData.length;
-  const approvedLeaves = currentLeaveData.filter((item) => item.status === "Approved").length;
-  const rejectedLeaves = currentLeaveData.filter((item) => item.status === "Rejected").length;
+  const approvedLeaves = currentLeaveData.filter(
+    (item) => item.status === "Approved" || item.status === "Disetujui"
+  ).length;
+  const rejectedLeaves = currentLeaveData.filter(
+    (item) => item.status === "Rejected" || item.status === "Ditolak"
+  ).length;
   const pendingLeaves = currentLeaveData.filter((item) => item.status === "Pending").length;
 
   document.getElementById("totalLeaves").textContent = totalLeaves;
@@ -204,37 +293,66 @@ function updateSummaryCards() {
 // Populate leave table with data
 function populateLeaveTable() {
   const tbody = document.getElementById("leaveReportList");
-  tbody.innerHTML = "";
 
-  currentLeaveData.forEach((record, index) => {
+  // Clear existing rows if this is a new search
+  if (lastVisibleDoc === null || currentLeaveData.length <= itemsPerPage) {
+    tbody.innerHTML = "";
+  }
+
+  // Get starting index for row numbers
+  const startIndex = tbody.children.length;
+
+  // Create document fragment for better performance
+  const fragment = document.createDocumentFragment();
+
+  currentLeaveData.slice(startIndex).forEach((record, index) => {
     const replacementInfo = getReplacementInfo(record);
     const row = document.createElement("tr");
 
+    // Add data attributes for filtering
+    row.dataset.status = record.status.toLowerCase();
+    row.dataset.replacementStatus = record.replacementStatus.toLowerCase().replace(/\s+/g, "-");
+    row.dataset.replacementType = record.replacementType || "";
+
     row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${record.employeeId}</td>
-            <td>${record.name}</td>
-            <td>${formatDate(record.submitDate)}</td>
-            <td>${record.leaveDate}</td>
-            <td>${record.reason}</td>
-            <td>${record.replacementType === "libur" ? "Ganti Libur" : "Ganti Jam"}</td>
-            <td>${replacementInfo}</td>
-            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-            <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
-            <td class="status-${record.replacementStatus.toLowerCase().replace(/\s+/g, "-")}">${
+                    <td>${startIndex + index + 1}</td>
+                    <td>${record.employeeId}</td>
+                    <td>${record.name}</td>
+                    <td>${formatDate(record.submitDate)}</td>
+                    <td>${record.leaveDate}</td>
+                    <td>${record.reason}</td>
+                    <td>${
+                      record.replacementType === "libur"
+                        ? "Ganti Libur"
+                        : record.replacementType === "jam"
+                        ? "Ganti Jam"
+                        : "Tidak Ada"
+                    }</td>
+                    <td>${replacementInfo}</td>
+                    <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+                    <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
+                    <td class="status-${record.replacementStatus.toLowerCase().replace(/\s+/g, "-")}">${
       record.replacementStatus
     }</td>
-        `;
-    tbody.appendChild(row);
+                `;
+    fragment.appendChild(row);
   });
+
+  tbody.appendChild(fragment);
 }
 
 // Helper function to format replacement information
 function getReplacementInfo(record) {
-  if (record.replacementType === "libur") {
-    return `Ganti libur pada ${record.replacementDetails.formattedDate}`;
+  if (!record.replacementType || record.replacementType === "tidak") {
+    return "-";
+  } else if (record.replacementType === "libur") {
+    return record.replacementDetails && record.replacementDetails.formattedDate
+      ? `Ganti libur pada ${record.replacementDetails.formattedDate}`
+      : "-";
   } else if (record.replacementType === "jam") {
-    return `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`;
+    return record.replacementDetails && record.replacementDetails.hours && record.replacementDetails.formattedDate
+      ? `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`
+      : "-";
   }
   return "-";
 }
@@ -258,6 +376,12 @@ function showReportElements() {
   document.getElementById("actionButtons").style.display = "flex";
   document.getElementById("tableContainer").style.display = "block";
   document.getElementById("noDataMessage").style.display = "none";
+
+  // Show load more button if there's more data
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.style.display = hasMoreData ? "block" : "none";
+  }
 }
 
 // Hide report elements
@@ -265,6 +389,12 @@ function hideReportElements() {
   document.getElementById("summaryCards").style.display = "none";
   document.getElementById("actionButtons").style.display = "none";
   document.getElementById("tableContainer").style.display = "none";
+
+  // Hide load more button
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.style.display = "none";
+  }
 }
 
 // Filter leave data
@@ -277,17 +407,15 @@ function filterLeaveData(filterType, value) {
     if (value !== "all") {
       if (filterType === "status") {
         const statusCell = row.querySelector("td:nth-child(9)").textContent.toLowerCase();
-        showRow = (
-          (value === "approved" && statusCell === "approved") || 
-          (value === "rejected" && statusCell === "rejected") || 
-          (value === "pending" && statusCell === "pending")
-        );
+        showRow =
+          (value === "approved" && (statusCell === "approved" || statusCell === "disetujui")) ||
+          (value === "rejected" && (statusCell === "rejected" || statusCell === "ditolak")) ||
+          (value === "pending" && statusCell === "pending");
       } else if (filterType === "replacement") {
         const replacementCell = row.querySelector("td:nth-child(11)").textContent.toLowerCase();
-        showRow = (
-          (value === "sudah" && replacementCell === "sudah diganti") || 
-          (value === "belum" && replacementCell === "belum diganti")
-        );
+        showRow =
+          (value === "sudah" && replacementCell === "sudah diganti") ||
+          (value === "belum" && replacementCell === "belum diganti");
       }
     }
 
@@ -300,313 +428,113 @@ function filterLeaveData(filterType, value) {
     if (value === "approved") buttonText = "Disetujui";
     else if (value === "rejected") buttonText = "Ditolak";
     else if (value === "pending") buttonText = "Pending";
-    
+
     document.getElementById("statusFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
   } else if (filterType === "replacement") {
     let buttonText = "Filter Pengganti";
     if (value === "sudah") buttonText = "Sudah Diganti";
     else if (value === "belum") buttonText = "Belum Diganti";
-    
-    document.getElementById("replacementFilterDropdown").innerHTML = `<i class="fas fa-exchange-alt"></i> ${buttonText}`;
+
+    document.getElementById(
+      "replacementFilterDropdown"
+    ).innerHTML = `<i class="fas fa-exchange-alt"></i> ${buttonText}`;
   }
 }
 
-// Export data to Excel
-function exportToExcel() {
-  try {
-    const month = parseInt(document.getElementById("monthSelector").value);
-    const year = parseInt(document.getElementById("yearSelector").value);
-    const monthName = monthNames[month - 1];
+// Filter by replacement type
+function filterByReplacementType(value) {
+  const rows = document.querySelectorAll("#leaveReportList tr");
 
-    // Prepare worksheet data
-    const wsData = [
-      ["LAPORAN IZIN KARYAWAN MELATI GOLD SHOP"],
-      [`PERIODE: ${monthName.toUpperCase()} ${year}`],
-      [""],
-      [
-        "No",
-        "ID Staff",
-        "Nama",
-        "Tanggal Pengajuan",
-        "Tanggal Izin",
-        "Alasan",
-        "Jenis Pengganti",
-        "Detail Pengganti",
-        "Status",
-        "Tanggal Keputusan",
-        "Status Ganti",
-      ],
-    ];
-
-    // Add data rows
-    currentLeaveData.forEach((record, index) => {
-      wsData.push([
-        index + 1,
-        record.employeeId,
-        record.name,
-        formatDate(record.submitDate),
-        record.leaveDate,
-        record.reason,
-        record.replacementType === "libur" ? "Ganti Libur" : "Ganti Jam",
-        getReplacementInfo(record),
-        record.status,
-        record.decisionDate ? formatDate(record.decisionDate) : "-",
-        record.replacementStatus,
-      ]);
-    });
-
-    // Create worksheet and workbook
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-
-    // Set column widths
-    const colWidths = [
-      { wch: 5 }, // No
-      { wch: 10 }, // ID Staff
-      { wch: 20 }, // Nama
-      { wch: 20 }, // Tanggal Pengajuan
-      { wch: 20 }, // Tanggal Izin
-      { wch: 30 }, // Alasan
-      { wch: 15 }, // Jenis Pengganti
-      { wch: 30 }, // Detail Pengganti
-      { wch: 10 }, // Status
-      { wch: 20 }, // Tanggal Keputusan
-      { wch: 15 }, // Status Ganti
-    ];
-    ws["!cols"] = colWidths;
-
-    // Merge cells for title and period
-    ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
-    ];
-
-    // Style the header cells
-    for (let i = 0; i <= 10; i++) {
-      const cellRef = XLSX.utils.encode_cell({ r: 3, c: i });
-      if (!ws[cellRef]) ws[cellRef] = {};
-      ws[cellRef].s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: "EEEEEE" } },
-      };
-    }
-
-    XLSX.utils.book_append_sheet(wb, ws, "Laporan Izin");
-
-    // Generate filename
-    const fileName = `Laporan_Izin_${monthName}_${year}.xlsx`;
-
-    // Export file
-    XLSX.writeFile(wb, fileName);
-
-    showAlert("success", `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke Excel: ${fileName}`);
-  } catch (error) {
-    console.error("Error exporting to Excel:", error);
-    showAlert("danger", '<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data ke Excel');
-  }
-}
-
-// Export data to PDF
-function exportToPDF() {
-  try {
-    const month = parseInt(document.getElementById("monthSelector").value);
-    const year = parseInt(document.getElementById("yearSelector").value);
-    const monthName = monthNames[month - 1];
-
-    // Create PDF document
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF("landscape", "mm", "a4");
-
-    // Add title
-    doc.setFontSize(16);
-    doc.setFont(undefined, "bold");
-    doc.text("LAPORAN IZIN KARYAWAN MELATI GOLD SHOP", 149, 15, { align: "center" });
-
-    // Add period
-    doc.setFontSize(12);
-    doc.text(`PERIODE: ${monthName.toUpperCase()} ${year}`, 149, 22, { align: "center" });
-
-    // Add current date
-    const currentDate = new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    doc.setFontSize(10);
-    doc.setFont(undefined, "normal");
-    doc.text(`Dicetak pada: ${currentDate}`, 149, 28, { align: "center" });
-
-    // Prepare table data
-    const tableColumn = [
-      "No",
-      "ID Staff",
-      "Nama",
-      "Tanggal Izin",
-      "Alasan",
-      "Jenis Pengganti",
-      "Status",
-      "Status Ganti",
-    ];
-    const tableRows = [];
-
-    currentLeaveData.forEach((record, index) => {
-      const rowData = [
-        (index + 1).toString(),
-        record.employeeId,
-        record.name,
-        record.leaveDate,
-        record.reason,
-        record.replacementType === "libur" ? "Ganti Libur" : "Ganti Jam",
-        record.status,
-        record.replacementStatus,
-      ];
-      tableRows.push(rowData);
-    });
-
-    // Add summary
-    doc.setFontSize(11);
-    doc.setFont(undefined, "bold");
-    doc.text(`Total Izin: ${currentLeaveData.length}`, 15, 35);
-    doc.text(`Disetujui: ${currentLeaveData.filter((item) => item.status === "Approved").length}`, 65, 35);
-    doc.text(`Ditolak: ${currentLeaveData.filter((item) => item.status === "Rejected").length}`, 115, 35);
-    doc.text(`Pending: ${currentLeaveData.filter((item) => item.status === "Pending").length}`, 165, 35);
-
-    // Add table
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 40,
-      theme: "grid",
-      styles: {
-        fontSize: 9,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: [67, 97, 238], // Primary color
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
-      columnStyles: {
-        0: { cellWidth: 10 }, // No
-        1: { cellWidth: 20 }, // ID Staff
-        2: { cellWidth: 35 }, // Nama
-        3: { cellWidth: 35 }, // Tanggal Izin
-        4: { cellWidth: 50 }, // Alasan
-        5: { cellWidth: 30 }, // Jenis Pengganti
-        6: { cellWidth: 20 }, // Status
-        7: { cellWidth: 25 }, // Status Ganti
-      },
-    });
-
-    // Add footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.text(`Halaman ${i} dari ${pageCount}`, 290, 200, { align: "right" });
-      doc.text("© Melati Gold Shop", 15, 200);
-    }
-
-    // Generate filename
-    const fileName = `Laporan_Izin_${monthName}_${year}.pdf`;
-
-    // Save PDF
-    doc.save(fileName);
-
-    showAlert("success", `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke PDF: ${fileName}`);
-  } catch (error) {
-    console.error("Error exporting to PDF:", error);
-    showAlert("danger", '<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data ke PDF');
-  }
-}
-
-// Show delete confirmation modal
-function showDeleteConfirmation() {
-  const month = parseInt(document.getElementById("monthSelector").value);
-  const year = parseInt(document.getElementById("yearSelector").value);
-  const monthName = monthNames[month - 1];
-
-  // Update modal content
-  document.getElementById("deleteMonthName").textContent = monthName;
-  document.getElementById("deleteYear").textContent = year;
-
-  // Show modal
-  const deleteModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
-  deleteModal.show();
-}
-
-// Delete data for the selected month
-async function deleteMonthData() {
-  try {
-    const month = parseInt(document.getElementById("monthSelector").value);
-    const year = parseInt(document.getElementById("yearSelector").value);
-    const monthName = monthNames[month - 1];
-
-    // Close modal
-    const deleteModal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
-    deleteModal.hide();
-
-    // Show loading state
-    showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus data izin...', false);
-
-    // Delete data
-    const deletedCount = await deleteLeaveRequestsByMonth(month, year);
-
-    if (deletedCount > 0) {
-      showAlert(
-        "success",
-        `<i class="fas fa-check-circle me-2"></i> Berhasil menghapus ${deletedCount} data izin untuk bulan ${monthName} ${year}`
-      );
-
-      // Reset UI
-      hideReportElements();
-      document.getElementById("noDataMessage").style.display = "block";
-      currentLeaveData = [];
+  rows.forEach((row) => {
+    if (value === "all") {
+      row.style.display = "";
     } else {
-      showAlert(
-        "warning",
-        `<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data izin untuk dihapus pada bulan ${monthName} ${year}`
-      );
+      const replacementTypeCell = row.querySelector("td:nth-child(7)").textContent.toLowerCase();
+      const showRow =
+        (value === "libur" && replacementTypeCell.includes("libur")) ||
+        (value === "jam" && replacementTypeCell.includes("jam"));
+      row.style.display = showRow ? "" : "none";
     }
-  } catch (error) {
-    console.error("Error deleting data:", error);
-    showAlert(
-      "danger",
-      '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat menghapus data: ' + error.message
+  });
+}
+
+import { db } from "../configFirebase.js";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch,
+  orderBy,
+  limit,
+  Timestamp,
+} from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+// Get leave requests by month
+export async function getLeaveRequestsByMonth(month, year) {
+  try {
+    const leaveCollection = collection(db, "leaveRequests");
+
+    // Create query for the specific month and year
+    const q = query(
+      leaveCollection,
+      where("month", "==", month),
+      where("year", "==", year),
+      orderBy("submitDate", "desc"),
+      limit(500) // Limit to 500 documents to prevent excessive reads
     );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      // Convert Firestore Timestamp to JS Date
+      submitDate: doc.data().submitDate.toDate(),
+      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
+      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
+    }));
+  } catch (error) {
+    console.error("Error getting leave requests by month:", error);
+    throw error;
   }
 }
 
-// Show alert message
-function showAlert(type, message, autoHide = true) {
-  const alertContainer = document.getElementById("alertContainer");
-  alertContainer.innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-  alertContainer.style.display = "block";
+// Delete leave requests by month
+export async function deleteLeaveRequestsByMonth(month, year) {
+  try {
+    const leaveCollection = collection(db, "leaveRequests");
 
-  // Auto hide after 5 seconds if needed
-  if (autoHide) {
-    setTimeout(() => {
-      const alert = document.querySelector(".alert");
-      if (alert) {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-      }
-    }, 5000);
+    // Create query for the specific month and year
+    const q = query(leaveCollection, where("month", "==", month), where("year", "==", year));
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return 0;
+    }
+
+    // Use batched writes for efficient deletion
+    const batchSize = 500; // Firestore batch limit is 500
+    let deletedCount = 0;
+    const totalDocs = snapshot.docs.length;
+
+    // Process in batches if needed
+    for (let i = 0; i < totalDocs; i += batchSize) {
+      const batch = writeBatch(db);
+      const currentBatch = snapshot.docs.slice(i, i + batchSize);
+
+      currentBatch.forEach((doc) => {
+        batch.delete(doc.ref);
+        deletedCount++;
+      });
+
+      await batch.commit();
+    }
+
+    return deletedCount;
+  } catch (error) {
+    console.error("Error deleting leave requests by month:", error);
+    throw error;
   }
 }
-
-// Hide alert
-function hideAlert() {
-  const alertContainer = document.getElementById("alertContainer");
-  alertContainer.innerHTML = "";
-  alertContainer.style.display = "none";
-}
-

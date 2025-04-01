@@ -1,7 +1,7 @@
 //import { checkAuthState } from './auth.js';
 import { getEmployees } from "../services/employee-service.js";
 import { submitLeaveRequest, getLeaveRequestsByEmployee } from "../services/leave-service.js";
-
+import { uploadFile } from "../services/file-service.js";
 // Initialize data
 let employees = [];
 let leaveHistory = [];
@@ -216,6 +216,26 @@ document.getElementById("hasMedicalCertificate")?.addEventListener("change", fun
   }
 });
 
+// Separate event listener for file input validation
+document.getElementById("medicalCertificateFile")?.addEventListener("change", function () {
+  const maxSize = 2 * 1024 * 1024; // 2MB
+  const file = this.files[0];
+  
+  if (file) {
+    if (file.size > maxSize) {
+      showFeedback("error", "Ukuran file melebihi 2MB. Silakan pilih file yang lebih kecil.");
+      this.value = ""; // Reset input file
+    }
+    
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+    if (!validTypes.includes(file.type)) {
+      showFeedback("error", "Format file tidak didukung. Gunakan JPG, PNG, atau PDF.");
+      this.value = ""; // Reset input file
+    }
+  }
+});
+
+
 // Event listener for radio button jenis cuti
 document.querySelectorAll('input[name="leaveTypeRadio"]')?.forEach((radio) => {
   radio.addEventListener("change", function () {
@@ -252,7 +272,7 @@ document.getElementById('leaveEndDate')?.addEventListener('change', updateLeaveR
 // Add event listener for the "Add More Dates" button
 document.getElementById('addMoreDates')?.addEventListener('click', addReplacementDateField);
 
-// Handle leave form submission
+// Hanya menambahkan beberapa baris pada fungsi yang menangani submit form
 document.getElementById("leaveForm")?.addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -279,19 +299,59 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     const leaveReason = document.getElementById("leaveReason").value;
     const replacementType = document.getElementById("replacementType").value;
     
+    // Format tanggal untuk tampilan
+    const formattedStartDate = new Date(leaveStartDate).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+    
+    const formattedEndDate = new Date(leaveEndDate).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+    
+    // Format tanggal izin untuk tampilan
+    let leaveDate;
+    if (leaveStartDate === leaveEndDate) {
+      leaveDate = formattedStartDate;
+    } else {
+      leaveDate = `${formattedStartDate} s/d ${formattedEndDate}`;
+    }
+    
     let replacementDetails;
+    let medicalCertificateFileInfo = null;
 
     // Proses berdasarkan jenis izin dan pengganti
     if (leaveType === "sakit") {
       const hasMedicalCertificate = document.getElementById("hasMedicalCertificate").checked;
-
+      // Upload file surat keterangan sakit jika ada
+      if (hasMedicalCertificate) {
+        const fileInput = document.getElementById("medicalCertificateFile");
+        if (fileInput.files.length > 0) {
+          // Tampilkan indikator upload
+          showFeedback("info", '<i class="fas fa-upload me-2"></i> Mengunggah surat keterangan sakit...', false);
+          
+          try {
+            // Upload file dan dapatkan informasinya
+            medicalCertificateFileInfo = await uploadFile(
+              fileInput.files[0], 
+              `medical-certificates/${employeeId}`
+            );
+          } catch (uploadError) {
+            showFeedback("error", `Gagal mengunggah file: ${uploadError.message}`);
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+            return;
+          }
+        }
+      }
       replacementDetails = {
         type: "sakit",
         needReplacement: replacementType !== "tidak",
         hasMedicalCertificate: hasMedicalCertificate,
-        medicalCertificateFile: hasMedicalCertificate
-          ? document.getElementById("medicalCertificateFile").files[0]?.name || null
-          : null,
+        medicalCertificateFile: medicalCertificateFileInfo
       };
       
       // Add replacement details based on type
@@ -299,11 +359,13 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         const replacementDates = [];
         document.querySelectorAll('.replacement-date').forEach(input => {
           if (input.value) {
+            const formattedDate = new Date(input.value).toLocaleDateString("id-ID", {
+              weekday: "long", year: "numeric", month: "long", day: "numeric"
+            });
+            
             replacementDates.push({
               date: input.value,
-              formatted: new Date(input.value).toLocaleDateString("id-ID", {
-                weekday: "long", year: "numeric", month: "long", day: "numeric"
-              })
+              formattedDate: formattedDate
             });
           }
         });
@@ -329,6 +391,9 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         
         replacementDetails.date = replacementHourDate;
         replacementDetails.hours = replacementHours;
+        replacementDetails.formattedDate = new Date(replacementHourDate).toLocaleDateString("id-ID", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric"
+        });
       }
     } else if (leaveType === "cuti") {
       const cutiType = document.querySelector('input[name="leaveTypeRadio"]:checked')?.value || "regular";
@@ -349,11 +414,13 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       const replacementDates = [];
       document.querySelectorAll('.replacement-date').forEach(input => {
         if (input.value) {
+          const formattedDate = new Date(input.value).toLocaleDateString("id-ID", {
+            weekday: "long", year: "numeric", month: "long", day: "numeric"
+          });
+          
           replacementDates.push({
             date: input.value,
-            formatted: new Date(input.value).toLocaleDateString("id-ID", {
-              weekday: "long", year: "numeric", month: "long", day: "numeric"
-            })
+            formattedDate: formattedDate
           });
         }
       });
@@ -386,7 +453,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         needReplacement: true,
         date: replacementHourDate,
         hours: replacementHours,
-        formatted: new Date(replacementHourDate).toLocaleDateString("id-ID", {
+        formattedDate: new Date(replacementHourDate).toLocaleDateString("id-ID", {
           weekday: "long",
           year: "numeric",
           month: "long",
@@ -400,8 +467,25 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       };
     }
 
-    // Here you would call your API to submit the leave request
-    // await submitLeaveRequest(...);
+    // Prepare leave request data with additional fields for efficient querying
+    const leaveRequest = {
+      employeeId: employeeId,
+      name: employee.name,
+      leaveDate: leaveDate,
+      leaveStartDate: leaveStartDate,
+      leaveEndDate: leaveEndDate,
+      reason: leaveReason,
+      leaveType: leaveType,
+      replacementType: replacementType,
+      replacementDetails: replacementDetails,
+      // Add these fields for efficient querying
+      rawLeaveDate: leaveStartDate, // For date range queries
+      month: new Date(leaveStartDate).getMonth() + 1, // For monthly reports
+      year: new Date(leaveStartDate).getFullYear(), // For yearly reports
+    };
+
+    // Submit the leave request
+    await submitLeaveRequest(leaveRequest);
 
     showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
     this.reset();
@@ -424,6 +508,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     submitBtn.disabled = false;
   }
 });
+
 
 // Function to show feedback messages
 function showFeedback(type, message) {

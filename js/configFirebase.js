@@ -1,7 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
-
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-storage.js";
 const firebaseConfig = {
     apiKey: "AIzaSyB6WS177m4mFIIlDE9sSSW21XHkWHQdwdU",
     authDomain: "sistem-antrian-76aa8.firebaseapp.com",
@@ -19,6 +19,7 @@ const db = getFirestore(app);
 console.log('Firebase initialized successfully');
 export { db, database };
 export default app;
+export const storage = getStorage(app);
 
 export const authService = {
     getCurrentUser: async () => {
