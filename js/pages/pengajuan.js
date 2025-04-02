@@ -272,7 +272,7 @@ document.getElementById('leaveEndDate')?.addEventListener('change', updateLeaveR
 // Add event listener for the "Add More Dates" button
 document.getElementById('addMoreDates')?.addEventListener('click', addReplacementDateField);
 
-// Hanya menambahkan beberapa baris pada fungsi yang menangani submit form
+// Pada bagian submit form, modifikasi untuk menangani multi-hari
 document.getElementById("leaveForm")?.addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -298,6 +298,12 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     const leaveEndDate = document.getElementById("leaveEndDate").value;
     const leaveReason = document.getElementById("leaveReason").value;
     const replacementType = document.getElementById("replacementType").value;
+    
+    // Hitung jumlah hari izin
+    const startDate = new Date(leaveStartDate);
+    const endDate = new Date(leaveEndDate);
+    const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    const isMultiDay = dayDiff > 1;
     
     // Format tanggal untuk tampilan
     const formattedStartDate = new Date(leaveStartDate).toLocaleDateString("id-ID", {
@@ -482,6 +488,9 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       rawLeaveDate: leaveStartDate, // For date range queries
       month: new Date(leaveStartDate).getMonth() + 1, // For monthly reports
       year: new Date(leaveStartDate).getFullYear(), // For yearly reports
+      // Tambahkan informasi multi-hari jika perlu
+      isMultiDay: isMultiDay,
+      dayCount: dayDiff
     };
 
     // Submit the leave request
@@ -508,6 +517,8 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     submitBtn.disabled = false;
   }
 });
+
+
 
 
 // Function to show feedback messages

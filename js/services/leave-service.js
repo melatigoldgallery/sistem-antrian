@@ -4,6 +4,7 @@ import {
   addDoc,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
   query,
   where,
@@ -29,6 +30,20 @@ export async function submitLeaveRequest(leaveRequest) {
     leaveRequest.submitDate = Timestamp.now();
     leaveRequest.status = "Pending";
     leaveRequest.replacementStatus = "Belum Diganti";
+    
+    // Jika izin lebih dari 1 hari, buat array status penggantian
+    if (leaveRequest.leaveStartDate && leaveRequest.leaveEndDate) {
+      const startDate = new Date(leaveRequest.leaveStartDate);
+      const endDate = new Date(leaveRequest.leaveEndDate);
+      const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      if (dayDiff > 1) {
+        // Buat array status penggantian untuk setiap hari
+        leaveRequest.replacementStatusArray = Array(dayDiff).fill("Belum Diganti");
+        leaveRequest.isMultiDay = true;
+        leaveRequest.dayCount = dayDiff;
+      }
+    }
     
     // Tambahkan field untuk memudahkan query bulanan
     const submitDate = new Date();
@@ -101,14 +116,31 @@ export async function getLeaveRequestsByMonth(month, year, lastDoc = null, items
     const snapshot = await getDocs(q);
     const lastVisible = snapshot.docs[snapshot.docs.length - 1];
     
-    const leaveRequests = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
-    }));
+    const leaveRequests = [];
+    
+    for (const doc of snapshot.docs) {
+      let leaveData = {
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamp to JS Date
+        submitDate: doc.data().submitDate.toDate(),
+        decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
+        replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
+      };
+      
+      // Migrasi data jika perlu
+      if (leaveData.leaveStartDate && leaveData.leaveEndDate && 
+          leaveData.leaveStartDate !== leaveData.leaveEndDate && 
+          !leaveData.replacementStatusArray) {
+        leaveData = await migrateLeaveRequest(doc.id);
+        // Pastikan timestamp tetap dalam format Date
+        leaveData.submitDate = doc.data().submitDate.toDate();
+        leaveData.decisionDate = doc.data().decisionDate ? doc.data().decisionDate.toDate() : null;
+        leaveData.replacementStatusDate = doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null;
+      }
+      
+      leaveRequests.push(leaveData);
+    }
     
     // Cache the results
     leaveRequestsCache.byMonth[cacheKey] = leaveRequests;
@@ -133,14 +165,33 @@ export async function getAllLeaveRequests() {
     const q = query(leaveCollection, orderBy("submitDate", "desc"), limit(100));
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
-    }));
+    const allLeaves = [];
+
+    for (const doc of snapshot.docs) {
+      let leaveData = {
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamp to JS Date
+        submitDate: doc.data().submitDate.toDate(),
+        decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
+        replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
+      };
+      
+      // Migrasi data jika perlu
+      if (leaveData.leaveStartDate && leaveData.leaveEndDate && 
+          leaveData.leaveStartDate !== leaveData.leaveEndDate && 
+          !leaveData.replacementStatusArray) {
+        leaveData = await migrateLeaveRequest(doc.id);
+        // Pastikan timestamp tetap dalam format Date
+        leaveData.submitDate = doc.data().submitDate.toDate();
+        leaveData.decisionDate = doc.data().decisionDate ? doc.data().decisionDate.toDate() : null;
+        leaveData.replacementStatusDate = doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null;
+      }
+      
+      allLeaves.push(leaveData);
+    }
+
+    return allLeaves;
   } catch (error) {
     console.error("Error getting leave requests:", error);
     throw error;
@@ -159,13 +210,29 @@ export async function getPendingLeaveRequests(itemsPerPage = 20) {
     );
 
     const querySnapshot = await getDocs(q);
+    const pendingLeaves = [];
 
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-    }));
+    for (const doc of querySnapshot.docs) {
+      let leaveData = {
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamp to JS Date
+        submitDate: doc.data().submitDate.toDate(),
+      };
+      
+      // Migrasi data jika perlu
+      if (leaveData.leaveStartDate && leaveData.leaveEndDate && 
+          leaveData.leaveStartDate !== leaveData.leaveEndDate && 
+          !leaveData.replacementStatusArray) {
+        leaveData = await migrateLeaveRequest(doc.id);
+        // Pastikan submitDate tetap dalam format Date
+        leaveData.submitDate = doc.data().submitDate.toDate();
+      }
+      
+      pendingLeaves.push(leaveData);
+    }
+
+    return pendingLeaves;
   } catch (error) {
     console.error("Error getting pending leave requests:", error);
     throw error;
@@ -193,15 +260,31 @@ export async function getLeaveRequestsByEmployee(employeeId, itemsPerPage = 20) 
     );
 
     const querySnapshot = await getDocs(q);
+    const results = [];
 
-    const results = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
-    }));
+    for (const doc of querySnapshot.docs) {
+      let leaveData = {
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamp to JS Date
+        submitDate: doc.data().submitDate.toDate(),
+        decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
+        replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
+      };
+      
+      // Migrasi data jika perlu
+      if (leaveData.leaveStartDate && leaveData.leaveEndDate && 
+          leaveData.leaveStartDate !== leaveData.leaveEndDate && 
+          !leaveData.replacementStatusArray) {
+        leaveData = await migrateLeaveRequest(doc.id);
+        // Pastikan timestamp tetap dalam format Date
+        leaveData.submitDate = doc.data().submitDate.toDate();
+        leaveData.decisionDate = doc.data().decisionDate ? doc.data().decisionDate.toDate() : null;
+        leaveData.replacementStatusDate = doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null;
+      }
+      
+      results.push(leaveData);
+    }
     
     // Cache the results
     leaveRequestsCache.byEmployee[employeeId] = results;
@@ -235,14 +318,49 @@ export async function updateLeaveRequestStatus(id, status) {
 }
 
 // Update replacement status
-export async function updateReplacementStatus(id, status) {
+export async function updateReplacementStatus(id, status, dayIndex = -1) {
   try {
     const leaveRef = doc(db, "leaveRequests", id);
-
-    await updateDoc(leaveRef, {
-      replacementStatus: status,
-      replacementStatusDate: Timestamp.now(),
-    });
+    
+    // Jika dayIndex valid, update status untuk hari tertentu
+    if (dayIndex >= 0) {
+      // Ambil data izin terlebih dahulu
+      const leaveDoc = await getDoc(leaveRef);
+      if (!leaveDoc.exists()) {
+        throw new Error("Dokumen izin tidak ditemukan");
+      }
+      
+      const leaveData = leaveDoc.data();
+      let replacementStatusArray = leaveData.replacementStatusArray || [];
+      
+      // Jika array belum ada, buat array baru
+      if (!replacementStatusArray.length) {
+        const startDate = new Date(leaveData.leaveStartDate);
+        const endDate = new Date(leaveData.leaveEndDate);
+        const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        replacementStatusArray = Array(dayDiff).fill("Belum Diganti");
+      }
+      
+      // Update status untuk hari tertentu
+      replacementStatusArray[dayIndex] = status;
+      
+      // Tentukan status keseluruhan berdasarkan semua status hari
+      const overallStatus = replacementStatusArray.every(s => s === "Sudah Diganti") 
+        ? "Sudah Diganti" 
+        : "Belum Diganti";
+      
+      await updateDoc(leaveRef, {
+        replacementStatusArray: replacementStatusArray,
+        replacementStatus: overallStatus,
+        replacementStatusDate: Timestamp.now(),
+      });
+    } else {
+      // Jika tidak ada dayIndex, update status keseluruhan (untuk kompatibilitas)
+      await updateDoc(leaveRef, {
+        replacementStatus: status,
+        replacementStatusDate: Timestamp.now(),
+      });
+    }
 
     // Invalidate caches since data has changed
     leaveRequestsCache.byMonth = {};
@@ -252,6 +370,58 @@ export async function updateReplacementStatus(id, status) {
     return true;
   } catch (error) {
     console.error("Error updating replacement status:", error);
+    throw error;
+  }
+}
+
+// Fungsi untuk migrasi data lama
+async function migrateLeaveRequest(leaveId) {
+  try {
+    const leaveRef = doc(db, "leaveRequests", leaveId);
+    const leaveDoc = await getDoc(leaveRef);
+    
+    if (!leaveDoc.exists()) {
+      throw new Error("Dokumen izin tidak ditemukan");
+    }
+    
+    const leaveData = leaveDoc.data();
+    
+    // Jika sudah memiliki replacementStatusArray, tidak perlu migrasi
+    if (leaveData.replacementStatusArray) {
+      return leaveData;
+    }
+    
+    // Periksa apakah ini izin multi-hari
+    const isMultiDay = leaveData.leaveStartDate && leaveData.leaveEndDate && 
+                      leaveData.leaveStartDate !== leaveData.leaveEndDate;
+    
+    if (isMultiDay) {
+      const startDate = new Date(leaveData.leaveStartDate);
+      const endDate = new Date(leaveData.leaveEndDate);
+      const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Buat array status penggantian untuk setiap hari
+      const replacementStatusArray = Array(dayDiff).fill(leaveData.replacementStatus || "Belum Diganti");
+      
+      // Update dokumen
+      await updateDoc(leaveRef, {
+        replacementStatusArray: replacementStatusArray,
+        isMultiDay: true,
+        dayCount: dayDiff
+      });
+      
+      // Return data yang sudah diupdate
+      return {
+        ...leaveData,
+        replacementStatusArray,
+        isMultiDay: true,
+        dayCount: dayDiff
+      };
+    }
+    
+    return leaveData;
+  } catch (error) {
+    console.error("Error migrating leave request:", error);
     throw error;
   }
 }
@@ -280,15 +450,31 @@ export async function getLeaveRequestsByDateRange(startDate, endDate, itemsPerPa
     );
 
     const querySnapshot = await getDocs(q);
+    const results = [];
 
-    const results = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
-    }));
+    for (const doc of querySnapshot.docs) {
+      let leaveData = {
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamp to JS Date
+        submitDate: doc.data().submitDate.toDate(),
+        decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
+        replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
+      };
+      
+      // Migrasi data jika perlu
+      if (leaveData.leaveStartDate && leaveData.leaveEndDate && 
+          leaveData.leaveStartDate !== leaveData.leaveEndDate && 
+          !leaveData.replacementStatusArray) {
+        leaveData = await migrateLeaveRequest(doc.id);
+        // Pastikan timestamp tetap dalam format Date
+        leaveData.submitDate = doc.data().submitDate.toDate();
+        leaveData.decisionDate = doc.data().decisionDate ? doc.data().decisionDate.toDate() : null;
+        leaveData.replacementStatusDate = doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null;
+      }
+      
+      results.push(leaveData);
+    }
     
     // Cache the results
     leaveRequestsCache.byDateRange[cacheKey] = results;
@@ -315,14 +501,31 @@ export async function getTodayApprovedLeaves() {
     );
 
     const querySnapshot = await getDocs(q);
+    const results = [];
 
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-    }));
+    for (const doc of querySnapshot.docs) {
+      let leaveData = {
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamp to JS Date
+        submitDate: doc.data().submitDate.toDate(),
+        decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
+      };
+      
+      // Migrasi data jika perlu
+      if (leaveData.leaveStartDate && leaveData.leaveEndDate && 
+          leaveData.leaveStartDate !== leaveData.leaveEndDate && 
+          !leaveData.replacementStatusArray) {
+        leaveData = await migrateLeaveRequest(doc.id);
+        // Pastikan timestamp tetap dalam format Date
+        leaveData.submitDate = doc.data().submitDate.toDate();
+        leaveData.decisionDate = doc.data().decisionDate ? doc.data().decisionDate.toDate() : null;
+      }
+      
+      results.push(leaveData);
+    }
+
+    return results;
   } catch (error) {
     console.error("Error getting today's approved leaves:", error);
     throw error;
@@ -337,3 +540,4 @@ export function clearLeaveRequestsCache() {
   leaveRequestsCache.lastFetch = null;
   console.log("Leave requests cache cleared");
 }
+

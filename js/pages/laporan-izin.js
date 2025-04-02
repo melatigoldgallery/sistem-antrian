@@ -5,20 +5,10 @@ import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 let currentLeaveData = [];
 let lastVisibleDoc = null;
 let hasMoreData = false;
-const itemsPerPage = 50;
+const itemsPerPage = 20; // Reduced from 50 to 20 for better pagination
 const monthNames = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
 // Initialize page
@@ -107,8 +97,12 @@ document.addEventListener("DOMContentLoaded", () => {
 // Setup year selector with current year and 5 years back
 function setupYearSelector() {
   const yearSelector = document.getElementById("yearSelector");
+  if (!yearSelector) return;
+  
+  // Clear existing options first
+  yearSelector.innerHTML = '';
+  
   const currentYear = new Date().getFullYear();
-
   for (let i = 0; i < 6; i++) {
     const year = currentYear - i;
     const option = document.createElement("option");
@@ -121,24 +115,32 @@ function setupYearSelector() {
 // Set default month and year to current month
 function setDefaultMonthAndYear() {
   const currentDate = new Date();
-  document.getElementById("monthSelector").value = currentDate.getMonth() + 1;
-  document.getElementById("yearSelector").value = currentDate.getFullYear();
+  const monthSelector = document.getElementById("monthSelector");
+  const yearSelector = document.getElementById("yearSelector");
+  
+  if (monthSelector) {
+    monthSelector.value = currentDate.getMonth() + 1;
+  }
+  
+  if (yearSelector) {
+    yearSelector.value = currentDate.getFullYear();
+  }
 }
 
 // Setup all event listeners
 function setupEventListeners() {
   // Generate report button
-  document.getElementById("generateReportBtn").addEventListener("click", generateReport);
+  document.getElementById("generateReportBtn")?.addEventListener("click", generateReport);
 
   // Export buttons
-  document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
-  document.getElementById("exportPdfBtn").addEventListener("click", exportToPDF);
+  document.getElementById("exportExcelBtn")?.addEventListener("click", exportToExcel);
+  document.getElementById("exportPdfBtn")?.addEventListener("click", exportToPDF);
 
   // Delete data button
-  document.getElementById("deleteDataBtn").addEventListener("click", showDeleteConfirmation);
+  document.getElementById("deleteDataBtn")?.addEventListener("click", showDeleteConfirmation);
 
   // Confirm delete button in modal
-  document.getElementById("confirmDeleteBtn").addEventListener("click", deleteMonthData);
+  document.getElementById("confirmDeleteBtn")?.addEventListener("click", deleteMonthData);
 
   // Filter by status
   document.querySelectorAll("[data-status-filter]").forEach((item) => {
@@ -158,7 +160,7 @@ function setupEventListeners() {
     });
   });
 
-  // Load more button (if added to HTML)
+  // Load more button
   const loadMoreBtn = document.getElementById("loadMoreBtn");
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", loadMoreData);
@@ -176,8 +178,16 @@ function setupEventListeners() {
 // Generate report based on selected month and year
 async function generateReport() {
   try {
-    const month = parseInt(document.getElementById("monthSelector").value);
-    const year = parseInt(document.getElementById("yearSelector").value);
+    const monthSelector = document.getElementById("monthSelector");
+    const yearSelector = document.getElementById("yearSelector");
+    
+    if (!monthSelector || !yearSelector) {
+      console.error("Month or year selector not found");
+      return;
+    }
+    
+    const month = parseInt(monthSelector.value);
+    const year = parseInt(yearSelector.value);
 
     // Reset pagination variables
     lastVisibleDoc = null;
@@ -206,13 +216,19 @@ async function generateReport() {
 
       // Show/hide load more button
       const loadMoreBtn = document.getElementById("loadMoreBtn");
-      if (loadMoreBtn) {
-        loadMoreBtn.style.display = hasMoreData ? "block" : "none";
+      const loadMoreContainer = document.getElementById("loadMoreContainer");
+      if (loadMoreBtn && loadMoreContainer) {
+        loadMoreContainer.style.display = hasMoreData ? "block" : "none";
       }
     } else {
       hideReportElements();
       document.getElementById("noDataMessage").style.display = "block";
     }
+    
+    // Update delete confirmation modal with month and year
+    document.getElementById("deleteMonthName").textContent = monthNames[month - 1];
+    document.getElementById("deleteYear").textContent = year;
+    
   } catch (error) {
     console.error("Error generating report:", error);
     showAlert(
@@ -255,7 +271,11 @@ async function loadMoreData() {
     if (loadMoreBtn) {
       loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
       loadMoreBtn.disabled = false;
-      loadMoreBtn.style.display = hasMoreData ? "block" : "none";
+      
+      const loadMoreContainer = document.getElementById("loadMoreContainer");
+      if (loadMoreContainer) {
+        loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+      }
     }
   } catch (error) {
     console.error("Error loading more data:", error);
@@ -293,6 +313,7 @@ function updateSummaryCards() {
 // Populate leave table with data
 function populateLeaveTable() {
   const tbody = document.getElementById("leaveReportList");
+  if (!tbody) return;
 
   // Clear existing rows if this is a new search
   if (lastVisibleDoc === null || currentLeaveData.length <= itemsPerPage) {
@@ -315,26 +336,26 @@ function populateLeaveTable() {
     row.dataset.replacementType = record.replacementType || "";
 
     row.innerHTML = `
-                    <td>${startIndex + index + 1}</td>
-                    <td>${record.employeeId}</td>
-                    <td>${record.name}</td>
-                    <td>${formatDate(record.submitDate)}</td>
-                    <td>${record.leaveDate}</td>
-                    <td>${record.reason}</td>
-                    <td>${
-                      record.replacementType === "libur"
-                        ? "Ganti Libur"
-                        : record.replacementType === "jam"
-                        ? "Ganti Jam"
-                        : "Tidak Ada"
-                    }</td>
-                    <td>${replacementInfo}</td>
-                    <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-                    <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
-                    <td class="status-${record.replacementStatus.toLowerCase().replace(/\s+/g, "-")}">${
+      <td>${startIndex + index + 1}</td>
+      <td>${record.employeeId}</td>
+      <td>${record.name}</td>
+      <td>${formatDate(record.submitDate)}</td>
+      <td>${record.leaveDate}</td>
+      <td>${record.reason}</td>
+      <td>${
+        record.replacementType === "libur"
+          ? "Ganti Libur"
+          : record.replacementType === "jam"
+          ? "Ganti Jam"
+          : "Tidak Ada"
+      }</td>
+      <td>${replacementInfo}</td>
+      <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+      <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
+      <td class="status-${record.replacementStatus.toLowerCase().replace(/\s+/g, "-")}">${
       record.replacementStatus
     }</td>
-                `;
+    `;
     fragment.appendChild(row);
   });
 
@@ -346,9 +367,13 @@ function getReplacementInfo(record) {
   if (!record.replacementType || record.replacementType === "tidak") {
     return "-";
   } else if (record.replacementType === "libur") {
-    return record.replacementDetails && record.replacementDetails.formattedDate
-      ? `Ganti libur pada ${record.replacementDetails.formattedDate}`
-      : "-";
+    if (record.replacementDetails && record.replacementDetails.dates && record.replacementDetails.dates.length > 0) {
+      // Handle multiple dates
+      return record.replacementDetails.dates.map(date => 
+        `Ganti libur pada ${date.formattedDate}`
+      ).join("<br>");
+    }
+    return "-";
   } else if (record.replacementType === "jam") {
     return record.replacementDetails && record.replacementDetails.hours && record.replacementDetails.formattedDate
       ? `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`
@@ -378,9 +403,9 @@ function showReportElements() {
   document.getElementById("noDataMessage").style.display = "none";
 
   // Show load more button if there's more data
-  const loadMoreBtn = document.getElementById("loadMoreBtn");
-  if (loadMoreBtn) {
-    loadMoreBtn.style.display = hasMoreData ? "block" : "none";
+  const loadMoreContainer = document.getElementById("loadMoreContainer");
+  if (loadMoreContainer) {
+    loadMoreContainer.style.display = hasMoreData ? "block" : "none";
   }
 }
 
@@ -389,11 +414,10 @@ function hideReportElements() {
   document.getElementById("summaryCards").style.display = "none";
   document.getElementById("actionButtons").style.display = "none";
   document.getElementById("tableContainer").style.display = "none";
-
   // Hide load more button
-  const loadMoreBtn = document.getElementById("loadMoreBtn");
-  if (loadMoreBtn) {
-    loadMoreBtn.style.display = "none";
+  const loadMoreContainer = document.getElementById("loadMoreContainer");
+  if (loadMoreContainer) {
+    loadMoreContainer.style.display = "none";
   }
 }
 
@@ -458,83 +482,311 @@ function filterByReplacementType(value) {
   });
 }
 
-import { db } from "../configFirebase.js";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  writeBatch,
-  orderBy,
-  limit,
-  Timestamp,
-} from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+// Show delete confirmation modal
+function showDeleteConfirmation() {
+  const month = parseInt(document.getElementById("monthSelector").value);
+  const year = parseInt(document.getElementById("yearSelector").value);
+  
+  // Update modal text
+  document.getElementById("deleteMonthName").textContent = monthNames[month - 1];
+  document.getElementById("deleteYear").textContent = year;
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
+  modal.show();
+}
 
-// Get leave requests by month
-export async function getLeaveRequestsByMonth(month, year) {
+// Delete month data
+async function deleteMonthData() {
   try {
-    const leaveCollection = collection(db, "leaveRequests");
-
-    // Create query for the specific month and year
-    const q = query(
-      leaveCollection,
-      where("month", "==", month),
-      where("year", "==", year),
-      orderBy("submitDate", "desc"),
-      limit(500) // Limit to 500 documents to prevent excessive reads
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+    
+    // Show loading in modal
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    const originalBtnText = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
+    confirmBtn.disabled = true;
+    
+    // Delete data
+    const deletedCount = await deleteLeaveRequestsByMonth(month, year);
+    
+    // Hide modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
+    modal.hide();
+    
+    // Show success message
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil menghapus ${deletedCount} data izin untuk bulan ${monthNames[month - 1]} ${year}`
     );
-
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      submitDate: doc.data().submitDate.toDate(),
-      decisionDate: doc.data().decisionDate ? doc.data().decisionDate.toDate() : null,
-      replacementStatusDate: doc.data().replacementStatusDate ? doc.data().replacementStatusDate.toDate() : null,
-    }));
+    
+    // Clear cache
+    clearLeaveRequestsCache();
+    
+    // Reset UI
+    hideReportElements();
+    document.getElementById("noDataMessage").style.display = "block";
+    
+    // Reset button
+    confirmBtn.innerHTML = originalBtnText;
+    confirmBtn.disabled = false;
+    
   } catch (error) {
-    console.error("Error getting leave requests by month:", error);
-    throw error;
+    console.error("Error deleting data:", error);
+    
+    // Show error
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal menghapus data: ${error.message}`
+    );
+    
+    // Reset button
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
+    confirmBtn.disabled = false;
+    
+    // Hide modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
+    modal.hide();
   }
 }
 
-// Delete leave requests by month
-export async function deleteLeaveRequestsByMonth(month, year) {
+// Export to Excel
+function exportToExcel() {
   try {
-    const leaveCollection = collection(db, "leaveRequests");
-
-    // Create query for the specific month and year
-    const q = query(leaveCollection, where("month", "==", month), where("year", "==", year));
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return 0;
+    if (currentLeaveData.length === 0) {
+      showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data untuk diekspor');
+      return;
     }
-
-    // Use batched writes for efficient deletion
-    const batchSize = 500; // Firestore batch limit is 500
-    let deletedCount = 0;
-    const totalDocs = snapshot.docs.length;
-
-    // Process in batches if needed
-    for (let i = 0; i < totalDocs; i += batchSize) {
-      const batch = writeBatch(db);
-      const currentBatch = snapshot.docs.slice(i, i + batchSize);
-
-      currentBatch.forEach((doc) => {
-        batch.delete(doc.ref);
-        deletedCount++;
-      });
-
-      await batch.commit();
-    }
-
-    return deletedCount;
+    
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+    
+    // Prepare worksheet data
+    const wsData = [
+      [
+        "No", "ID Staff", "Nama", "Tanggal Pengajuan", "Tanggal Izin", 
+        "Alasan", "Jenis Pengganti", "Detail Pengganti", "Status", 
+        "Tanggal Keputusan", "Status Ganti"
+      ]
+    ];
+    
+    // Add data rows
+    currentLeaveData.forEach((record, index) => {
+      const replacementType = record.replacementType === "libur" 
+        ? "Ganti Libur" 
+        : record.replacementType === "jam" 
+          ? "Ganti Jam" 
+          : "Tidak Ada";
+          
+      const replacementInfo = getReplacementInfoPlain(record);
+      
+      wsData.push([
+        index + 1,
+        record.employeeId,
+        record.name,
+        formatDatePlain(record.submitDate),
+        record.leaveDate,
+        record.reason,
+        replacementType,
+        replacementInfo,
+        record.status,
+        record.decisionDate ? formatDatePlain(record.decisionDate) : "-",
+        record.replacementStatus
+      ]);
+    });
+    
+    // Create worksheet and workbook
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Izin");
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 5 },  // No
+      { wch: 10 }, // ID Staff
+      { wch: 20 }, // Nama
+      { wch: 20 }, // Tanggal Pengajuan
+      { wch: 20 }, // Tanggal Izin
+      { wch: 30 }, // Alasan
+      { wch: 15 }, // Jenis Pengganti
+      { wch: 30 }, // Detail Pengganti
+      { wch: 10 }, // Status
+      { wch: 20 }, // Tanggal Keputusan
+      { wch: 15 }  // Status Ganti
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Generate filename
+    const fileName = `Laporan_Izin_${monthNames[month - 1]}_${year}.xlsx`;
+    
+    // Export file
+    XLSX.writeFile(wb, fileName);
+    
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke Excel`
+    );
+    
   } catch (error) {
-    console.error("Error deleting leave requests by month:", error);
-    throw error;
+    console.error("Error exporting to Excel:", error);
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
+    );
+  }
+}
+
+// Helper function for plain text replacement info (for Excel export)
+function getReplacementInfoPlain(record) {
+  if (!record.replacementType || record.replacementType === "tidak") {
+    return "-";
+  } else if (record.replacementType === "libur") {
+    if (record.replacementDetails && record.replacementDetails.dates && record.replacementDetails.dates.length > 0) {
+      // Handle multiple dates
+      return record.replacementDetails.dates.map(date => 
+        `Ganti libur pada ${date.formattedDate}`
+      ).join(", ");
+    }
+    return "-";
+  } else if (record.replacementType === "jam") {
+    return record.replacementDetails && record.replacementDetails.hours && record.replacementDetails.formattedDate
+      ? `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`
+      : "-";
+  }
+  return "-";
+}
+
+// Format date for Excel export
+function formatDatePlain(date) {
+  if (!date) return "-";
+
+  return new Date(date).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// Export to PDF
+function exportToPDF() {
+  try {
+    if (currentLeaveData.length === 0) {
+      showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data untuk diekspor');
+      return;
+    }
+    
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+    
+    // Create PDF document
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text(`Laporan Izin Karyawan - ${monthNames[month - 1]} ${year}`, 14, 15);
+    
+    // Add subtitle with date
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, 14, 22);
+    
+    // Prepare table data
+    const tableData = currentLeaveData.map((record, index) => {
+      const replacementType = record.replacementType === "libur" 
+        ? "Ganti Libur" 
+        : record.replacementType === "jam" 
+          ? "Ganti Jam" 
+          : "Tidak Ada";
+          
+      const replacementInfo = getReplacementInfoPlain(record);
+      
+      return [
+        index + 1,
+        record.employeeId,
+        record.name,
+        formatDatePlain(record.submitDate),
+        record.leaveDate,
+        record.reason.substring(0, 20) + (record.reason.length > 20 ? '...' : ''),
+        replacementType,
+        record.status,
+        record.replacementStatus
+      ];
+    });
+    
+    // Add table
+    doc.autoTable({
+      startY: 30,
+      head: [['No', 'ID', 'Nama', 'Tgl Pengajuan', 'Tgl Izin', 'Alasan', 'Jenis Pengganti', 'Status', 'Status Ganti']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        5: { cellWidth: 40 }
+      }
+    });
+    
+    // Generate filename
+    const fileName = `Laporan_Izin_${monthNames[month - 1]}_${year}.pdf`;
+    
+    // Save PDF
+    doc.save(fileName);
+    
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke PDF`
+    );
+    
+  } catch (error) {
+    console.error("Error exporting to PDF:", error);
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
+    );
+  }
+}
+
+// Show alert message
+function showAlert(type, message, autoHide = true) {
+  const alertContainer = document.getElementById("alertContainer");
+  if (!alertContainer) return;
+  
+  alertContainer.innerHTML = `
+    <div class="alert alert-${type} alert-dismissible fade show">
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  `;
+  
+  alertContainer.style.display = "block";
+  
+  if (autoHide) {
+    setTimeout(() => {
+      const alert = alertContainer.querySelector('.alert');
+      if (alert) {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      }
+    }, 5000);
+  }
+}
+
+// Hide alert
+function hideAlert() {
+  const alertContainer = document.getElementById("alertContainer");
+  if (alertContainer) {
+    alertContainer.innerHTML = '';
+    alertContainer.style.display = "none";
   }
 }

@@ -21,6 +21,73 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Status Pengajuan Izin - Melati Gold Shop</title>
     <style>
+      /* Tambahkan di bagian style yang sudah ada */
+  .first-day-row {
+    border-top: 2px solid var(--primary-color);
+  }
+  
+  .badge.bg-info {
+    font-size: 0.7rem;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+  
+  /* Styling untuk mengelompokkan baris dari izin yang sama */
+  tr[data-leave-id] {
+    transition: background-color 0.2s;
+  }
+  
+  tr[data-leave-id]:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+  }
+  /* Styling untuk baris multi-hari */
+  .first-day-row {
+    border-top: 2px solid var(--primary-color);
+  }
+  
+  /* Styling untuk badge hari */
+  .badge.bg-info {
+    font-size: 0.7rem;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+  
+  /* Styling untuk status */
+  .status-sudah-diganti {
+    color: var(--success-color);
+    font-weight: 600;
+  }
+  
+  .status-belum-diganti {
+    color: var(--gray-600);
+    font-weight: 600;
+  }
+  
+  .status-approved, .status-disetujui {
+    color: var(--success-color);
+    font-weight: 600;
+  }
+  
+  .status-rejected, .status-ditolak {
+    color: var(--danger-color);
+    font-weight: 600;
+  }
+  
+  .status-pending {
+    color: var(--warning-color);
+    font-weight: 600;
+  }
+  
+  /* Styling untuk badge hari */
+  .day-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    background-color: var(--info-color);
+    color: white;
+    margin-left: 5px;
+  }
       .status-badge {
         display: inline-block;
         padding: 5px 10px;
@@ -28,11 +95,11 @@
         font-size: 0.75rem;
         font-weight: 500;
       }
-      .status-badge.approved {
+      .status-badge.approved, .status-disetujui {
         background-color: rgba(76, 201, 240, 0.1);
         color: var(--success-color);
       }
-      .status-badge.rejected {
+      .status-badge.rejected, .status-ditolak {
         background-color: rgba(249, 65, 68, 0.1);
         color: var(--danger-color);
       }
@@ -40,13 +107,13 @@
         background-color: rgba(248, 150, 30, 0.1);
         color: var(--warning-color);
       }
-      .status-badge.completed {
-        background-color: rgba(76, 201, 240, 0.1);
+      .status-sudah-diganti {
         color: var(--success-color);
+        font-weight: 600;
       }
-      .status-badge.not-completed {
-        background-color: rgba(173, 181, 189, 0.1);
+      .status-belum-diganti {
         color: var(--gray-600);
+        font-weight: 500;
       }
       .action-buttons .btn {
         padding: 0.25rem 0.5rem;
@@ -91,6 +158,29 @@
       }
       .tab-content {
         padding-top: 1.5rem;
+      }
+      .empty-state {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+        color: var(--gray-600);
+      }
+      .empty-image {
+        max-width: 200px;
+        margin-bottom: 1rem;
+        opacity: 0.7;
+      }
+      .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+      }
+      .replacement-status-btn {
+        white-space: nowrap;
       }
     </style>
   </head>
@@ -199,7 +289,7 @@
                   </li>
                   <li class="nav-item">
                     <a class="nav-link" href="supervisor.html">
-                      <i class="fas fa-file-medical"></i>
+                      <i class="fas fa-user-tie"></i>
                       <span class="menu-text">Supervisor</span>
                     </a>
                   </li>
@@ -381,19 +471,28 @@
                         <tr>
                           <th>ID Karyawan</th>
                           <th>Nama</th>
-                          <th>Tanggal Pengajuan</th>
                           <th>Tanggal Izin</th>
                           <th>Alasan</th>
                           <th>Jenis Pengganti</th>
                           <th>Aksi</th>
                         </tr>
                       </thead>
-                      <tbody id="pendingRequestsList">
+                      <tbody id="pendingLeaveList">
                         <!-- Data will be populated by JavaScript -->
+                        <tr>
+                          <td colspan="6" class="text-center">
+                            <div class="loading-spinner">
+                              <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                              </div>
+                              <span class="ms-2">Memuat data...</span>
+                            </div>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
-                  <div class="empty-state" id="emptyPendingRequests" style="display: none">
+                  <div class="empty-state" id="emptyPendingRequests">
                     <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
                     <p>Tidak ada pengajuan izin yang menunggu persetujuan</p>
                   </div>
@@ -407,30 +506,34 @@
                         <tr>
                           <th>ID Karyawan</th>
                           <th>Nama</th>
-                          <th>Tanggal Pengajuan</th>
                           <th>Tanggal Izin</th>
-                          <th>Status</th>
+                          <th>Alasan</th>
                           <th>Jenis Pengganti</th>
+                          <th>Status</th>
+                          <th>Tanggal Keputusan</th>
                           <th>Status Penggantian</th>
                           <th>Aksi</th>
                         </tr>
                       </thead>
-                      <tbody id="allRequestsList">
+                      <tbody id="leaveHistoryList">
                         <!-- Data will be populated by JavaScript -->
+                        <tr>
+                          <td colspan="9" class="text-center">
+                            <div class="loading-spinner">
+                              <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                              </div>
+                              <span class="ms-2">Memuat data...</span>
+                            </div>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
-                  <div class="empty-state" id="emptyAllRequests" style="display: none">
+                  <div class="empty-state" id="emptyAllRequests">
                     <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
                     <p>Belum ada data pengajuan izin</p>
                   </div>
-
-                  <!-- Pagination -->
-                  <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center" id="pagination">
-                      <!-- Pagination will be populated by JavaScript -->
-                    </ul>
-                  </nav>
                 </div>
               </div>
             </div>
@@ -607,6 +710,7 @@
         </div>
       </div>
     </div>
+    
     <!-- Modal untuk menampilkan surat keterangan sakit -->
     <div
       class="modal fade"
@@ -623,6 +727,12 @@
           </div>
           <div class="modal-body" id="medicalCertModalBody">
             <!-- Content will be inserted here -->
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2">Memuat dokumen...</p>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -630,6 +740,10 @@
         </div>
       </div>
     </div>
+    
+    <!-- Script imports -->
+    <script type="module" src="js/configFirebase.js"></script>
     <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/pages/supervisor.js"></script>
   </body>
 </html>
