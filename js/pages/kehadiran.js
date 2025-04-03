@@ -1,5 +1,5 @@
 import { getAttendanceByDateRange, deleteAttendanceByDateRange } from "../services/report-service.js";
-import { attendanceCache } from "../services/attendance-service.js";
+import { attendanceCache } from "../services/attendance-service.js"; // Ubah import dari report-service ke attendance-service
 
 // Global variables
 let currentAttendanceData = [];
@@ -133,13 +133,25 @@ function setupEventListeners() {
   // Delete data button
   const deleteDataBtn = document.getElementById("deleteDataBtn");
   if (deleteDataBtn) {
-    deleteDataBtn.addEventListener("click", showDeleteConfirmation);
+    console.log("Delete button found, attaching event listener");
+    deleteDataBtn.addEventListener("click", function() {
+      console.log("Delete button clicked");
+      showDeleteConfirmation();
+    });
+  } else {
+    console.error("Delete button not found");
   }
   
   // Confirm delete button
   const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
   if (confirmDeleteBtn) {
-    confirmDeleteBtn.addEventListener("click", deleteAttendanceData);
+    console.log("Confirm delete button found, attaching event listener");
+    confirmDeleteBtn.addEventListener("click", function() {
+      console.log("Confirm delete button clicked");
+      deleteAttendanceData();
+    });
+  } else {
+    console.error("Confirm delete button not found");
   }
   
   // Filter buttons
@@ -215,8 +227,16 @@ function setupEventListeners() {
 // Generate report based on selected date range
 async function generateReport() {
   try {
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
+    const startDateEl = document.getElementById("startDate");
+    const endDateEl = document.getElementById("endDate");
+    
+    if (!startDateEl || !endDateEl) {
+      console.error("Start date or end date element not found");
+      return;
+    }
+    
+    const startDate = startDateEl.value;
+    const endDate = endDateEl.value;
     
     if (!startDate || !endDate) {
       showAlert("warning", "Mohon pilih tanggal mulai dan tanggal akhir");
@@ -319,12 +339,16 @@ async function generateReport() {
       }
     } else {
       hideReportElements();
-      document.getElementById("noDataMessage").style.display = "block";
+      const noDataMessage = document.getElementById("noDataMessage");
+      if (noDataMessage) noDataMessage.style.display = "block";
     }
     
     // Update delete confirmation modal with date range
-    document.getElementById("deleteStartDate").textContent = formatDateForDisplay(startDate);
-    document.getElementById("deleteEndDate").textContent = formatDateForDisplay(endDate);
+    const deleteStartDateEl = document.getElementById("deleteStartDate");
+    const deleteEndDateEl = document.getElementById("deleteEndDate");
+    
+    if (deleteStartDateEl) deleteStartDateEl.textContent = formatDateForDisplay(startDate);
+    if (deleteEndDateEl) deleteEndDateEl.textContent = formatDateForDisplay(endDate);
     
   } catch (error) {
     console.error("Error generating report:", error);
@@ -426,11 +450,18 @@ function updateSummaryCards() {
   
   const avgLateMinutes = lateRecordsCount > 0 ? Math.round(totalLateMinutes / lateRecordsCount) : 0;
   
-  // Update UI
-  document.getElementById("totalAttendance").textContent = totalAttendance;
-  document.getElementById("onTimeCount").textContent = onTimeCount;
-  document.getElementById("lateCount").textContent = lateCount;
-  document.getElementById("avgLateTime").textContent = `${avgLateMinutes} menit`;
+  // Update UI with null checks
+  const totalAttendanceEl = document.getElementById("totalAttendance");
+  if (totalAttendanceEl) totalAttendanceEl.textContent = totalAttendance;
+  
+  const onTimeCountEl = document.getElementById("onTimeCount");
+  if (onTimeCountEl) onTimeCountEl.textContent = onTimeCount;
+  
+  const lateCountEl = document.getElementById("lateCount");
+  if (lateCountEl) lateCountEl.textContent = lateCount;
+  
+  const avgLateTimeEl = document.getElementById("avgLateTime");
+  if (avgLateTimeEl) avgLateTimeEl.textContent = `${avgLateMinutes} menit`;
 }
 
 // Display current page of data
@@ -591,13 +622,26 @@ function showDeleteConfirmation() {
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
   
+  if (!startDate || !endDate) {
+    showAlert("warning", "Pilih rentang tanggal terlebih dahulu");
+    return;
+  }
+  
   // Update modal text
-  document.getElementById("deleteStartDate").textContent = formatDateForDisplay(startDate);
-  document.getElementById("deleteEndDate").textContent = formatDateForDisplay(endDate);
+  const deleteStartDateEl = document.getElementById("deleteStartDate");
+  const deleteEndDateEl = document.getElementById("deleteEndDate");
+  
+  if (deleteStartDateEl) deleteStartDateEl.textContent = formatDateForDisplay(startDate);
+  if (deleteEndDateEl) deleteEndDateEl.textContent = formatDateForDisplay(endDate);
   
   // Show modal
-  const modal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
-  modal.show();
+  const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+  if (deleteConfirmModal) {
+    const modal = new bootstrap.Modal(deleteConfirmModal);
+    modal.show();
+  } else {
+    console.error("Delete confirmation modal not found");
+  }
 }
 
 // Delete attendance data
@@ -606,18 +650,38 @@ async function deleteAttendanceData() {
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
     
+    if (!startDate || !endDate) {
+      showAlert("warning", "Pilih rentang tanggal terlebih dahulu");
+      return;
+    }
+    
     // Show loading in modal
     const confirmBtn = document.getElementById("confirmDeleteBtn");
+    if (!confirmBtn) {
+      console.error("Confirm delete button not found");
+      return;
+    }
+    
     const originalBtnText = confirmBtn.innerHTML;
     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
     confirmBtn.disabled = true;
     
     // Delete data
+    console.log(`Deleting data from ${startDate} to ${endDate}`);
     const deletedCount = await deleteAttendanceByDateRange(startDate, endDate);
     
     // Hide modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
-    modal.hide();
+    const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+    if (deleteConfirmModal) {
+      const modal = bootstrap.Modal.getInstance(deleteConfirmModal);
+      if (modal) {
+        modal.hide();
+      } else {
+        // Fallback if modal instance not found
+        const newModal = new bootstrap.Modal(deleteConfirmModal);
+        newModal.hide();
+      }
+    }
     
     // Show success message
     showAlert(
@@ -643,11 +707,16 @@ async function deleteAttendanceData() {
     
     // Reset UI
     hideReportElements();
-    document.getElementById("noDataMessage").style.display = "block";
+    const noDataMessage = document.getElementById("noDataMessage");
+    if (noDataMessage) noDataMessage.style.display = "block";
     
     // Reset button
     confirmBtn.innerHTML = originalBtnText;
     confirmBtn.disabled = false;
+    
+    // Reset data
+    currentAttendanceData = [];
+    filteredData = [];
     
   } catch (error) {
     console.error("Error deleting data:", error);
@@ -660,14 +729,22 @@ async function deleteAttendanceData() {
     
     // Reset button
     const confirmBtn = document.getElementById("confirmDeleteBtn");
-    confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
-    confirmBtn.disabled = false;
+    if (confirmBtn) {
+      confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
+      confirmBtn.disabled = false;
+    }
     
     // Hide modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
-    modal.hide();
+    const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+    if (deleteConfirmModal) {
+      const modal = bootstrap.Modal.getInstance(deleteConfirmModal);
+      if (modal) {
+        modal.hide();
+      }
+    }
   }
 }
+
 
 // Export to Excel
 function exportToExcel() {
@@ -796,7 +873,7 @@ function exportToPDF() {
         formatShift(record.shift),
         timeIn,
         timeOut,
-        record.status
+        record.status + (record.lateMinutes ? ` (${record.lateMinutes} menit)` : "")
       ];
     });
     
@@ -836,11 +913,24 @@ function exportToPDF() {
 
 // Show report elements
 function showReportElements() {
-  document.getElementById("summaryCards").style.display = "flex";
-  document.getElementById("actionButtons").style.display = "flex";
-  document.getElementById("tableContainer").style.display = "block";
-  document.getElementById("paginationContainer").style.display = "flex";
-  document.getElementById("noDataMessage").style.display = "none";
+  const summaryCards = document.getElementById("summaryCards");
+  if (summaryCards) summaryCards.style.display = "flex";
+  
+  const actionButtons = document.getElementById("actionButtons");
+  if (actionButtons) {
+    // Hapus !important dari style
+    actionButtons.style.display = "flex";
+    console.log("Action buttons displayed");
+  }
+  
+  const tableContainer = document.getElementById("tableContainer");
+  if (tableContainer) tableContainer.style.display = "block";
+  
+  const paginationContainer = document.getElementById("paginationContainer");
+  if (paginationContainer) paginationContainer.style.display = "flex";
+  
+  const noDataMessage = document.getElementById("noDataMessage");
+  if (noDataMessage) noDataMessage.style.display = "none";
   
   // Show load more button if there's more data
   const loadMoreContainer = document.getElementById("loadMoreContainer");
@@ -849,12 +939,20 @@ function showReportElements() {
   }
 }
 
+
 // Hide report elements
 function hideReportElements() {
-  document.getElementById("summaryCards").style.display = "none";
-  document.getElementById("actionButtons").style.display = "none";
-  document.getElementById("tableContainer").style.display = "none";
-  document.getElementById("paginationContainer").style.display = "none";
+  const summaryCards = document.getElementById("summaryCards");
+  if (summaryCards) summaryCards.style.display = "none";
+  
+  const actionButtons = document.getElementById("actionButtons");
+  if (actionButtons) actionButtons.style.display = "none";
+  
+  const tableContainer = document.getElementById("tableContainer");
+  if (tableContainer) tableContainer.style.display = "none";
+  
+  const paginationContainer = document.getElementById("paginationContainer");
+  if (paginationContainer) paginationContainer.style.display = "none";
   
   // Hide load more button
   const loadMoreContainer = document.getElementById("loadMoreContainer");
@@ -862,6 +960,7 @@ function hideReportElements() {
     loadMoreContainer.style.display = "none";
   }
 }
+
 
 // Helper function to format time
 function formatTime(timestamp) {

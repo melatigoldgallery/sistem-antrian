@@ -355,9 +355,6 @@ if (confirmSkipQueue) {
         // Bersihkan input
         document.getElementById("skipQueueNumberInput").value = "";
         
-        // Tampilkan pesan sukses
-        alert(`Nomor antrian ${letter}${queueManager.formatNumber(number)} akan dilewati.`);
-        
         console.log("Nomor antrian berhasil ditambahkan ke skip list");
       } else {
         alert("Nomor antrian ini sudah ada dalam daftar skip");

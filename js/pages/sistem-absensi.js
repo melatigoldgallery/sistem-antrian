@@ -4,32 +4,53 @@ import { recordAttendance, updateAttendanceOut, getTodayAttendance } from "../se
 
 // Initialize data
 let attendanceRecords = [];
-// Hapus variabel yang tidak diperlukan
-// let leaveRecords = [];
 let employees = [];
+
+// Tambahkan cache untuk employees
+const employeeCache = new Map(); // Cache untuk karyawan berdasarkan barcode
+const attendanceCache = new Map(); // Cache untuk data kehadiran berdasarkan tanggal
 
 // Load today's attendance
 async function loadTodayAttendance() {
   try {
     attendanceRecords = await getTodayAttendance();
-    updateAttendanceTable();
+    // Hapus panggilan ke updateAttendanceTable() karena tidak didefinisikan
+    // dan sepertinya tidak diperlukan lagi
     updateStats();
+    
+    // Pastikan data hari ini ada di cache
+    const today = new Date().toISOString().split('T')[0];
+    if (!attendanceCache.has(today)) {
+      attendanceCache.set(today, [...attendanceRecords]);
+    }
+    
+    console.log(`Loaded ${attendanceRecords.length} attendance records for today`);
   } catch (error) {
     console.error("Error loading attendance:", error);
     showScanResult("error", "Gagal memuat data kehadiran");
   }
 }
 
-// Load employees
+// Load employees and cache them
 async function loadEmployees() {
   try {
-    employees = await getEmployees();
-    // Hapus pemanggilan populateEmployeeDropdown karena tidak diperlukan lagi
-    // populateEmployeeDropdown();
+    if (employeeCache.size === 0) {
+      employees = await getEmployees();
+      
+      // Cache employees by barcode for faster lookup
+      employees.forEach(employee => {
+        if (employee.barcode) {
+          employeeCache.set(employee.barcode, employee);
+        }
+      });
+      
+      console.log(`Cached ${employeeCache.size} employees`);
+    }
   } catch (error) {
     console.error("Error loading employees:", error);
   }
 }
+
 // Inisialisasi event listeners saat DOM sudah siap
 document.addEventListener("DOMContentLoaded", async () => {
   try {
@@ -66,14 +87,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    // Load data - hapus loadLeaveRequests
+    // Load data
     await Promise.all([loadEmployees(), loadTodayAttendance()]);
 
     console.log("Attendance system initialized successfully");
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
-});
+}); 
 
 // Process barcode scan
 async function processBarcode() {
@@ -85,7 +106,18 @@ async function processBarcode() {
   }
 
   try {
-    const employee = await findEmployeeByBarcode(barcode);
+    // Check if employee exists in cache first to reduce Firestore reads
+    let employee = employeeCache.get(barcode);
+    
+    // If not in cache, fetch from Firestore
+    if (!employee) {
+      employee = await findEmployeeByBarcode(barcode);
+      
+      // Add to cache if found
+      if (employee && employee.barcode) {
+        employeeCache.set(employee.barcode, employee);
+      }
+    }
 
     if (!employee) {
       showScanResult("error", "Barcode tidak valid!");
@@ -95,30 +127,15 @@ async function processBarcode() {
     // Get scan type (in/out)
     const scanType = document.querySelector('input[name="scanType"]:checked').value;
 
-    // Get employee type (auto/staff/ob)
-    const employeeTypeSelection = document.querySelector('input[name="employeeType"]:checked').value;
-    // Pastikan employeeType selalu valid (staff atau ob)
-    const employeeType = employeeTypeSelection === "auto" 
-      ? (employee.type === "staff" || employee.type === "ob" ? employee.type : "staff") 
-      : employeeTypeSelection;
-
-    // Get shift (auto/morning/afternoon)
-    const shiftSelection = document.querySelector('input[name="shiftOption"]:checked').value;
-    // Pastikan shift selalu valid (morning atau afternoon)
-    const shift = shiftSelection === "auto" 
-      ? (employee.defaultShift === "morning" || employee.defaultShift === "afternoon" ? employee.defaultShift : "morning") 
-      : shiftSelection;
-
-    console.log(`Employee type: ${employeeType}, Shift: ${shift}`); // Debugging
-
     // Current time
     const now = new Date();
     const timeString = now.toTimeString().split(" ")[0];
+    const today = now.toISOString().split("T")[0];
 
     if (scanType === "in") {
       // Check if already checked in
       const existingRecord = attendanceRecords.find(
-        (record) => record.employeeId === employee.employeeId && record.date === now.toISOString().split("T")[0]
+        (record) => record.employeeId === employee.employeeId && record.date === today
       );
 
       if (existingRecord && existingRecord.timeIn) {
@@ -126,8 +143,20 @@ async function processBarcode() {
         return;
       }
 
+      // Use employee's default type and shift from their profile
+      const employeeType = employee.type || "staff";
+      const shift = employee.defaultShift || "morning";
+
       // Check if late based on employee type and shift
       const isLate = checkIfLate(timeString, employeeType, shift);
+
+      // Calculate late minutes if employee is late
+      let lateMinutes = 0;
+      if (isLate) {
+        const currentTime = new Date(`1970-01-01T${timeString}`);
+        const thresholdTime = getThresholdTime(employeeType, shift);
+        lateMinutes = Math.floor((currentTime - thresholdTime) / (1000 * 60));
+      }
 
       // Record attendance
       const attendance = {
@@ -137,7 +166,8 @@ async function processBarcode() {
         shift: shift,
         timeIn: now,
         status: isLate ? "Terlambat" : "Tepat Waktu",
-        date: now.toISOString().split("T")[0],
+        lateMinutes: isLate ? lateMinutes : 0,
+        date: today,
       };
 
       await recordAttendance(attendance);
@@ -145,7 +175,7 @@ async function processBarcode() {
       showScanResult(
         "success",
         `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
-          isLate ? "Terlambat" : "Tepat Waktu"
+          isLate ? `Terlambat ${lateMinutes} menit` : "Tepat Waktu"
         }`
       );
 
@@ -154,7 +184,7 @@ async function processBarcode() {
     } else {
       // Scan out logic
       const existingRecord = attendanceRecords.find(
-        (record) => record.employeeId === employee.employeeId && record.date === now.toISOString().split("T")[0]
+        (record) => record.employeeId === employee.employeeId && record.date === today
       );
 
       if (!existingRecord) {
@@ -185,11 +215,8 @@ async function processBarcode() {
   document.getElementById("barcodeInput").focus();
 }
 
-// Check if employee is late based on type and shift
-function checkIfLate(timeString, employeeType, shift) {
-  const time = new Date(`1970-01-01T${timeString}`);
-
-  // Define late thresholds for each employee type and shift
+// Get threshold time for lateness calculation
+function getThresholdTime(employeeType, shift) {
   const thresholds = {
     staff: {
       morning: new Date("1970-01-01T08:45:00"),
@@ -205,11 +232,16 @@ function checkIfLate(timeString, employeeType, shift) {
   if (!employeeType || !shift || !thresholds[employeeType] || !thresholds[employeeType][shift]) {
     console.warn(`Invalid employee type or shift: ${employeeType}, ${shift}`);
     // Default ke staff morning jika tipe atau shift tidak valid
-    return time > thresholds.staff.morning;
+    return thresholds.staff.morning;
   }
 
-  // Get appropriate threshold
-  const threshold = thresholds[employeeType][shift];
+  return thresholds[employeeType][shift];
+}
+
+// Check if employee is late based on type and shift
+function checkIfLate(timeString, employeeType, shift) {
+  const time = new Date(`1970-01-01T${timeString}`);
+  const threshold = getThresholdTime(employeeType, shift);
 
   // Check if time is later than threshold
   return time > threshold;
@@ -230,11 +262,6 @@ function showScanResult(type, message) {
   }, 3000);
 }
 
-function updateAttendanceTable() {
-  // Tidak perlu mengupdate tabel karena card attendance dihapus
-  // Tetapi tetap perlu untuk updateStats()
-}
-
 // Update statistics
 function updateStats() {
   const today = new Date().toISOString().split("T")[0];
@@ -249,8 +276,11 @@ function updateStats() {
   
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) lateCountEl.textContent = lateCount;
+  
+  // Update izin count (jika ada)
+  const leaveCountEl = document.getElementById("leaveCount");
+  if (leaveCountEl) leaveCountEl.textContent = "0"; // Default ke 0 karena kita tidak lagi memuat data izin
 }
-
 
 // Helper function to format employee type
 function formatEmployeeType(type) {
@@ -262,5 +292,5 @@ function formatShift(shift) {
   return shift === "morning" ? "Pagi" : "Sore";
 }
 
-// Export fungsi yang diperlukan
-export { loadTodayAttendance, processBarcode };
+// Export fungsi dan cache yang diperlukan
+export { loadTodayAttendance, processBarcode, attendanceCache, employeeCache };

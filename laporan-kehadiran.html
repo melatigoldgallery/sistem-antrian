@@ -386,8 +386,8 @@
               </div>
             </div>
 
-            <!-- Export & Delete Buttons -->
-            <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important">
+            <!-- Perbaikan pada tombol hapus data -->
+            <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none">
               <div>
                 <button id="exportExcelBtn" class="btn btn-success export-btn">
                   <i class="fas fa-file-excel me-2"></i>
@@ -398,11 +398,13 @@
                   Export PDF
                 </button>
               </div>
-              <button id="deleteDataBtn" class="btn delete-btn">
+              <!-- Ubah style display:none !important menjadi display:none saja -->
+              <button id="deleteDataBtn" class="btn btn-outline-danger">
                 <i class="fas fa-trash-alt me-2"></i>
-                Hapus Data Periode Ini
+                Hapus Data
               </button>
             </div>
+
             <!-- Table Container -->
             <div class="card mb-4" id="tableContainer" style="display: none">
               <div class="card-header">

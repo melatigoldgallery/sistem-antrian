@@ -8,6 +8,8 @@ export class QueueManager {
         this.customerRef = ref(database, 'customerCount');
         this.initializeCustomerCount();
         this.skipList = [];
+        // Tambahkan baris ini untuk memastikan tampilan diperbarui saat inisialisasi
+        setTimeout(() => this.updateSkipListDisplay(), 1000); // Delay sedikit untuk memastikan DOM sudah siap
     }
 
     async initializeFromFirebase() {
@@ -20,12 +22,14 @@ export class QueueManager {
                 this.currentNumber = data.currentNumber;
                 this.delayedQueue = data.delayedQueue || [];
                 this.skipList = data.skipList || [];
+                this.updateSkipListDisplay(); // Tambahkan baris ini
             } else {
                 this.currentLetter = 0;
                 this.currentNumber = 1;
                 this.delayedQueue = [];
                 this.skipList = [];
                 await this.saveState();
+                this.updateSkipListDisplay(); // Tambahkan baris ini
             }
         } catch (error) {
             console.log('Initializing default values due to:', error.message);
@@ -34,6 +38,7 @@ export class QueueManager {
             this.delayedQueue = [];
             this.skipList = [];
             await this.saveState();
+            this.updateSkipListDisplay(); // Tambahkan baris ini
         }
     }
     
@@ -109,7 +114,18 @@ export class QueueManager {
         // Kembalikan nomor antrian yang baru
         return this.getCurrentQueue();
     }
-    
+    // Tambahkan method baru untuk memperbarui tampilan skip list
+updateSkipListDisplay() {
+    const skipListDisplay = document.getElementById("skipListDisplay");
+    if (skipListDisplay) {
+        if (this.skipList.length > 0) {
+            skipListDisplay.textContent = this.skipList.join(", ");
+        } else {
+            skipListDisplay.textContent = "-";
+        }
+    }
+}
+
     // Tambahkan fungsi ini ke class QueueManager
 previousQueue() {
     // Simpan nomor antrian saat ini
@@ -145,8 +161,8 @@ previousQueue() {
             skipList: this.skipList
         });
     }
- // Tambahkan method untuk menambahkan nomor ke skipList
- addToSkipList(letter, number) {
+// Modifikasi method addToSkipList
+addToSkipList(letter, number) {
     // Format nomor dengan leading zero
     const formattedNumber = this.formatNumber(number);
     const skipItem = `${letter}${formattedNumber}`;
@@ -154,10 +170,12 @@ previousQueue() {
     if (!this.skipList.includes(skipItem)) {
         this.skipList.push(skipItem);
         this.saveState();
+        this.updateSkipListDisplay(); // Tambahkan baris ini untuk memperbarui tampilan
         return true;
     }
     return false;
 }
+
 
 // Tambahkan method untuk mendapatkan skipList
 getSkipList() {
