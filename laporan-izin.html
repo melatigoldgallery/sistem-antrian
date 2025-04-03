@@ -77,6 +77,61 @@
         top: 0;
         z-index: 10;
       }
+      .first-day-row {
+        border-top: 2px solid var(--primary-color);
+      }
+      
+      .badge.bg-info {
+        font-size: 0.7rem;
+        margin-left: 5px;
+        vertical-align: middle;
+      }
+      
+      /* Styling untuk mengelompokkan baris dari izin yang sama */
+      tr[data-leave-id] {
+        transition: background-color 0.2s;
+      }
+      
+      tr[data-leave-id]:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+      }
+      
+      /* Styling untuk status */
+      .status-sudah-diganti {
+        color: var(--success-color);
+        font-weight: 600;
+      }
+      
+      .status-belum-diganti {
+        color: var(--gray-600);
+        font-weight: 600;
+      }
+      
+      .status-approved, .status-disetujui {
+        color: var(--success-color);
+        font-weight: 600;
+      }
+      
+      .status-rejected, .status-ditolak {
+        color: var(--danger-color);
+        font-weight: 600;
+      }
+      
+      .status-pending {
+        color: var(--warning-color);
+        font-weight: 600;
+      }
+      
+      /* Styling untuk badge hari */
+      .day-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        background-color: var(--info-color);
+        color: white;
+        margin-left: 5px;
+      }
     </style>
   </head>
   <body>

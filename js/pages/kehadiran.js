@@ -1,10 +1,14 @@
 import { getAttendanceByDateRange, deleteAttendanceByDateRange } from "../services/report-service.js";
+import { attendanceCache } from "../services/attendance-service.js";
 
 // Global variables
 let currentAttendanceData = [];
 let filteredData = [];
 let currentPage = 1;
 const itemsPerPage = 20;
+let attendanceDataCache = new Map(); // Cache untuk laporan kehadiran
+let lastVisibleDoc = null;
+let hasMoreData = false;
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
@@ -82,52 +86,130 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateDateTime();
   setInterval(updateDateTime, 1000);
- 
+
+  // Initialize date pickers with default values
+  initializeDatePickers();
+
+  // Setup event listeners
+  setupEventListeners();
 });
 
-// Set default date range to current month
-function setDefaultDateRange() {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+// Initialize date pickers with default values
+function initializeDatePickers() {
+  const today = new Date();
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   
-  document.getElementById("startDate").valueAsDate = firstDay;
-  document.getElementById("endDate").valueAsDate = lastDay;
+  const startDateInput = document.getElementById("startDate");
+  const endDateInput = document.getElementById("endDate");
+  
+  if (startDateInput) {
+    startDateInput.valueAsDate = firstDayOfMonth;
+  }
+  
+  if (endDateInput) {
+    endDateInput.valueAsDate = today;
+  }
 }
 
-// Setup all event listeners
+// Setup event listeners
 function setupEventListeners() {
   // Generate report button
-  document.getElementById("generateReportBtn").addEventListener("click", generateReport);
-
+  const generateReportBtn = document.getElementById("generateReportBtn");
+  if (generateReportBtn) {
+    generateReportBtn.addEventListener("click", generateReport);
+  }
+  
   // Export buttons
-  document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
-  document.getElementById("exportPdfBtn").addEventListener("click", exportToPDF);
-
+  const exportExcelBtn = document.getElementById("exportExcelBtn");
+  if (exportExcelBtn) {
+    exportExcelBtn.addEventListener("click", exportToExcel);
+  }
+  
+  const exportPdfBtn = document.getElementById("exportPdfBtn");
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener("click", exportToPDF);
+  }
+  
   // Delete data button
-  document.getElementById("deleteDataBtn").addEventListener("click", showDeleteConfirmation);
-
-  // Confirm delete button in modal
-  document.getElementById("confirmDeleteBtn").addEventListener("click", deleteAttendanceData);
+  const deleteDataBtn = document.getElementById("deleteDataBtn");
+  if (deleteDataBtn) {
+    deleteDataBtn.addEventListener("click", showDeleteConfirmation);
+  }
   
-  // Search button
-  document.getElementById("searchBtn").addEventListener("click", searchAttendance);
+  // Confirm delete button
+  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener("click", deleteAttendanceData);
+  }
   
-  // Search input (search on Enter key)
-  document.getElementById("searchInput").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-      searchAttendance();
-    }
+  // Filter buttons
+  document.querySelectorAll("[data-shift-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      const filter = this.dataset.shiftFilter;
+      filterAttendanceData("shift", filter);
+    });
   });
   
-  // Filter checkboxes
-  document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-    checkbox.addEventListener("change", applyFilters);
+  document.querySelectorAll("[data-status-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      const filter = this.dataset.statusFilter;
+      filterAttendanceData("status", filter);
+    });
   });
   
-  // Employee type and shift filters
-  document.getElementById("employeeTypeFilter").addEventListener("change", applyFilters);
-  document.getElementById("shiftFilter").addEventListener("change", applyFilters);
+  document.querySelectorAll("[data-employee-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      const filter = this.dataset.employeeFilter;
+      filterAttendanceData("type", filter);
+    });
+  });
+  
+  // Search input
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
+  
+  if (searchInput && searchBtn) {
+    searchBtn.addEventListener("click", function() {
+      searchAttendance(searchInput.value);
+    });
+    
+    searchInput.addEventListener("keyup", function(e) {
+      if (e.key === "Enter") {
+        searchAttendance(this.value);
+      }
+    });
+  }
+  
+  // Pagination buttons
+  const prevPageBtn = document.getElementById("prevPage");
+  const nextPageBtn = document.getElementById("nextPage");
+  
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener("click", function() {
+      if (currentPage > 1) {
+        currentPage--;
+        displayCurrentPage();
+      }
+    });
+  }
+  
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener("click", function() {
+      if (currentPage < getTotalPages()) {
+        currentPage++;
+        displayCurrentPage();
+      }
+    });
+  }
+  
+  // Load more button
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", loadMoreData);
+  }
 }
 
 // Generate report based on selected date range
@@ -137,190 +219,201 @@ async function generateReport() {
     const endDate = document.getElementById("endDate").value;
     
     if (!startDate || !endDate) {
-      showAlert("danger", "Mohon pilih rentang tanggal yang valid");
+      showAlert("warning", "Mohon pilih tanggal mulai dan tanggal akhir");
       return;
     }
     
-    if (new Date(startDate) > new Date(endDate)) {
-      showAlert("danger", "Tanggal mulai tidak boleh lebih besar dari tanggal akhir");
+    // Validate date range
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+      showAlert("warning", "Tanggal mulai tidak boleh lebih besar dari tanggal akhir");
       return;
     }
-
+    
+    // Check if date range is too large
+    const dayDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    if (dayDiff > 31) {
+      showAlert("warning", "Rentang tanggal maksimal adalah 31 hari");
+      return;
+    }
+    
+    // Create cache key
+    const cacheKey = `${startDate}_${endDate}`;
+    
+    // Reset pagination variables
+    currentPage = 1;
+    lastVisibleDoc = null;
+    hasMoreData = false;
+    
     // Show loading state
     showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Memuat data kehadiran...', false);
-
-    // Fetch data
-    currentAttendanceData = await getAttendanceByDateRange(startDate, endDate);
-
-    // Hide alert
-    hideAlert();
-
-    // Update UI based on data
-    if (currentAttendanceData.length > 0) {
-      // Apply initial filters
-      applyFilters();
+    
+    let attendanceData;
+    
+    // Check if data is in cache
+    if (attendanceDataCache.has(cacheKey)) {
+      attendanceData = attendanceDataCache.get(cacheKey);
+      console.log("Using cached attendance report data");
       
-      // Show report elements
+      // Hide loading message
+      hideAlert();
+    } else {
+      // Check if we can use data from sistem-absensi cache
+      let canUseSystemCache = true;
+      const dateRange = getDatesInRange(start, end);
+      
+      for (const date of dateRange) {
+        const dateStr = date.toISOString().split('T')[0];
+        if (!attendanceCache.has(dateStr)) {
+          canUseSystemCache = false;
+          break;
+        }
+      }
+      
+      if (canUseSystemCache) {
+        // Combine data from sistem-absensi cache
+        attendanceData = [];
+        for (const date of dateRange) {
+          const dateStr = date.toISOString().split('T')[0];
+          const dayData = attendanceCache.get(dateStr);
+          attendanceData.push(...dayData);
+        }
+        console.log("Using sistem-absensi cache for report");
+      } else {
+        // Fetch from Firestore with pagination
+        const result = await getAttendanceByDateRange(startDate, endDate, null, itemsPerPage);
+        attendanceData = result.attendanceRecords;
+        lastVisibleDoc = result.lastDoc;
+        hasMoreData = result.hasMore;
+        
+        // Store in cache
+        attendanceDataCache.set(cacheKey, [...attendanceData]);
+        
+        // Limit cache size (keep max 5 reports)
+        if (attendanceDataCache.size > 5) {
+          const oldestKey = Array.from(attendanceDataCache.keys())[0];
+          attendanceDataCache.delete(oldestKey);
+        }
+      }
+      
+      // Hide loading message
+      hideAlert();
+    }
+    
+    // Update global data
+    currentAttendanceData = attendanceData;
+    filteredData = [...attendanceData];
+    
+    // Update UI
+    if (attendanceData.length > 0) {
+      updateSummaryCards();
+      displayCurrentPage();
       showReportElements();
+      
+      // Show/hide load more button
+      const loadMoreContainer = document.getElementById("loadMoreContainer");
+      if (loadMoreContainer) {
+        loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+      }
     } else {
       hideReportElements();
       document.getElementById("noDataMessage").style.display = "block";
     }
+    
+    // Update delete confirmation modal with date range
+    document.getElementById("deleteStartDate").textContent = formatDateForDisplay(startDate);
+    document.getElementById("deleteEndDate").textContent = formatDateForDisplay(endDate);
+    
   } catch (error) {
     console.error("Error generating report:", error);
-    showAlert(
-      "danger",
-      '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memuat data: ' + error.message
-    );
+    showAlert("danger", `<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan: ${error.message}`);
   }
 }
 
-// Apply filters to the attendance data
-function applyFilters() {
-  // Get filter values
-  const employeeType = document.getElementById("employeeTypeFilter").value;
-  const shift = document.getElementById("shiftFilter").value;
-  const showOntime = document.getElementById("ontimeFilter").checked;
-  const showLate = document.getElementById("lateFilter").checked;
-  const showAbsent = document.getElementById("absentFilter").checked;
-  const showLeave = document.getElementById("leaveFilter").checked;
+// Get array of dates in range
+function getDatesInRange(startDate, endDate) {
+  const dates = [];
+  let currentDate = new Date(startDate);
   
-  // Filter data
-  filteredData = currentAttendanceData.filter(record => {
-    // Filter by employee type
-    if (employeeType !== "all" && record.type !== employeeType) {
-      return false;
-    }
-    
-    // Filter by shift
-    if (shift !== "all" && record.shift !== shift) {
-      return false;
-    }
-    
-    // Filter by status
-    if (record.status === "Tepat Waktu" && !showOntime) {
-      return false;
-    }
-    
-    if (record.status === "Terlambat" && !showLate) {
-      return false;
-    }
-    
-    if (record.status === "Tidak Hadir" && !showAbsent) {
-      return false;
-    }
-    
-    if (record.status === "Izin" && !showLeave) {
-      return false;
-    }
-    
-    return true;
-  });
-  
-  // Reset to first page
-  currentPage = 1;
-  
-  // Update UI
-  updateSummaryCards();
-  updateStatistics();
-  populateAttendanceTable();
-}
-
-// Search attendance records
-function searchAttendance() {
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
-  
-  if (!searchTerm) {
-    // If search term is empty, just apply filters
-    applyFilters();
-    return;
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
   }
   
-  // Filter by search term (name or employee ID)
-  filteredData = filteredData.filter(record => 
-    record.name.toLowerCase().includes(searchTerm) || 
-    record.employeeId.toLowerCase().includes(searchTerm)
-  );
-  
-  // Reset to first page
-  currentPage = 1;
-  
-  // Update table
-  populateAttendanceTable();
+  return dates;
 }
 
-// Update summary cards with counts
+// Load more data (pagination)
+async function loadMoreData() {
+  if (!hasMoreData || !lastVisibleDoc) return;
+  
+  try {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    
+    // Show loading state on button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
+      loadMoreBtn.disabled = true;
+    }
+    
+    // Fetch next batch
+    const result = await getAttendanceByDateRange(startDate, endDate, lastVisibleDoc, itemsPerPage);
+    
+    // Update pagination variables
+    const newData = result.attendanceRecords;
+    lastVisibleDoc = result.lastDoc;
+    hasMoreData = result.hasMore;
+    
+    // Append to current data
+    currentAttendanceData = [...currentAttendanceData, ...newData];
+    filteredData = [...filteredData, ...newData];
+    
+    // Update cache
+    const cacheKey = `${startDate}_${endDate}`;
+    if (attendanceDataCache.has(cacheKey)) {
+      attendanceDataCache.set(cacheKey, [...currentAttendanceData]);
+    }
+    
+    // Update UI
+    updateSummaryCards();
+    displayCurrentPage();
+    
+    // Reset button state
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+      
+      // Show/hide load more button
+      const loadMoreContainer = document.getElementById("loadMoreContainer");
+      if (loadMoreContainer) {
+        loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+      }
+    }
+    
+  } catch (error) {
+    console.error("Error loading more data:", error);
+    showAlert("danger", `<i class="fas fa-exclamation-circle me-2"></i> Gagal memuat data tambahan: ${error.message}`);
+    
+    // Reset button state
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+    }
+  }
+}
+
+// Update summary cards
 function updateSummaryCards() {
   const totalAttendance = filteredData.length;
-  const ontimeCount = filteredData.filter(record => record.status === "Tepat Waktu").length;
+  const onTimeCount = filteredData.filter(record => record.status === "Tepat Waktu").length;
   const lateCount = filteredData.filter(record => record.status === "Terlambat").length;
-  const absentCount = filteredData.filter(record => record.status === "Tidak Hadir").length;
-  const leaveCount = filteredData.filter(record => record.status === "Izin").length;
   
-  document.getElementById("totalAttendance").textContent = totalAttendance;
-  document.getElementById("ontimeCount").textContent = ontimeCount;
-  document.getElementById("lateCount").textContent = lateCount;
-  document.getElementById("absentCount").textContent = absentCount;
-}
-
-// Update statistics
-function updateStatistics() {
-  const totalRecords = filteredData.length;
-  
-  if (totalRecords === 0) {
-    return;
-  }
-  
-  // Calculate percentages
-  const ontimeCount = filteredData.filter(record => record.status === "Tepat Waktu").length;
-  const lateCount = filteredData.filter(record => record.status === "Terlambat").length;
-  const absentCount = filteredData.filter(record => record.status === "Tidak Hadir").length;
-  const leaveCount = filteredData.filter(record => record.status === "Izin").length;
-  
-  const ontimePercentage = (ontimeCount / totalRecords) * 100;
-  const latePercentage = (lateCount / totalRecords) * 100;
-  const absentPercentage = (absentCount / totalRecords) * 100;
-  const leavePercentage = (leaveCount / totalRecords) * 100;
-  
-  // Update progress bars
-  const ontimeBar = document.getElementById("ontimePercentage");
-  const lateBar = document.getElementById("latePercentage");
-  const absentBar = document.getElementById("absentPercentage");
-  const leaveBar = document.getElementById("leavePercentage");
-  
-  ontimeBar.style.width = `${ontimePercentage}%`;
-  lateBar.style.width = `${latePercentage}%`;
-  absentBar.style.width = `${absentPercentage}%`;
-  leaveBar.style.width = `${leavePercentage}%`;
-  
-  ontimeBar.textContent = `${Math.round(ontimePercentage)}%`;
-  lateBar.textContent = `${Math.round(latePercentage)}%`;
-  absentBar.textContent = `${Math.round(absentPercentage)}%`;
-  leaveBar.textContent = `${Math.round(leavePercentage)}%`;
-  
-  // Calculate average work duration
-  let totalDurationMinutes = 0;
-  let workRecordsCount = 0;
-  
-  filteredData.forEach(record => {
-    if (record.timeIn && record.timeOut) {
-      const timeIn = new Date(record.timeIn);
-      const timeOut = new Date(record.timeOut);
-      const durationMs = timeOut - timeIn;
-      const durationMinutes = Math.floor(durationMs / (1000 * 60));
-      
-      totalDurationMinutes += durationMinutes;
-      workRecordsCount++;
-    }
-  });
-  
-  const avgDurationMinutes = workRecordsCount > 0 ? totalDurationMinutes / workRecordsCount : 0;
-  const avgHours = Math.floor(avgDurationMinutes / 60);
-  const avgMinutes = Math.floor(avgDurationMinutes % 60);
-  
-  document.getElementById("avgWorkDuration").textContent = `${avgHours}j ${avgMinutes}m`;
-  
-  // Calculate average late time
+  // Calculate average late minutes
   let totalLateMinutes = 0;
   let lateRecordsCount = 0;
   
@@ -332,1060 +425,555 @@ function updateStatistics() {
   });
   
   const avgLateMinutes = lateRecordsCount > 0 ? Math.round(totalLateMinutes / lateRecordsCount) : 0;
-  document.getElementById("avgLateTime").textContent = `${avgLateMinutes}m`;
+  
+  // Update UI
+  document.getElementById("totalAttendance").textContent = totalAttendance;
+  document.getElementById("onTimeCount").textContent = onTimeCount;
+  document.getElementById("lateCount").textContent = lateCount;
+  document.getElementById("avgLateTime").textContent = `${avgLateMinutes} menit`;
 }
-// Populate attendance table with data
-function populateAttendanceTable() {
-    const tbody = document.getElementById("attendanceReportList");
-    tbody.innerHTML = "";
+
+// Display current page of data
+function displayCurrentPage() {
+  const tbody = document.getElementById("attendanceReportList");
+  if (!tbody) return;
+  
+  // Clear existing rows
+  tbody.innerHTML = "";
+  
+  // Calculate start and end index for current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+  
+  // Create document fragment for better performance
+  const fragment = document.createDocumentFragment();
+  
+  // Add rows for current page
+  for (let i = startIndex; i < endIndex; i++) {
+    const record = filteredData[i];
+    const row = document.createElement("tr");
     
-    // Calculate pagination
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+    // Add data attributes for filtering
+    row.dataset.shift = record.shift;
+    row.dataset.status = record.status.toLowerCase().replace(/\s+/g, "-");
+    row.dataset.type = record.type;
     
-    // Get current page data
-    const currentPageData = filteredData.slice(startIndex, endIndex);
+    // Format times
+    const timeIn = record.timeIn ? formatTime(record.timeIn) : "-";
+    const timeOut = record.timeOut ? formatTime(record.timeOut) : "-";
     
-    // Add rows to table
-    currentPageData.forEach(record => {
-      const row = document.createElement("tr");
-      
-      // Format date
-      const date = new Date(record.date).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-      
-      // Format times
-      const timeIn = record.timeIn ? new Date(record.timeIn).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit"
-      }) : "-";
-      
-      const timeOut = record.timeOut ? new Date(record.timeOut).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit"
-      }) : "-";
-      
-      // Calculate duration
-      let duration = "-";
-      if (record.timeIn && record.timeOut) {
-        const timeInDate = new Date(record.timeIn);
-        const timeOutDate = new Date(record.timeOut);
-        const durationMs = timeOutDate - timeInDate;
-        const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-        const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-        duration = `${durationHours}j ${durationMinutes}m`;
-      }
-      
-      // Determine status class
-      let statusClass = "";
-      switch (record.status) {
-        case "Tepat Waktu":
-          statusClass = "status-ontime";
-          break;
-        case "Terlambat":
-          statusClass = "status-late";
-          break;
-        case "Tidak Hadir":
-          statusClass = "status-absent";
-          break;
-        case "Izin":
-          statusClass = "status-leave";
-          break;
-      }
-      
-      // Format employee type and shift
-      const employeeType = record.type === "staff" ? "Staff" : "Office Boy";
-      const shift = record.shift === "morning" ? "Pagi" : "Sore";
-      
-      row.innerHTML = `
-        <td>${date}</td>
-        <td>${record.employeeId}</td>
-        <td>${record.name}</td>
-        <td>${employeeType}</td>
-        <td>${shift}</td>
-        <td>${timeIn}</td>
-        <td class="${statusClass}">${record.status}</td>
-        <td>${timeOut}</td>
-        <td>${duration}</td>
-        <td>${record.notes || "-"}</td>
-      `;
-      
-      // Add click event to show detail modal
-      row.addEventListener("click", () => showAttendanceDetail(record));
-      
-      tbody.appendChild(row);
-    });
+    // Calculate work duration
+    const workDuration = calculateWorkDuration(record.timeIn, record.timeOut);
     
-    // Update pagination
-    updatePagination(totalPages);
+    row.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${record.employeeId || "-"}</td>
+      <td>${record.name || "-"}</td>
+      <td>${formatDateForDisplay(record.date)}</td>
+      <td>${formatEmployeeType(record.type)}</td>
+      <td>${formatShift(record.shift)}</td>
+      <td>${timeIn}</td>
+      <td>${timeOut}</td>
+      <td>${workDuration}</td>
+      <td class="status-${record.status.toLowerCase().replace(/\s+/g, "-")}">
+        ${record.status}
+        ${record.lateMinutes ? `<span class="late-minutes">(${record.lateMinutes} menit)</span>` : ""}
+      </td>
+    `;
+    
+    fragment.appendChild(row);
   }
   
-  // Update pagination
-function updatePagination(totalPages) {
-    const pagination = document.getElementById("pagination");
-    pagination.innerHTML = "";
+  tbody.appendChild(fragment);
+  
+  // Update pagination info
+  updatePaginationInfo();
+}
+
+// Update pagination info
+function updatePaginationInfo() {
+  const paginationInfo = document.getElementById("paginationInfo");
+  const totalPages = getTotalPages();
+  
+  if (paginationInfo) {
+    paginationInfo.textContent = `Halaman ${currentPage} dari ${totalPages}`;
+  }
+  
+  // Enable/disable pagination buttons
+  const prevPageBtn = document.getElementById("prevPage");
+  const nextPageBtn = document.getElementById("nextPage");
+  
+  if (prevPageBtn) {
+    prevPageBtn.disabled = currentPage <= 1;
+  }
+  
+  if (nextPageBtn) {
+    nextPageBtn.disabled = currentPage >= totalPages;
+  }
+}
+
+// Get total pages
+function getTotalPages() {
+  return Math.ceil(filteredData.length / itemsPerPage);
+}
+
+// Filter attendance data
+function filterAttendanceData(filterType, value) {
+  if (value === "all") {
+    // Reset filter
+    filteredData = [...currentAttendanceData];
+  } else {
+    filteredData = currentAttendanceData.filter(record => {
+      if (filterType === "shift") {
+        return record.shift === value;
+      } else if (filterType === "status") {
+        return (value === "ontime" && record.status === "Tepat Waktu") || 
+               (value === "late" && record.status === "Terlambat");
+      } else if (filterType === "type") {
+        return record.type === value;
+      }
+      return true;
+    });
+  }
+  
+  // Reset to first page
+  currentPage = 1;
+  
+  // Update UI
+  updateSummaryCards();
+  displayCurrentPage();
+  
+  // Update dropdown button text
+  if (filterType === "shift") {
+    let buttonText = "Semua Shift";
+    if (value === "morning") buttonText = "Shift Pagi";
+    else if (value === "afternoon") buttonText = "Shift Sore";
     
-    if (totalPages <= 1) {
+    document.getElementById("shiftFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
+  } else if (filterType === "status") {
+    let buttonText = "Semua Status";
+    if (value === "ontime") buttonText = "Tepat Waktu";
+    else if (value === "late") buttonText = "Terlambat";
+    
+    document.getElementById("statusFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
+  } else if (filterType === "type") {
+    let buttonText = "Semua Karyawan";
+    if (value === "staff") buttonText = "Staff";
+    else if (value === "ob") buttonText = "Office Boy";
+    
+    document.getElementById("employeeFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
+  }
+}
+
+// Search attendance by employee ID or name
+function searchAttendance(query) {
+  if (!query.trim()) {
+    // Reset search
+    filteredData = [...currentAttendanceData];
+  } else {
+    const searchTerm = query.toLowerCase().trim();
+    filteredData = currentAttendanceData.filter(record => 
+      (record.employeeId && record.employeeId.toLowerCase().includes(searchTerm)) ||
+      (record.name && record.name.toLowerCase().includes(searchTerm))
+    );
+  }
+  
+  // Reset to first page
+  currentPage = 1;
+  
+  // Update UI
+  updateSummaryCards();
+  displayCurrentPage();
+}
+
+// Show delete confirmation modal
+function showDeleteConfirmation() {
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  
+  // Update modal text
+  document.getElementById("deleteStartDate").textContent = formatDateForDisplay(startDate);
+  document.getElementById("deleteEndDate").textContent = formatDateForDisplay(endDate);
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
+  modal.show();
+}
+
+// Delete attendance data
+async function deleteAttendanceData() {
+  try {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    
+    // Show loading in modal
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    const originalBtnText = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
+    confirmBtn.disabled = true;
+    
+    // Delete data
+    const deletedCount = await deleteAttendanceByDateRange(startDate, endDate);
+    
+    // Hide modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
+    modal.hide();
+    
+    // Show success message
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil menghapus ${deletedCount} data kehadiran`
+    );
+    
+    // Clear cache
+    const cacheKey = `${startDate}_${endDate}`;
+    attendanceDataCache.delete(cacheKey);
+    
+    // Clear sistem-absensi cache for affected dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const dateRange = getDatesInRange(start, end);
+    
+    for (const date of dateRange) {
+      const dateStr = date.toISOString().split('T')[0];
+      if (attendanceCache.has(dateStr)) {
+        attendanceCache.delete(dateStr);
+      }
+    }
+    
+    // Reset UI
+    hideReportElements();
+    document.getElementById("noDataMessage").style.display = "block";
+    
+    // Reset button
+    confirmBtn.innerHTML = originalBtnText;
+    confirmBtn.disabled = false;
+    
+  } catch (error) {
+    console.error("Error deleting data:", error);
+    
+    // Show error
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal menghapus data: ${error.message}`
+    );
+    
+    // Reset button
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
+    confirmBtn.disabled = false;
+    
+    // Hide modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
+    modal.hide();
+  }
+}
+
+// Export to Excel
+function exportToExcel() {
+  try {
+    if (filteredData.length === 0) {
+      showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data untuk diekspor');
       return;
     }
     
-    // Previous button
-    const prevLi = document.createElement("li");
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous">
-                          <span aria-hidden="true">&laquo;</span>
-                        </a>`;
-    if (currentPage > 1) {
-      prevLi.addEventListener("click", () => {
-        currentPage--;
-        populateAttendanceTable();
-      });
-    }
-    pagination.appendChild(prevLi);
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
     
-    // Page numbers
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    // First page
-    if (startPage > 1) {
-      const firstLi = document.createElement("li");
-      firstLi.className = "page-item";
-      firstLi.innerHTML = `<a class="page-link" href="#">1</a>`;
-      firstLi.addEventListener("click", () => {
-        currentPage = 1;
-        populateAttendanceTable();
-      });
-      pagination.appendChild(firstLi);
-      
-      if (startPage > 2) {
-        const ellipsisLi = document.createElement("li");
-        ellipsisLi.className = "page-item disabled";
-        ellipsisLi.innerHTML = `<a class="page-link" href="#">...</a>`;
-        pagination.appendChild(ellipsisLi);
-      }
-    }
-    
-    // Page numbers
-    for (let i = startPage; i <= endPage; i++) {
-      const pageLi = document.createElement("li");
-      pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
-      pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-      
-      if (i !== currentPage) {
-        pageLi.addEventListener("click", () => {
-          currentPage = i;
-          populateAttendanceTable();
-        });
-      }
-      
-      pagination.appendChild(pageLi);
-    }
-    
-    // Last page
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        const ellipsisLi = document.createElement("li");
-        ellipsisLi.className = "page-item disabled";
-        ellipsisLi.innerHTML = `<a class="page-link" href="#">...</a>`;
-        pagination.appendChild(ellipsisLi);
-      }
-      
-      const lastLi = document.createElement("li");
-      lastLi.className = "page-item";
-      lastLi.innerHTML = `<a class="page-link" href="#">${totalPages}</a>`;
-      lastLi.addEventListener("click", () => {
-        currentPage = totalPages;
-        populateAttendanceTable();
-      });
-      pagination.appendChild(lastLi);
-    }
-    
-    // Next button
-    const nextLi = document.createElement("li");
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next">
-                          <span aria-hidden="true">&raquo;</span>
-                        </a>`;
-    if (currentPage < totalPages) {
-      nextLi.addEventListener("click", () => {
-        currentPage++;
-        populateAttendanceTable();
-      });
-    }
-    pagination.appendChild(nextLi);
-  }
-  
-  // Show attendance detail modal
-  function showAttendanceDetail(record) {
-    // Format date
-    const date = new Date(record.date).toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-    
-    // Format times
-    const timeIn = record.timeIn ? new Date(record.timeIn).toLocaleTimeString("id-ID") : "-";
-    const timeOut = record.timeOut ? new Date(record.timeOut).toLocaleTimeString("id-ID") : "-";
-    
-    // Calculate duration
-    let duration = "-";
-    if (record.timeIn && record.timeOut) {
-      const timeInDate = new Date(record.timeIn);
-      const timeOutDate = new Date(record.timeOut);
-      const durationMs = timeOutDate - timeInDate;
-      const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-      const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      duration = `${durationHours} jam ${durationMinutes} menit`;
-    }
-    
-    // Format employee type and shift
-    const employeeType = record.type === "staff" ? "Staff" : "Office Boy";
-    const shift = record.shift === "morning" ? "Shift Pagi" : "Shift Sore";
-    
-    // Set modal content
-    document.getElementById("detailEmployeeId").textContent = record.employeeId;
-    document.getElementById("detailName").textContent = record.name;
-    document.getElementById("detailDate").textContent = date;
-    document.getElementById("detailStatus").textContent = record.status;
-    document.getElementById("detailTimeIn").textContent = timeIn;
-    document.getElementById("detailTimeOut").textContent = timeOut;
-    document.getElementById("detailType").textContent = employeeType;
-    document.getElementById("detailShift").textContent = shift;
-    document.getElementById("detailDuration").textContent = duration;
-    document.getElementById("detailNotes").textContent = record.notes || "-";
-    
-    // Add status color to status text
-    const statusElement = document.getElementById("detailStatus");
-    statusElement.className = "";
-    
-    switch (record.status) {
-      case "Tepat Waktu":
-        statusElement.classList.add("status-ontime");
-        break;
-      case "Terlambat":
-        statusElement.classList.add("status-late");
-        break;
-      case "Tidak Hadir":
-        statusElement.classList.add("status-absent");
-        break;
-      case "Izin":
-        statusElement.classList.add("status-leave");
-        break;
-    }
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById("attendanceDetailModal"));
-    modal.show();
-  }
-  
-  // Show report elements
-  function showReportElements() {
-    document.getElementById("summaryCards").style.display = "flex";
-    document.getElementById("actionButtons").style.display = "flex";
-    document.getElementById("statisticsCard").style.display = "block";
-    document.getElementById("tableContainer").style.display = "block";
-    document.getElementById("noDataMessage").style.display = "none";
-  }
-  
-  // Hide report elements
-  function hideReportElements() {
-    document.getElementById("summaryCards").style.display = "none";
-    document.getElementById("actionButtons").style.display = "none";
-    document.getElementById("statisticsCard").style.display = "none";
-    document.getElementById("tableContainer").style.display = "none";
-  }
-  
-  // Export data to Excel
-  function exportToExcel() {
-    try {
-      const startDate = new Date(document.getElementById("startDate").value);
-      const endDate = new Date(document.getElementById("endDate").value);
-      
-      // Format date range for filename
-      const startDateStr = startDate.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      });
-      
-      const endDateStr = endDate.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      });
-      
-      // Prepare worksheet data
-      const wsData = [
-        ["LAPORAN KEHADIRAN KARYAWAN MELATI GOLD SHOP"],
-        [`PERIODE: ${startDateStr} - ${endDateStr}`],
-        [""],
-        [
-          "Tanggal",
-          "ID Staff",
-          "Nama",
-          "Tipe",
-          "Shift",
-          "Waktu Masuk",
-          "Status",
-          "Waktu Pulang",
-          "Durasi Kerja",
-          "Keterangan"
-        ],
-      ];
-      
-      // Add data rows
-      filteredData.forEach(record => {
-        // Format date
-        const date = new Date(record.date).toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric"
-        });
-        
-        // Format times
-        const timeIn = record.timeIn ? new Date(record.timeIn).toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit"
-        }) : "-";
-        
-        const timeOut = record.timeOut ? new Date(record.timeOut).toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit"
-        }) : "-";
-        
-        // Calculate duration
-        let duration = "-";
-        if (record.timeIn && record.timeOut) {
-          const timeInDate = new Date(record.timeIn);
-          const timeOutDate = new Date(record.timeOut);
-          const durationMs = timeOutDate - timeInDate;
-          const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-          const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-          duration = `${durationHours}j ${durationMinutes}m`;
-        }
-        
-        // Format employee type and shift
-        const employeeType = record.type === "staff" ? "Staff" : "Office Boy";
-        const shift = record.shift === "morning" ? "Pagi" : "Sore";
-        
-        wsData.push([
-          date,
-          record.employeeId,
-          record.name,
-          employeeType,
-          shift,
-          timeIn,
-          record.status,
-          timeOut,
-          duration,
-          record.notes || "-"
-        ]);
-      });
-      
-      // Create worksheet and workbook
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      const wb = XLSX.utils.book_new();
-      
-      // Set column widths
-      const colWidths = [
-        { wch: 20 }, // Tanggal
-        { wch: 10 }, // ID Staff
-        { wch: 20 }, // Nama
-        { wch: 10 }, // Tipe
-        { wch: 10 }, // Shift
-        { wch: 15 }, // Waktu Masuk
-        { wch: 15 }, // Status
-        { wch: 15 }, // Waktu Pulang
-        { wch: 15 }, // Durasi Kerja
-        { wch: 25 }, // Keterangan
-      ];
-      ws["!cols"] = colWidths;
-      
-      // Merge cells for title and period
-      ws["!merges"] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
-      ];
-      
-      // Style the header cells
-      for (let i = 0; i <= 9; i++) {
-        const cellRef = XLSX.utils.encode_cell({ r: 3, c: i });
-        if (!ws[cellRef]) ws[cellRef] = {};
-        ws[cellRef].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: "EEEEEE" } },
-        };
-      }
-      
-      XLSX.utils.book_append_sheet(wb, ws, "Laporan Kehadiran");
-      
-      // Generate filename
-      const fileName = `Laporan_Kehadiran_${startDate.toISOString().split('T')[0]}_${endDate.toISOString().split('T')[0]}.xlsx`;
-      
-      // Export file
-      XLSX.writeFile(wb, fileName);
-      
-      showAlert("success", `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke Excel: ${fileName}`);
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      showAlert("danger", '<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data ke Excel');
-    }
-  }
-  
-  // Export data to PDF
-  function exportToPDF() {
-    try {
-      const startDate = new Date(document.getElementById("startDate").value);
-      const endDate = new Date(document.getElementById("endDate").value);
-      
-      // Format date range for title
-      const startDateStr = startDate.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-      
-      const endDateStr = endDate.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-      
-      // Create PDF document
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("landscape", "mm", "a4");
-      
-      // Add title
-      doc.setFontSize(16);
-      doc.setFont(undefined, "bold");
-      doc.text("LAPORAN KEHADIRAN KARYAWAN MELATI GOLD SHOP", 149, 15, { align: "center" });
-      
-      // Add period
-      doc.setFontSize(12);
-      doc.text(`PERIODE: ${startDateStr} - ${endDateStr}`, 149, 22, { align: "center" });
-      
-      // Add current date
-      const currentDate = new Date().toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
-      doc.text(`Dicetak pada: ${currentDate}`, 149, 28, { align: "center" });
-      
-      // Add summary
-      doc.setFontSize(11);
-      doc.setFont(undefined, "bold");
-      
-      const totalAttendance = filteredData.length;
-      const ontimeCount = filteredData.filter(record => record.status === "Tepat Waktu").length;
-      const lateCount = filteredData.filter(record => record.status === "Terlambat").length;
-      const absentCount = filteredData.filter(record => record.status === "Tidak Hadir").length;
-      const leaveCount = filteredData.filter(record => record.status === "Izin").length;
-      
-      doc.text(`Total: ${totalAttendance}`, 15, 35);
-      doc.text(`Tepat Waktu: ${ontimeCount}`, 65, 35);
-      doc.text(`Terlambat: ${lateCount}`, 115, 35);
-      doc.text(`Tidak Hadir: ${absentCount}`, 165, 35);
-      doc.text(`Izin: ${leaveCount}`, 215, 35);
-      
-      // Prepare table data
-      const tableColumn = [
-        "Tanggal",
-        "ID Staff",
-        "Nama",
-        "Tipe",
-        "Shift",
-        "Waktu Masuk",
-        "Status",
-        "Waktu Pulang",
-        "Durasi"
-      ];
-      
-      const tableRows = [];
-      
-      // Add data rows (limit to first 100 records to avoid PDF size issues)
-      const maxRows = Math.min(filteredData.length, 100);
-      for (let i = 0; i < maxRows; i++) {
-        const record = filteredData[i];
-        
-        // Format date
-        const date = new Date(record.date).toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "short",
-          year: "numeric"
-        });
-        
-        // Format times
-        const timeIn = record.timeIn ? new Date(record.timeIn).toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit"
-        }) : "-";
-        
-        const timeOut = record.timeOut ? new Date(record.timeOut).toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit"
-        }) : "-";
-        
-        // Calculate duration
-        let duration = "-";
-        if (record.timeIn && record.timeOut) {
-          const timeInDate = new Date(record.timeIn);
-          const timeOutDate = new Date(record.timeOut);
-          const durationMs = timeOutDate - timeInDate;
-          const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-          const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-          duration = `${durationHours}j ${durationMinutes}m`;
-        }
-        
-        // Format employee type and shift
-        const employeeType = record.type === "staff" ? "Staff" : "OB";
-        const shift = record.shift === "morning" ? "Pagi" : "Sore";
-        
-        tableRows.push([
-          date,
-          record.employeeId,
-          record.name,
-          employeeType,
-          shift,
-          timeIn,
-          record.status,
-          timeOut,
-          duration
-        ]);
-      }
-      
-      // Add table
-      doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 40,
-        theme: "grid",
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-        },
-        headStyles: {
-          fillColor: [66, 66, 66],
-          textColor: 255,
-          fontStyle: "bold",
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245],
-        },
-        columnStyles: {
-          0: { cellWidth: 25 }, // Tanggal
-          1: { cellWidth: 20 }, // ID Staff
-          2: { cellWidth: 35 }, // Nama
-          3: { cellWidth: 15 }, // Tipe
-          4: { cellWidth: 15 }, // Shift
-          5: { cellWidth: 20 }, // Waktu Masuk
-          6: { cellWidth: 20 }, // Status
-          7: { cellWidth: 20 }, // Waktu Pulang
-          8: { cellWidth: 20 }, // Durasi
-        },
-      });
-      
-      // Add note if data was truncated
-      if (filteredData.length > 100) {
-        const finalY = doc.lastAutoTable.finalY || 150;
-        doc.setFontSize(10);
-        doc.setFont(undefined, "italic");
-        doc.setTextColor(100, 100, 100);
-        doc.text(`* Catatan: Hanya 100 data pertama yang ditampilkan dari total ${filteredData.length} data.`, 15, finalY + 10);
-      }
-      
-      // Add footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Halaman ${i} dari ${pageCount}`, 290, 200, { align: "right" });
-        doc.text("© Melati Gold Shop", 15, 200);
-      }
-      
-      // Generate filename
-      const fileName = `Laporan_Kehadiran_${startDate.toISOString().split('T')[0]}_${endDate.toISOString().split('T')[0]}.pdf`;
-      
-      // Save PDF
-      doc.save(fileName);
-      
-      showAlert("success", `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke PDF: ${fileName}`);
-    } catch (error) {
-      console.error("Error exporting to PDF:", error);
-      showAlert("danger", '<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data ke PDF');
-    }
-  }
-  
-  // Show delete confirmation modal
-  function showDeleteConfirmation() {
-    const startDate = new Date(document.getElementById("startDate").value);
-    const endDate = new Date(document.getElementById("endDate").value);
-    
-    // Format date range for display
-    const startDateStr = startDate.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-    
-    const endDateStr = endDate.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-    
-    // Update modal content
-    document.getElementById("deletePeriod").textContent = `${startDateStr} hingga ${endDateStr}`;
-    
-    // Show modal
-    const deleteModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
-    deleteModal.show();
-  }
-  
-  // Delete attendance data for the selected period
-  async function deleteAttendanceData() {
-    try {
-      const startDate = document.getElementById("startDate").value;
-      const endDate = document.getElementById("endDate").value;
-      
-      // Close modal
-      const deleteModal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
-      deleteModal.hide();
-      
-      // Show loading state
-      showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus data kehadiran...', false);
-      
-      // Delete data
-      const deletedCount = await deleteAttendanceByDateRange(startDate, endDate);
-      
-      if (deletedCount > 0) {
-        showAlert(
-          "success",
-          `<i class="fas fa-check-circle me-2"></i> Berhasil menghapus ${deletedCount} data kehadiran untuk periode yang dipilih`
-        );
-        
-        // Reset UI
-        hideReportElements();
-        document.getElementById("noDataMessage").style.display = "block";
-        currentAttendanceData = [];
-        filteredData = [];
-      } else {
-        showAlert(
-          "warning",
-          `<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data kehadiran untuk dihapus pada periode yang dipilih`
-        );
-      }
-    } catch (error) {
-      console.error("Error deleting data:", error);
-      showAlert(
-        "danger",
-        '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat menghapus data: ' + error.message
-      );
-    }
-  }
-  
-  // Show alert message
-  function showAlert(type, message, autoHide = true) {
-    const alertContainer = document.getElementById("alertContainer");
-    alertContainer.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    `;
-    alertContainer.style.display = "block";
-    
-    // Auto hide after 5 seconds if needed
-    if (autoHide) {
-      setTimeout(() => {
-        const alert = document.querySelector(".alert");
-        if (alert) {
-          const bsAlert = new bootstrap.Alert(alert);
-          bsAlert.close();
-        }
-      }, 5000);
-    }
-  }
-  
-  // Hide alert
-  function hideAlert() {
-    const alertContainer = document.getElementById("alertContainer");
-    alertContainer.innerHTML = "";
-    alertContainer.style.display = "none";
-  }
-  // Get attendance data by date range
-export async function getAttendanceByDateRange(startDate, endDate) {
-    try {
-      // Format dates for API
-      const formattedStartDate = new Date(startDate).toISOString().split('T')[0];
-      const formattedEndDate = new Date(endDate).toISOString().split('T')[0];
-      
-      // Fetch data from API or local storage
-      // This is a placeholder - replace with actual API call
-      const response = await fetch(`/api/attendance?startDate=${formattedStartDate}&endDate=${formattedEndDate}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching attendance data:", error);
-      
-      // For development/demo purposes, return mock data
-      return generateMockAttendanceData(startDate, endDate);
-    }
-  }
-  
-  // Delete attendance data by date range
-  export async function deleteAttendanceByDateRange(startDate, endDate) {
-    try {
-      // Format dates for API
-      const formattedStartDate = new Date(startDate).toISOString().split('T')[0];
-      const formattedEndDate = new Date(endDate).toISOString().split('T')[0];
-      
-      // Delete data via API
-      // This is a placeholder - replace with actual API call
-      const response = await fetch(`/api/attendance?startDate=${formattedStartDate}&endDate=${formattedEndDate}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      return result.deletedCount || 0;
-    } catch (error) {
-      console.error("Error deleting attendance data:", error);
-      
-      // For development/demo purposes, return mock result
-      return 15; // Mock number of deleted records
-    }
-  }
-  
-  // Get leave requests by month
-  export async function getLeaveRequestsByMonth(month, year) {
-    try {
-      // Fetch data from API or local storage
-      // This is a placeholder - replace with actual API call
-      const response = await fetch(`/api/leave-requests?month=${month}&year=${year}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching leave requests:", error);
-      
-      // For development/demo purposes, return mock data
-      return generateMockLeaveData(month, year);
-    }
-  }
-  
-  // Delete leave requests by month
-  export async function deleteLeaveRequestsByMonth(month, year) {
-    try {
-      // Delete data via API
-      // This is a placeholder - replace with actual API call
-      const response = await fetch(`/api/leave-requests?month=${month}&year=${year}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      return result.deletedCount || 0;
-    } catch (error) {
-      console.error("Error deleting leave requests:", error);
-      
-      // For development/demo purposes, return mock result
-      return 8; // Mock number of deleted records
-    }
-  }
-  
-  // Generate mock attendance data for development/demo purposes
-  function generateMockAttendanceData(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const mockData = [];
-    
-    const employees = [
-      { employeeId: "EMP001", name: "Budi Santoso", type: "staff", shift: "morning" },
-      { employeeId: "EMP002", name: "Siti Rahayu", type: "staff", shift: "afternoon" },
-      { employeeId: "EMP003", name: "Ahmad Hidayat", type: "staff", shift: "morning" },
-      { employeeId: "EMP004", name: "Dewi Lestari", type: "staff", shift: "afternoon" },
-      { employeeId: "EMP005", name: "Joko Widodo", type: "ob", shift: "morning" },
-      { employeeId: "EMP006", name: "Rina Marlina", type: "ob", shift: "afternoon" }
+    // Prepare worksheet data
+    const wsData = [
+      [
+        "No", "ID Karyawan", "Nama", "Tanggal", "Tipe Karyawan", "Shift", 
+        "Jam Masuk", "Jam Keluar", "Durasi Kerja", "Status"
+      ]
     ];
     
-    // Loop through each day in the date range
-    for (let day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
-      const currentDate = new Date(day);
+    // Add data rows
+    filteredData.forEach((record, index) => {
+      const timeIn = record.timeIn ? formatTime(record.timeIn) : "-";
+      const timeOut = record.timeOut ? formatTime(record.timeOut) : "-";
+      const workDuration = calculateWorkDuration(record.timeIn, record.timeOut);
       
-      // Skip weekends for some employees to simulate days off
-      const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
-      
-      // For each employee, create an attendance record
-      employees.forEach(employee => {
-        // Skip some weekend records
-        if (isWeekend && Math.random() > 0.3) {
-          return;
-        }
-        
-        // Determine if employee is present, absent, or on leave
-        const rand = Math.random();
-        let status, timeIn, timeOut, notes, lateMinutes;
-        
-        if (rand > 0.9) {
-          // Employee is absent
-          status = "Tidak Hadir";
-          timeIn = null;
-          timeOut = null;
-          notes = "Tidak ada keterangan";
-        } else if (rand > 0.8) {
-          // Employee is on leave
-          status = "Izin";
-          timeIn = null;
-          timeOut = null;
-          notes = "Izin sakit";
-        } else {
-          // Employee is present
-          // Set base time based on shift
-          let baseHourIn, baseMinuteIn, baseHourOut, baseMinuteOut;
-          
-          if (employee.type === "staff") {
-            if (employee.shift === "morning") {
-              baseHourIn = 8;
-              baseMinuteIn = 45;
-              baseHourOut = 16;
-              baseMinuteOut = 30;
-            } else {
-                baseHourIn = 14;
-                baseMinuteIn = 20;
-                baseHourOut = 21;
-                baseMinuteOut = 0;
-              }
-            } else { // Office Boy
-              if (employee.shift === "morning") {
-                baseHourIn = 7;
-                baseMinuteIn = 30;
-                baseHourOut = 15;
-                baseMinuteOut = 30;
-              } else {
-                baseHourIn = 13;
-                baseMinuteIn = 30;
-                baseHourOut = 21;
-                baseMinuteOut = 0;
-              }
-            }
-            
-            // Add some randomness to check-in time
-            const minuteVariation = Math.floor(Math.random() * 30) - 10; // -10 to +19 minutes
-            
-            // Create time in
-            const timeInObj = new Date(currentDate);
-            timeInObj.setHours(baseHourIn, baseMinuteIn + minuteVariation, 0);
-            timeIn = timeInObj.toISOString();
-            
-            // Determine if late
-            const isLate = minuteVariation > 0;
-            status = isLate ? "Terlambat" : "Tepat Waktu";
-            lateMinutes = isLate ? minuteVariation : 0;
-            
-            // Create time out (if present)
-            if (rand > 0.05) { // 5% chance of missing checkout
-              // Add some randomness to checkout time
-              const checkoutVariation = Math.floor(Math.random() * 60) - 10; // -10 to +49 minutes
-              
-              const timeOutObj = new Date(currentDate);
-              timeOutObj.setHours(baseHourOut, baseMinuteOut + checkoutVariation, 0);
-              timeOut = timeOutObj.toISOString();
-            } else {
-              timeOut = null;
-              notes = "Lupa checkout";
-            }
-          }
-          
-          // Create the attendance record
-          mockData.push({
-            id: `att-${mockData.length + 1}`,
-            employeeId: employee.employeeId,
-            name: employee.name,
-            type: employee.type,
-            shift: employee.shift,
-            date: currentDate.toISOString().split('T')[0],
-            timeIn: timeIn,
-            timeOut: timeOut,
-            status: status,
-            lateMinutes: lateMinutes,
-            notes: notes
-          });
-        });
-      }
-      
-      return mockData;
+      wsData.push([
+        index + 1,
+        record.employeeId || "-",
+        record.name || "-",
+        formatDateForDisplay(record.date),
+        formatEmployeeType(record.type),
+        formatShift(record.shift),
+        timeIn,
+        timeOut,
+        workDuration,
+        record.status + (record.lateMinutes ? ` (${record.lateMinutes} menit)` : "")
+      ]);
+    });
+    
+    // Create worksheet and workbook
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kehadiran");
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 5 },  // No
+      { wch: 10 }, // ID Karyawan
+      { wch: 20 }, // Nama
+      { wch: 15 }, // Tanggal
+      { wch: 15 }, // Tipe Karyawan
+      { wch: 10 }, // Shift
+      { wch: 10 }, // Jam Masuk
+      { wch: 10 }, // Jam Keluar
+      { wch: 15 }, // Durasi Kerja
+      { wch: 20 }  // Status
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Generate filename
+    const fileName = `Laporan_Kehadiran_${formatDateForFilename(startDate)}_${formatDateForFilename(endDate)}.xlsx`;
+    
+    // Export file
+    XLSX.writeFile(wb, fileName);
+    
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke Excel`
+    );
+    
+  } catch (error) {
+    console.error("Error exporting to Excel:", error);
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
+    );
+  }
+}
+
+// Export to PDF
+function exportToPDF() {
+  try {
+    if (filteredData.length === 0) {
+      showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data untuk diekspor');
+      return;
     }
     
-    // Generate mock leave data for development/demo purposes
-    function generateMockLeaveData(month, year) {
-      const mockData = [];
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    
+    // Create PDF document
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text(`Laporan Kehadiran Karyawan`, 14, 15);
+    
+    // Add subtitle with date range
+    doc.setFontSize(12);
+    doc.text(`Periode: ${formatDateForDisplay(startDate)} - ${formatDateForDisplay(endDate)}`, 14, 22);
+    
+    // Add subtitle with date
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, 14, 28);
+    
+    // Prepare table data
+    const tableData = filteredData.map((record, index) => {
+      const timeIn = record.timeIn ? formatTime(record.timeIn) : "-";
+      const timeOut = record.timeOut ? formatTime(record.timeOut) : "-";
+      const workDuration = calculateWorkDuration(record.timeIn, record.timeOut);
       
-      const employees = [
-        { employeeId: "EMP001", name: "Budi Santoso", type: "staff", shift: "morning" },
-        { employeeId: "EMP002", name: "Siti Rahayu", type: "staff", shift: "afternoon" },
-        { employeeId: "EMP003", name: "Ahmad Hidayat", type: "staff", shift: "morning" },
-        { employeeId: "EMP004", name: "Dewi Lestari", type: "staff", shift: "afternoon" },
-        { employeeId: "EMP005", name: "Joko Widodo", type: "ob", shift: "morning" },
-        { employeeId: "EMP006", name: "Rina Marlina", type: "ob", shift: "afternoon" }
+      return [
+        index + 1,
+        record.employeeId || "-",
+        record.name || "-",
+        formatDateForDisplay(record.date),
+        formatEmployeeType(record.type),
+        formatShift(record.shift),
+        timeIn,
+        timeOut,
+        record.status
       ];
-      
-      const reasons = [
-        "Sakit",
-        "Urusan keluarga",
-        "Acara keluarga",
-        "Keperluan pribadi",
-        "Kendaraan rusak"
-      ];
-      
-      // Generate between 5-15 leave requests for the month
-      const numRequests = 5 + Math.floor(Math.random() * 10);
-      
-      for (let i = 0; i < numRequests; i++) {
-        // Random employee
-        const employee = employees[Math.floor(Math.random() * employees.length)];
-        
-        // Random date in the month
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const day = 1 + Math.floor(Math.random() * daysInMonth);
-        const leaveDate = new Date(year, month - 1, day);
-        
-        // Format leave date
-        const formattedLeaveDate = leaveDate.toLocaleDateString("id-ID", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric"
-        });
-        
-        // Random reason
-        const reason = reasons[Math.floor(Math.random() * reasons.length)];
-        
-        // Random replacement type
-        const replacementType = Math.random() > 0.5 ? "libur" : "jam";
-        
-        // Random replacement details
-        let replacementDetails;
-        if (replacementType === "libur") {
-          // Random replacement date (1-4 weeks after leave date)
-          const replacementDate = new Date(leaveDate);
-          replacementDate.setDate(replacementDate.getDate() + 7 + Math.floor(Math.random() * 21));
-          
-          replacementDetails = {
-            date: replacementDate.toISOString().split('T')[0],
-            formattedDate: replacementDate.toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric"
-            })
-          };
-        } else {
-          // Random replacement date (1-2 weeks after leave date)
-          const replacementDate = new Date(leaveDate);
-          replacementDate.setDate(replacementDate.getDate() + 7 + Math.floor(Math.random() * 7));
-          
-          // Random hours (2-8)
-          const hours = 2 + Math.floor(Math.random() * 6);
-          
-          replacementDetails = {
-            date: replacementDate.toISOString().split('T')[0],
-            hours: hours,
-            formattedDate: replacementDate.toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric"
-            })
-          };
-        }
-        
-        // Random status
-        const statusRand = Math.random();
-        let status, replacementStatus, decisionDate;
-        
-        if (statusRand < 0.7) {
-          // Approved
-          status = "Approved";
-          
-          // Decision date (1-2 days after submit)
-          const submitDate = new Date(leaveDate);
-          submitDate.setDate(submitDate.getDate() - 7 - Math.floor(Math.random() * 7)); // Submit 1-2 weeks before
-          
-          decisionDate = new Date(submitDate);
-          decisionDate.setDate(decisionDate.getDate() + 1 + Math.floor(Math.random() * 2));
-          
-          // Replacement status
-          replacementStatus = leaveDate < new Date() ? 
-            (Math.random() > 0.3 ? "Sudah Diganti" : "Belum Diganti") : 
-            "Belum Diganti";
-        } else if (statusRand < 0.9) {
-          // Rejected
-          status = "Rejected";
-          
-          // Decision date (1-2 days after submit)
-          const submitDate = new Date(leaveDate);
-          submitDate.setDate(submitDate.getDate() - 7 - Math.floor(Math.random() * 7)); // Submit 1-2 weeks before
-          
-          decisionDate = new Date(submitDate);
-          decisionDate.setDate(decisionDate.getDate() + 1 + Math.floor(Math.random() * 2));
-          
-          replacementStatus = "Tidak Perlu Diganti";
-        } else {
-          // Pending
-          status = "Pending";
-          decisionDate = null;
-          replacementStatus = "Belum Diganti";
-        }
-        
-        // Create leave request
-        mockData.push({
-          id: `leave-${mockData.length + 1}`,
-          employeeId: employee.employeeId,
-          name: employee.name,
-          type: employee.type,
-          shift: employee.shift,
-          submitDate: new Date(leaveDate.getFullYear(), leaveDate.getMonth(), leaveDate.getDate() - 7 - Math.floor(Math.random() * 7)).toISOString(),
-          leaveDate: formattedLeaveDate,
-          rawLeaveDate: leaveDate.toISOString().split('T')[0],
-          reason: reason,
-          replacementType: replacementType,
-          replacementDetails: replacementDetails,
-          status: status,
-          decisionDate: decisionDate ? decisionDate.toISOString() : null,
-          replacementStatus: replacementStatus
-        });
+    });
+    
+    // Add table
+    doc.autoTable({
+      startY: 35,
+      head: [['No', 'ID', 'Nama', 'Tanggal', 'Tipe', 'Shift', 'Masuk', 'Keluar', 'Status']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 8 },
+        2: { cellWidth: 30 }
       }
-      
-      return mockData;
-    }
+    });
+    
+    // Generate filename
+    const fileName = `Laporan_Kehadiran_${formatDateForFilename(startDate)}_${formatDateForFilename(endDate)}.pdf`;
+    
+    // Save PDF
+    doc.save(fileName);
+    
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke PDF`
+    );
+    
+  } catch (error) {
+    console.error("Error exporting to PDF:", error);
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
+    );
+  }
+}
+
+// Show report elements
+function showReportElements() {
+  document.getElementById("summaryCards").style.display = "flex";
+  document.getElementById("actionButtons").style.display = "flex";
+  document.getElementById("tableContainer").style.display = "block";
+  document.getElementById("paginationContainer").style.display = "flex";
+  document.getElementById("noDataMessage").style.display = "none";
+  
+  // Show load more button if there's more data
+  const loadMoreContainer = document.getElementById("loadMoreContainer");
+  if (loadMoreContainer) {
+    loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+  }
+}
+
+// Hide report elements
+function hideReportElements() {
+  document.getElementById("summaryCards").style.display = "none";
+  document.getElementById("actionButtons").style.display = "none";
+  document.getElementById("tableContainer").style.display = "none";
+  document.getElementById("paginationContainer").style.display = "none";
+  
+  // Hide load more button
+  const loadMoreContainer = document.getElementById("loadMoreContainer");
+  if (loadMoreContainer) {
+    loadMoreContainer.style.display = "none";
+  }
+}
+
+// Helper function to format time
+function formatTime(timestamp) {
+  if (!timestamp) return "-";
+  
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  
+  return date.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+// Helper function to format date for display
+function formatDateForDisplay(dateString) {
+  if (!dateString) return "-";
+  
+  const date = new Date(dateString);
+  
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+// Helper function to format date for filename
+function formatDateForFilename(dateString) {
+  if (!dateString) return "";
+  
+  const date = new Date(dateString);
+  
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).replace(/\//g, '-');
+}
+
+// Helper function to calculate work duration
+function calculateWorkDuration(timeIn, timeOut) {
+  if (!timeIn || !timeOut) return "-";
+  
+  const inTime = timeIn instanceof Date ? timeIn : new Date(timeIn);
+  const outTime = timeOut instanceof Date ? timeOut : new Date(timeOut);
+  
+  // Calculate duration in minutes
+  const durationMinutes = Math.floor((outTime - inTime) / (1000 * 60));
+  
+  // Convert to hours and minutes
+  const hours = Math.floor(durationMinutes / 60);
+  const minutes = durationMinutes % 60;
+  
+  return `${hours} jam ${minutes} menit`;
+}
+
+// Helper function to format employee type
+function formatEmployeeType(type) {
+  return type === "staff" ? "Staff" : "Office Boy";
+}
+
+// Helper function to format shift
+function formatShift(shift) {
+  return shift === "morning" ? "Pagi" : "Sore";
+}
+
+// Show alert message
+function showAlert(type, message, autoHide = true) {
+  const alertContainer = document.getElementById("alertContainer");
+  if (!alertContainer) return;
+  
+  alertContainer.innerHTML = `
+    <div class="alert alert-${type} alert-dismissible fade show">
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  `;
+  
+  alertContainer.style.display = "block";
+  
+  if (autoHide) {
+    setTimeout(() => {
+      const alert = alertContainer.querySelector('.alert');
+      if (alert) {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      }
+    }, 5000);
+  }
+}
+
+// Hide alert
+function hideAlert() {
+  const alertContainer = document.getElementById("alertContainer");
+  if (alertContainer) {
+    alertContainer.innerHTML = '';
+    alertContainer.style.display = "none";
+  }
+}
+
+// Clear attendance data cache
+function clearAttendanceDataCache() {
+  attendanceDataCache.clear();
+  console.log("Attendance data cache cleared");
+}
+
+// Export functions
+export {
+  generateReport,
+  exportToExcel,
+  exportToPDF,
+  clearAttendanceDataCache
+};
+
+

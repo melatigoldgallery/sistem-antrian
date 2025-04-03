@@ -265,7 +265,7 @@ async function loadMoreData() {
     currentLeaveData = [...currentLeaveData, ...newData];
 
     // Update UI
-    populateLeaveTable();
+    populateLeaveTable(true); // true indicates append mode
 
     // Reset button state
     if (loadMoreBtn) {
@@ -311,12 +311,12 @@ function updateSummaryCards() {
 }
 
 // Populate leave table with data
-function populateLeaveTable() {
+function populateLeaveTable(appendMode = false) {
   const tbody = document.getElementById("leaveReportList");
   if (!tbody) return;
 
-  // Clear existing rows if this is a new search
-  if (lastVisibleDoc === null || currentLeaveData.length <= itemsPerPage) {
+  // Clear existing rows if this is a new search and not appending
+  if (!appendMode) {
     tbody.innerHTML = "";
   }
 
@@ -326,37 +326,116 @@ function populateLeaveTable() {
   // Create document fragment for better performance
   const fragment = document.createDocumentFragment();
 
+  // Process each leave record
   currentLeaveData.slice(startIndex).forEach((record, index) => {
-    const replacementInfo = getReplacementInfo(record);
-    const row = document.createElement("tr");
+    // Periksa apakah izin multi-hari
+    const isMultiDay = record.leaveStartDate && record.leaveEndDate && 
+                      record.leaveStartDate !== record.leaveEndDate;
+    
+    // Jika bukan multi-hari, tampilkan seperti biasa
+    if (!isMultiDay) {
+      const replacementInfo = getReplacementInfo(record);
+      const row = document.createElement("tr");
 
-    // Add data attributes for filtering
-    row.dataset.status = record.status.toLowerCase();
-    row.dataset.replacementStatus = record.replacementStatus.toLowerCase().replace(/\s+/g, "-");
-    row.dataset.replacementType = record.replacementType || "";
+      // Add data attributes for filtering
+      row.dataset.status = record.status.toLowerCase();
+      row.dataset.replacementStatus = (record.replacementStatus || "Belum Diganti").toLowerCase().replace(/\s+/g, "-");
+      row.dataset.replacementType = record.replacementType || "";
+      row.dataset.leaveId = record.id || "";
 
-    row.innerHTML = `
-      <td>${startIndex + index + 1}</td>
-      <td>${record.employeeId}</td>
-      <td>${record.name}</td>
-      <td>${formatDate(record.submitDate)}</td>
-      <td>${record.leaveDate}</td>
-      <td>${record.reason}</td>
-      <td>${
-        record.replacementType === "libur"
-          ? "Ganti Libur"
-          : record.replacementType === "jam"
-          ? "Ganti Jam"
-          : "Tidak Ada"
+      row.innerHTML = `
+        <td>${startIndex + index + 1}</td>
+        <td>${record.employeeId || '-'}</td>
+        <td>${record.name || '-'}</td>
+        <td>${formatDate(record.submitDate)}</td>
+        <td>${record.leaveDate || '-'}</td>
+        <td>${record.reason || '-'}</td>
+        <td>${
+          record.replacementType === "libur"
+            ? "Ganti Libur"
+            : record.replacementType === "jam"
+            ? "Ganti Jam"
+            : "Tidak Ada"
+        }</td>
+        <td>${replacementInfo}</td>
+        <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+        <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
+        <td class="status-${(record.replacementStatus || "Belum Diganti").toLowerCase().replace(/\s+/g, "-")}">${
+        record.replacementStatus || "Belum Diganti"
       }</td>
-      <td>${replacementInfo}</td>
-      <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-      <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
-      <td class="status-${record.replacementStatus.toLowerCase().replace(/\s+/g, "-")}">${
-      record.replacementStatus
-    }</td>
-    `;
-    fragment.appendChild(row);
+      `;
+      fragment.appendChild(row);
+    } else {
+      // Untuk multi-hari, buat baris untuk setiap hari
+      const startDate = new Date(record.leaveStartDate);
+      const endDate = new Date(record.leaveEndDate);
+      const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Pastikan replacementStatusArray ada
+      const replacementStatusArray = record.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+      
+      // Buat baris untuk setiap hari
+      for (let i = 0; i < dayDiff; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        const formattedDate = currentDate.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        });
+        
+        const row = document.createElement('tr');
+        
+        // Jika ini hari pertama, tambahkan kelas untuk styling
+        if (i === 0) {
+          row.classList.add('first-day-row');
+        }
+        
+        // Tentukan status ganti untuk hari ini
+        const dayStatus = replacementStatusArray[i] || 'Belum Diganti';
+        
+        // Add data attributes for filtering
+        row.dataset.status = record.status.toLowerCase();
+        row.dataset.replacementStatus = dayStatus.toLowerCase().replace(/\s+/g, "-");
+        row.dataset.replacementType = record.replacementType || "";
+        row.dataset.leaveId = record.id || "";
+        row.dataset.dayIndex = i;
+        
+        // Tampilkan informasi penggantian untuk hari ini
+        let replacementInfo = '-';
+        if (record.replacementType === 'libur' && record.replacementDetails && record.replacementDetails.dates) {
+          // Jika ada tanggal pengganti spesifik untuk hari ini
+          if (record.replacementDetails.dates[i]) {
+            replacementInfo = `Ganti libur pada ${record.replacementDetails.dates[i].formattedDate}`;
+          }
+        } else if (record.replacementType === 'jam' && record.replacementDetails) {
+          replacementInfo = `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`;
+        }
+        
+        row.innerHTML = `
+          <td>${startIndex + index + 1}-${i+1}</td>
+          <td>${record.employeeId || '-'}</td>
+          <td>${record.name || '-'}</td>
+          <td>${formatDate(record.submitDate)}</td>
+          <td>${formattedDate} <span class="badge bg-info">Hari ${i+1}/${dayDiff}</span></td>
+          <td>${record.reason || '-'}</td>
+          <td>${
+            record.replacementType === "libur"
+              ? "Ganti Libur"
+              : record.replacementType === "jam"
+              ? "Ganti Jam"
+              : "Tidak Ada"
+          }</td>
+          <td>${replacementInfo}</td>
+          <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+          <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
+          <td class="status-${dayStatus.toLowerCase().replace(/\s+/g, "-")}">${dayStatus}</td>
+        `;
+        
+        fragment.appendChild(row);
+      }
+    }
   });
 
   tbody.appendChild(fragment);
@@ -365,19 +444,21 @@ function populateLeaveTable() {
 // Helper function to format replacement information
 function getReplacementInfo(record) {
   if (!record.replacementType || record.replacementType === "tidak") {
-    return "-";
+    return "Tidak perlu diganti";
   } else if (record.replacementType === "libur") {
     if (record.replacementDetails && record.replacementDetails.dates && record.replacementDetails.dates.length > 0) {
       // Handle multiple dates
       return record.replacementDetails.dates.map(date => 
         `Ganti libur pada ${date.formattedDate}`
       ).join("<br>");
+    } else if (record.replacementDetails && record.replacementDetails.formattedDate) {
+      return `Ganti libur pada ${record.replacementDetails.formattedDate}`;
     }
-    return "-";
+    return "Ganti libur";
   } else if (record.replacementType === "jam") {
     return record.replacementDetails && record.replacementDetails.hours && record.replacementDetails.formattedDate
       ? `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`
-      : "-";
+      : "Ganti jam";
   }
   return "-";
 }
@@ -573,28 +654,85 @@ function exportToExcel() {
     ];
     
     // Add data rows
-    currentLeaveData.forEach((record, index) => {
-      const replacementType = record.replacementType === "libur" 
-        ? "Ganti Libur" 
-        : record.replacementType === "jam" 
-          ? "Ganti Jam" 
-          : "Tidak Ada";
-          
-      const replacementInfo = getReplacementInfoPlain(record);
+    let rowNumber = 1;
+    currentLeaveData.forEach((record) => {
+      // Periksa apakah izin multi-hari
+      const isMultiDay = record.leaveStartDate && record.leaveEndDate && 
+                        record.leaveStartDate !== record.leaveEndDate;
       
-      wsData.push([
-        index + 1,
-        record.employeeId,
-        record.name,
-        formatDatePlain(record.submitDate),
-        record.leaveDate,
-        record.reason,
-        replacementType,
-        replacementInfo,
-        record.status,
-        record.decisionDate ? formatDatePlain(record.decisionDate) : "-",
-        record.replacementStatus
-      ]);
+      if (!isMultiDay) {
+        const replacementType = record.replacementType === "libur" 
+          ? "Ganti Libur" 
+          : record.replacementType === "jam" 
+            ? "Ganti Jam" 
+            : "Tidak Ada";
+            
+        const replacementInfo = getReplacementInfoPlain(record);
+        
+        wsData.push([
+          rowNumber++,
+          record.employeeId || '-',
+          record.name || '-',
+          formatDatePlain(record.submitDate),
+          record.leaveDate || '-',
+          record.reason || '-',
+          replacementType,
+          replacementInfo,
+          record.status,
+          record.decisionDate ? formatDatePlain(record.decisionDate) : "-",
+          record.replacementStatus || "Belum Diganti"
+        ]);
+      } else {
+        // Untuk multi-hari, buat baris untuk setiap hari
+        const startDate = new Date(record.leaveStartDate);
+        const endDate = new Date(record.leaveEndDate);
+        const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        
+        // Pastikan replacementStatusArray ada
+        const replacementStatusArray = record.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+        
+        for (let i = 0; i < dayDiff; i++) {
+          const currentDate = new Date(startDate);
+          currentDate.setDate(startDate.getDate() + i);
+          
+          const formattedDate = currentDate.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+          });
+          
+          // Tampilkan informasi penggantian untuk hari ini
+          let replacementInfo = '-';
+          if (record.replacementType === 'libur' && record.replacementDetails && record.replacementDetails.dates) {
+            // Jika ada tanggal pengganti spesifik untuk hari ini
+            if (record.replacementDetails.dates[i]) {
+              replacementInfo = `Ganti libur pada ${record.replacementDetails.dates[i].formattedDate}`;
+            }
+          } else if (record.replacementType === 'jam' && record.replacementDetails) {
+            replacementInfo = `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`;
+          }
+          
+          const replacementType = record.replacementType === "libur" 
+            ? "Ganti Libur" 
+            : record.replacementType === "jam" 
+              ? "Ganti Jam" 
+              : "Tidak Ada";
+          
+          wsData.push([
+            `${rowNumber++} (Hari ${i+1}/${dayDiff})`,
+            record.employeeId || '-',
+            record.name || '-',
+            formatDatePlain(record.submitDate),
+            formattedDate,
+            record.reason || '-',
+            replacementType,
+            replacementInfo,
+            record.status,
+            record.decisionDate ? formatDatePlain(record.decisionDate) : "-",
+            replacementStatusArray[i] || "Belum Diganti"
+          ]);
+        }
+      }
     });
     
     // Create worksheet and workbook
@@ -604,7 +742,7 @@ function exportToExcel() {
     
     // Set column widths
     const colWidths = [
-      { wch: 5 },  // No
+      { wch: 10 }, // No
       { wch: 10 }, // ID Staff
       { wch: 20 }, // Nama
       { wch: 20 }, // Tanggal Pengajuan
@@ -618,175 +756,222 @@ function exportToExcel() {
     ];
     ws['!cols'] = colWidths;
     
-    // Generate filename
-    const fileName = `Laporan_Izin_${monthNames[month - 1]}_${year}.xlsx`;
+       // Generate filename
+       const fileName = `Laporan_Izin_${monthNames[month - 1]}_${year}.xlsx`;
     
-    // Export file
-    XLSX.writeFile(wb, fileName);
-    
-    showAlert(
-      "success", 
-      `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke Excel`
-    );
-    
-  } catch (error) {
-    console.error("Error exporting to Excel:", error);
-    showAlert(
-      "danger",
-      `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
-    );
-  }
-}
-
-// Helper function for plain text replacement info (for Excel export)
-function getReplacementInfoPlain(record) {
-  if (!record.replacementType || record.replacementType === "tidak") {
-    return "-";
-  } else if (record.replacementType === "libur") {
-    if (record.replacementDetails && record.replacementDetails.dates && record.replacementDetails.dates.length > 0) {
-      // Handle multiple dates
-      return record.replacementDetails.dates.map(date => 
-        `Ganti libur pada ${date.formattedDate}`
-      ).join(", ");
-    }
-    return "-";
-  } else if (record.replacementType === "jam") {
-    return record.replacementDetails && record.replacementDetails.hours && record.replacementDetails.formattedDate
-      ? `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`
-      : "-";
-  }
-  return "-";
-}
-
-// Format date for Excel export
-function formatDatePlain(date) {
-  if (!date) return "-";
-
-  return new Date(date).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-// Export to PDF
-function exportToPDF() {
-  try {
-    if (currentLeaveData.length === 0) {
-      showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data untuk diekspor');
-      return;
-    }
-    
-    const month = parseInt(document.getElementById("monthSelector").value);
-    const year = parseInt(document.getElementById("yearSelector").value);
-    
-    // Create PDF document
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
-    
-    // Add title
-    doc.setFontSize(16);
-    doc.text(`Laporan Izin Karyawan - ${monthNames[month - 1]} ${year}`, 14, 15);
-    
-    // Add subtitle with date
-    doc.setFontSize(10);
-    doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`, 14, 22);
-    
-    // Prepare table data
-    const tableData = currentLeaveData.map((record, index) => {
-      const replacementType = record.replacementType === "libur" 
-        ? "Ganti Libur" 
-        : record.replacementType === "jam" 
-          ? "Ganti Jam" 
-          : "Tidak Ada";
-          
-      const replacementInfo = getReplacementInfoPlain(record);
-      
-      return [
-        index + 1,
-        record.employeeId,
-        record.name,
-        formatDatePlain(record.submitDate),
-        record.leaveDate,
-        record.reason.substring(0, 20) + (record.reason.length > 20 ? '...' : ''),
-        replacementType,
-        record.status,
-        record.replacementStatus
-      ];
-    });
-    
-    // Add table
-    doc.autoTable({
-      startY: 30,
-      head: [['No', 'ID', 'Nama', 'Tgl Pengajuan', 'Tgl Izin', 'Alasan', 'Jenis Pengganti', 'Status', 'Status Ganti']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      styles: { fontSize: 8, cellPadding: 2 },
-      columnStyles: {
-        0: { cellWidth: 10 },
-        5: { cellWidth: 40 }
-      }
-    });
-    
-    // Generate filename
-    const fileName = `Laporan_Izin_${monthNames[month - 1]}_${year}.pdf`;
-    
-    // Save PDF
-    doc.save(fileName);
-    
-    showAlert(
-      "success", 
-      `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke PDF`
-    );
-    
-  } catch (error) {
-    console.error("Error exporting to PDF:", error);
-    showAlert(
-      "danger",
-      `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
-    );
-  }
-}
-
-// Show alert message
-function showAlert(type, message, autoHide = true) {
-  const alertContainer = document.getElementById("alertContainer");
-  if (!alertContainer) return;
-  
-  alertContainer.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show">
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  `;
-  
-  alertContainer.style.display = "block";
-  
-  if (autoHide) {
-    setTimeout(() => {
-      const alert = alertContainer.querySelector('.alert');
-      if (alert) {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-      }
-    }, 5000);
-  }
-}
-
-// Hide alert
-function hideAlert() {
-  const alertContainer = document.getElementById("alertContainer");
-  if (alertContainer) {
-    alertContainer.innerHTML = '';
-    alertContainer.style.display = "none";
-  }
-}
+       // Export file
+       XLSX.writeFile(wb, fileName);
+       
+       showAlert(
+         "success", 
+         `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke Excel`
+       );
+       
+     } catch (error) {
+       console.error("Error exporting to Excel:", error);
+       showAlert(
+         "danger",
+         `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
+       );
+     }
+   }
+   
+   // Helper function for plain text replacement info (for Excel export)
+   function getReplacementInfoPlain(record) {
+     if (!record.replacementType || record.replacementType === "tidak") {
+       return "Tidak perlu diganti";
+     } else if (record.replacementType === "libur") {
+       if (record.replacementDetails && record.replacementDetails.dates && record.replacementDetails.dates.length > 0) {
+         // Handle multiple dates
+         return record.replacementDetails.dates.map(date => 
+           `Ganti libur pada ${date.formattedDate}`
+         ).join(", ");
+       } else if (record.replacementDetails && record.replacementDetails.formattedDate) {
+         return `Ganti libur pada ${record.replacementDetails.formattedDate}`;
+       }
+       return "Ganti libur";
+     } else if (record.replacementType === "jam") {
+       return record.replacementDetails && record.replacementDetails.hours && record.replacementDetails.formattedDate
+         ? `Ganti ${record.replacementDetails.hours} jam pada ${record.replacementDetails.formattedDate}`
+         : "Ganti jam";
+     }
+     return "-";
+   }
+   
+   // Format date for Excel export
+   function formatDatePlain(date) {
+     if (!date) return "-";
+   
+     return new Date(date).toLocaleDateString("id-ID", {
+       day: "numeric",
+       month: "long",
+       year: "numeric",
+       hour: "2-digit",
+       minute: "2-digit",
+     });
+   }
+   
+   // Export to PDF
+   function exportToPDF() {
+     try {
+       if (currentLeaveData.length === 0) {
+         showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data untuk diekspor');
+         return;
+       }
+       
+       const month = parseInt(document.getElementById("monthSelector").value);
+       const year = parseInt(document.getElementById("yearSelector").value);
+       
+       // Create PDF document
+       const { jsPDF } = window.jspdf;
+       const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+       
+       // Add title
+       doc.setFontSize(16);
+       doc.text(`Laporan Izin Karyawan - ${monthNames[month - 1]} ${year}`, 14, 15);
+       
+       // Add subtitle with date
+       doc.setFontSize(10);
+       doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID', {
+         day: 'numeric',
+         month: 'long',
+         year: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit'
+       })}`, 14, 22);
+       
+       // Prepare table data
+       const tableData = [];
+       let rowNumber = 1;
+       
+       currentLeaveData.forEach((record) => {
+         // Periksa apakah izin multi-hari
+         const isMultiDay = record.leaveStartDate && record.leaveEndDate && 
+                           record.leaveStartDate !== record.leaveEndDate;
+         
+         if (!isMultiDay) {
+           const replacementType = record.replacementType === "libur" 
+             ? "Ganti Libur" 
+             : record.replacementType === "jam" 
+               ? "Ganti Jam" 
+               : "Tidak Ada";
+           
+           tableData.push([
+             rowNumber++,
+             record.employeeId || '-',
+             record.name || '-',
+             formatDatePlain(record.submitDate).split(' ')[0], // Hanya tanggal tanpa waktu
+             record.leaveDate || '-',
+             record.reason ? (record.reason.substring(0, 20) + (record.reason.length > 20 ? '...' : '')) : '-',
+             replacementType,
+             record.status,
+             record.replacementStatus || "Belum Diganti"
+           ]);
+         } else {
+           // Untuk multi-hari, buat baris untuk setiap hari
+           const startDate = new Date(record.leaveStartDate);
+           const endDate = new Date(record.leaveEndDate);
+           const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+           
+           // Pastikan replacementStatusArray ada
+           const replacementStatusArray = record.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+           
+           for (let i = 0; i < dayDiff; i++) {
+             const currentDate = new Date(startDate);
+             currentDate.setDate(startDate.getDate() + i);
+             
+             const formattedDate = currentDate.toLocaleDateString("id-ID", {
+               day: "numeric",
+               month: "long",
+               year: "numeric"
+             });
+             
+             const replacementType = record.replacementType === "libur" 
+               ? "Ganti Libur" 
+               : record.replacementType === "jam" 
+                 ? "Ganti Jam" 
+                 : "Tidak Ada";
+             
+             tableData.push([
+               `${rowNumber++} (${i+1}/${dayDiff})`,
+               record.employeeId || '-',
+               record.name || '-',
+               formatDatePlain(record.submitDate).split(' ')[0], // Hanya tanggal tanpa waktu
+               formattedDate,
+               record.reason ? (record.reason.substring(0, 20) + (record.reason.length > 20 ? '...' : '')) : '-',
+               replacementType,
+               record.status,
+               replacementStatusArray[i] || "Belum Diganti"
+             ]);
+           }
+         }
+       });
+       
+       // Add table
+       doc.autoTable({
+         startY: 30,
+         head: [['No', 'ID', 'Nama', 'Tgl Pengajuan', 'Tgl Izin', 'Alasan', 'Jenis Pengganti', 'Status', 'Status Ganti']],
+         body: tableData,
+         theme: 'grid',
+         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+         styles: { fontSize: 8, cellPadding: 2 },
+         columnStyles: {
+           0: { cellWidth: 10 },
+           5: { cellWidth: 40 }
+         }
+       });
+       
+       // Generate filename
+       const fileName = `Laporan_Izin_${monthNames[month - 1]}_${year}.pdf`;
+       
+       // Save PDF
+       doc.save(fileName);
+       
+       showAlert(
+         "success", 
+         `<i class="fas fa-check-circle me-2"></i> Berhasil mengekspor data ke PDF`
+       );
+       
+     } catch (error) {
+       console.error("Error exporting to PDF:", error);
+       showAlert(
+         "danger",
+         `<i class="fas fa-exclamation-circle me-2"></i> Gagal mengekspor data: ${error.message}`
+       );
+     }
+   }
+   
+   // Show alert message
+   function showAlert(type, message, autoHide = true) {
+     const alertContainer = document.getElementById("alertContainer");
+     if (!alertContainer) return;
+     
+     alertContainer.innerHTML = `
+       <div class="alert alert-${type} alert-dismissible fade show">
+         ${message}
+         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+       </div>
+     `;
+     
+     alertContainer.style.display = "block";
+     
+     if (autoHide) {
+       setTimeout(() => {
+         const alert = alertContainer.querySelector('.alert');
+         if (alert) {
+           const bsAlert = new bootstrap.Alert(alert);
+           bsAlert.close();
+         }
+       }, 5000);
+     }
+   }
+   
+   // Hide alert
+   function hideAlert() {
+     const alertContainer = document.getElementById("alertContainer");
+     if (alertContainer) {
+       alertContainer.innerHTML = '';
+       alertContainer.style.display = "none";
+     }
+   }
+   

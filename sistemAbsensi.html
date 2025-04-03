@@ -422,135 +422,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Attendance List -->
-            <div class="card attendance-card">
-              <div class="card-header">
-                <h2>
-                  <i class="fas fa-clipboard-check"></i>
-                  Daftar Kehadiran Hari Ini
-                </h2>
-                <div class="card-actions">
-                  <div class="dropdown me-2">
-                    <button
-                      class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      id="employeeFilterDropdown"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <i class="fas fa-user-tag"></i>
-                      Tipe
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="employeeFilterDropdown">
-                      <li><a class="dropdown-item" href="#" data-employee-filter="all">Semua</a></li>
-                      <li><a class="dropdown-item" href="#" data-employee-filter="staff">Staff</a></li>
-                      <li><a class="dropdown-item" href="#" data-employee-filter="ob">Office Boy</a></li>
-                    </ul>
-                  </div>
-                  <div class="dropdown me-2">
-                    <button
-                      class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      id="shiftFilterDropdown"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <i class="fas fa-clock"></i>
-                      Shift
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="shiftFilterDropdown">
-                      <li><a class="dropdown-item" href="#" data-shift-filter="all">Semua Shift</a></li>
-                      <li><a class="dropdown-item" href="#" data-shift-filter="morning">Shift Pagi</a></li>
-                      <li><a class="dropdown-item" href="#" data-shift-filter="afternoon">Shift Sore</a></li>
-                    </ul>
-                  </div>
-                  <div class="dropdown me-2">
-                    <button
-                      class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      id="statusFilterDropdown"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <i class="fas fa-filter"></i>
-                      Status
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
-                      <li><a class="dropdown-item" href="#" data-status-filter="all">Semua Status</a></li>
-                      <li><a class="dropdown-item" href="#" data-status-filter="ontime">Tepat Waktu</a></li>
-                      <li><a class="dropdown-item" href="#" data-status-filter="late">Terlambat</a></li>
-                    </ul>
-                  </div>
-                  <!-- <button class="btn btn-sm btn-outline-primary" id="exportAttendance">
-                    <i class="fas fa-download"></i> Export
-                  </button> -->
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-hover" id="attendanceTable">
-                    <thead>
-                      <tr>
-                        <th>ID Karyawan</th>
-                        <th>Nama</th>
-                        <th>Tipe</th>
-                        <th>Shift</th>
-                        <th>Waktu Masuk</th>
-                        <th>Status Masuk</th>
-                        <th>Waktu Pulang</th>
-                        <th>Durasi Kerja</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody id="attendanceList">
-                      <!-- Data will be populated by JavaScript -->
-                    </tbody>
-                  </table>
-                </div>
-                <div class="empty-state" id="emptyAttendance">
-                  <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
-                  <p>Belum ada data kehadiran hari ini</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Leave List -->
-            <div class="card leave-card">
-              <div class="card-header">
-                <h2>
-                  <i class="fas fa-calendar-alt"></i>
-                  Daftar Izin Karyawan
-                </h2>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-hover" id="leaveTable">
-                    <thead>
-                      <tr>
-                        <th>ID Karyawan</th>
-                        <th>Nama</th>
-                        <th>Tipe</th>
-                        <th>Shift</th>
-                        <th>Tanggal Izin</th>
-                        <th>Alasan</th>
-                        <th>Jenis Pengganti</th>
-                        <th>Detail Pengganti</th>
-                        <th>Status Pengajuan</th>
-                        <th>Status Ganti</th>
-                      </tr>
-                    </thead>
-                    <tbody id="leaveList">
-                      <!-- Data will be populated by JavaScript -->
-                    </tbody>
-                  </table>
-                </div>
-                <div class="empty-state" id="emptyLeave">
-                  <img src="img/empty-leave.svg" alt="No Leave Data" class="empty-image" />
-                  <p>Belum ada data izin</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </main>
@@ -685,12 +556,17 @@
         </div>
       </div>
     </div>
-    <script type="module" src="js/pages/sistem-absensi.js"></script>
-    <script type="module" src="js/main.js"></script>
-     <script type="module">
-      // Import Firebase SDK di sini jika diperlukan
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+    <!-- Di bagian bawah file, sebelum </body> -->
+<!-- Firebase SDK -->
+<script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+<script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
+<script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
+
+<!-- Custom Scripts -->
+<script type="module" src="js/configFirebase.js"></script>
+<script type="module" src="js/main.js"></script>
+<script type="module" src="js/pages/sistem-absensi.js"></script>
+
     </script>
   </body>
 </html>
