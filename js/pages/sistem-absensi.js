@@ -12,12 +12,259 @@ let leaveRequests = [];
 const employeeCache = new Map(); // Cache untuk karyawan berdasarkan barcode
 const attendanceCache = new Map(); // Cache untuk data kehadiran berdasarkan tanggal
 
-// Process barcode scan - PINDAHKAN DEFINISI KE ATAS SEBELUM EXPORT
+// Variabel global untuk menyimpan suara Indonesia
+let indonesianVoice = null;
+// Variabel global untuk status suara
+let soundEnabled = true;
+// Variabel global untuk menyimpan status ketersediaan audio
+let isOpeningAudioAvailable = true;
+
+// Fungsi untuk memeriksa ketersediaan file audio
+function checkAudioAvailability(audioPath) {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio(audioPath);
+    
+    audio.oncanplaythrough = () => {
+      resolve(true);
+    };
+    
+    audio.onerror = () => {
+      resolve(false);
+    };
+    
+    // Set timeout untuk menghindari hanging
+    setTimeout(() => {
+      resolve(false);
+    }, 2000);
+    
+    // Coba load audio
+    audio.load();
+  });
+}
+
+// Fungsi untuk memeriksa ketersediaan audio pembuka
+async function checkOpeningAudio() {
+  try {
+    isOpeningAudioAvailable = await checkAudioAvailability('audio/antrian.mp3');
+    console.log("Opening audio available:", isOpeningAudioAvailable);
+  } catch (error) {
+    console.error("Error checking audio availability:", error);
+    isOpeningAudioAvailable = false;
+  }
+}
+// Fungsi untuk memutar notifikasi suara dengan audio pembuka
+function playNotificationSound(type) {
+  // Jika suara dinonaktifkan, keluar dari fungsi
+  if (!soundEnabled) return;
+  
+  try {
+    // Hentikan semua suara yang sedang diputar
+    window.speechSynthesis.cancel();
+    
+    // Putar audio pembuka terlebih dahulu
+    const openingAudio = new Audio('audio/antrian.mp3');
+    
+    // Set volume audio pembuka
+    openingAudio.volume = 0.7;
+    
+    // Buat instance SpeechSynthesisUtterance untuk pesan
+    const utterance = new SpeechSynthesisUtterance();
+    
+    // Set bahasa ke Indonesia
+    utterance.lang = 'id-ID';
+    
+    // Set volume dan kecepatan untuk kejelasan yang lebih baik
+    utterance.volume = 1;    // 0 to 1
+    utterance.rate = 0.8;    // Sedikit lebih lambat untuk kejelasan
+    utterance.pitch = 1.1;   // Sedikit lebih tinggi untuk kejelasan
+    
+    // Gunakan suara Indonesia yang telah dimuat
+    if (indonesianVoice) {
+      utterance.voice = indonesianVoice;
+    }
+    
+    // Set teks berdasarkan tipe notifikasi
+    switch(type) {
+      case 'success-in':
+        utterance.text = "Absensi berhasil";
+        break;
+      case 'success-out':
+        utterance.text = "Berhasil scen pulang";
+        break;
+      case 'already-in':
+        utterance.text = "Kamu sudah scen";
+        break;
+      case 'already-out':
+        utterance.text = "Kamu sudah scen pulang";
+        break;
+      case 'late':
+        utterance.text = "Kamu terlambat";
+        break;
+      case 'not-found':
+        utterance.text = "Barcode tidak terdaftar";
+        break;
+      case 'error':
+        utterance.text = "Terjadi kesalahan";
+        break;
+      default:
+        utterance.text = "Operasi berhasil";
+    }
+    
+    // Tambahkan event untuk debugging
+    utterance.onstart = () => {
+      console.log("Speech started:", utterance.text);
+    };
+    
+    utterance.onend = () => {
+      console.log("Speech ended");
+    };
+    
+    utterance.onerror = (event) => {
+      console.error("Speech error:", event);
+    };
+    
+    // Putar audio pembuka dan kemudian baca teks
+    openingAudio.onended = () => {
+      // Berikan jeda kecil setelah audio pembuka
+      setTimeout(() => {
+        // Putar suara
+        window.speechSynthesis.speak(utterance);
+        
+        // Pastikan suara diputar (workaround untuk bug di beberapa browser)
+        setTimeout(() => {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+        }, 100);
+      }, 300); // Jeda 300ms setelah audio pembuka
+    };
+    
+    // Tangani error pada audio pembuka
+    openingAudio.onerror = (error) => {
+      console.error("Error playing opening audio:", error);
+      // Jika audio pembuka gagal, langsung baca teks
+      window.speechSynthesis.speak(utterance);
+    };
+    
+    // Mulai putar audio pembuka
+    openingAudio.play().catch(error => {
+      console.error("Error playing opening audio:", error);
+      // Jika audio pembuka gagal, langsung baca teks
+      window.speechSynthesis.speak(utterance);
+    });
+  } catch (error) {
+    console.error("Error playing notification sound:", error);
+  }
+}
+
+
+// Fungsi untuk menginisialisasi dan memuat suara Indonesia
+function initSpeechSynthesis() {
+  if ('speechSynthesis' in window) {
+    console.log("Speech synthesis supported");
+    
+    // Fungsi untuk mencari suara Indonesia
+    const findIndonesianVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`).join(', '));
+      
+      // Cari suara Indonesia atau Melayu (sebagai fallback)
+      const idVoice = voices.find(voice => 
+        voice.lang.includes('id-ID') || voice.lang.includes('id')
+      );
+      
+      // Jika tidak ada suara Indonesia, coba cari suara Melayu
+      const msVoice = voices.find(voice => 
+        voice.lang.includes('ms-MY') || voice.lang.includes('ms')
+      );
+      
+      // Jika masih tidak ada, gunakan suara default
+      indonesianVoice = idVoice || msVoice || voices.find(v => v.default) || voices[0];
+      
+      if (indonesianVoice) {
+        console.log("Selected voice:", indonesianVoice.name, indonesianVoice.lang);
+        
+        // Test suara
+        const testUtterance = new SpeechSynthesisUtterance("Sistem absensi siap digunakan");
+        testUtterance.voice = indonesianVoice;
+        testUtterance.lang = 'id-ID';
+        testUtterance.volume = 0.5; // Lebih pelan untuk test
+        window.speechSynthesis.speak(testUtterance);
+      } else {
+        console.warn("No suitable voice found");
+      }
+    };
+    
+    // Periksa apakah suara sudah dimuat
+    if (window.speechSynthesis.getVoices().length > 0) {
+      findIndonesianVoice();
+    } else {
+      // Jika belum, tunggu event onvoiceschanged
+      window.speechSynthesis.onvoiceschanged = findIndonesianVoice;
+    }
+  } else {
+    console.warn("Speech synthesis not supported in this browser");
+  }
+}
+
+// Fungsi untuk mengatasi bug umum pada Web Speech API
+function fixSpeechSynthesisBugs() {
+  // Bug di Chrome: speechSynthesis berhenti setelah sekitar 15 detik
+  // Solusi: resume secara periodik
+  setInterval(() => {
+    if (window.speechSynthesis && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  }, 5000);
+  
+  // Bug di beberapa browser: speechSynthesis tidak berfungsi setelah tab tidak aktif
+  // Solusi: reset saat tab menjadi aktif
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  });
+}
+
+// Fungsi untuk mengaktifkan/menonaktifkan suara
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  
+  // Update icon
+  const soundIcon = document.querySelector('#toggleSound + label i');
+  if (soundIcon) {
+    soundIcon.className = soundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+  }
+  
+  // Simpan preferensi di localStorage
+  localStorage.setItem('soundEnabled', soundEnabled);
+  
+  // Notifikasi
+  showScanResult(
+    "info", 
+    `Suara notifikasi ${soundEnabled ? 'diaktifkan' : 'dinonaktifkan'}`
+  );
+  
+  // Jika diaktifkan, putar suara konfirmasi
+  if (soundEnabled) {
+    const confirmUtterance = new SpeechSynthesisUtterance("Suara notifikasi diaktifkan");
+    confirmUtterance.lang = 'id-ID';
+    confirmUtterance.volume = 0.8;
+    
+    if (indonesianVoice) {
+      confirmUtterance.voice = indonesianVoice;
+    }
+    
+    window.speechSynthesis.speak(confirmUtterance);
+  }
+}
+
 async function processBarcode() {
   const barcode = document.getElementById("barcodeInput").value.trim();
 
   if (!barcode) {
     showScanResult("error", "Barcode tidak boleh kosong!");
+    playNotificationSound('error');
     return;
   }
 
@@ -37,11 +284,15 @@ async function processBarcode() {
 
     if (!employee) {
       showScanResult("error", "Barcode tidak valid!");
+      playNotificationSound('not-found');
       return;
     }
 
     // Get scan type (in/out)
     const scanType = document.querySelector('input[name="scanType"]:checked').value;
+    
+    // Get selected shift
+    const selectedShift = document.querySelector('input[name="shiftOption"]:checked').value;
 
     // Current time
     const now = new Date();
@@ -56,12 +307,13 @@ async function processBarcode() {
 
       if (existingRecord && existingRecord.timeIn) {
         showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
+        playNotificationSound('already-in');
         return;
       }
 
       // Use employee's default type and shift from their profile
       const employeeType = employee.type || "staff";
-      const shift = employee.defaultShift || "morning";
+      const shift = selectedShift;
 
       // Check if late based on employee type and shift
       const isLate = checkIfLate(timeString, employeeType, shift);
@@ -94,6 +346,13 @@ async function processBarcode() {
           isLate ? `Terlambat ${lateMinutes} menit` : "Tepat Waktu"
         }`
       );
+      
+      // Play notification sound based on status
+      if (isLate) {
+        playNotificationSound('late');
+      } else {
+        playNotificationSound('success-in');
+      }
 
       // Reload attendance data
       await loadTodayAttendance();
@@ -105,11 +364,13 @@ async function processBarcode() {
 
       if (!existingRecord) {
         showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
+        playNotificationSound('error');
         return;
       }
 
       if (existingRecord.timeOut) {
         showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
+        playNotificationSound('already-out');
         return;
       }
 
@@ -117,6 +378,7 @@ async function processBarcode() {
       await updateAttendanceOut(existingRecord.id, now);
 
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
+      playNotificationSound('success-out');
 
       // Reload attendance data
       await loadTodayAttendance();
@@ -124,12 +386,15 @@ async function processBarcode() {
   } catch (error) {
     console.error("Error scanning barcode:", error);
     showScanResult("error", "Terjadi kesalahan saat memproses barcode");
+    playNotificationSound('error');
   }
 
   // Clear input
   document.getElementById("barcodeInput").value = "";
   document.getElementById("barcodeInput").focus();
 }
+
+
 
 // Modifikasi fungsi loadTodayAttendance untuk memastikan data izin diambil dengan benar
 async function loadTodayAttendance() {
@@ -246,7 +511,21 @@ function updateStats() {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     console.log("DOM Content Loaded - Initializing attendance system");
+    // Periksa ketersediaan audio pembuka
+    await checkOpeningAudio();
     
+    // Inisialisasi Web Speech API
+    initSpeechSynthesis();
+    
+    // Perbaiki bug umum pada Web Speech API
+    fixSpeechSynthesisBugs();
+    
+    // Preload audio untuk mengurangi delay
+    if (isOpeningAudioAvailable) {
+      const preloadAudio = new Audio('audio/antrian.mp3');
+      preloadAudio.preload = 'auto';
+      preloadAudio.load();
+    }
     // Setup barcode scanning
     const barcodeInput = document.getElementById("barcodeInput");
     if (barcodeInput) {
@@ -336,6 +615,7 @@ function getThresholdTime(employeeType, shift) {
 
   return thresholds[employeeType][shift];
 }
+
 
 // Check if employee is late based on type and shift
 function checkIfLate(timeString, employeeType, shift) {

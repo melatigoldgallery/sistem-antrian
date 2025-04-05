@@ -1338,6 +1338,93 @@ tr:has(.badge.bg-info) {
   background-color: #d32f2f !important;  /* Warna merah lebih gelap saat hover */
   border-color: #c62828 !important;
 }
+.barcode-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background-color: white;
+  border-radius: 5px;
+  max-width: 200px;
+}
+
+.barcode {
+  width: 100%;
+  max-width: 180px;
+}
+
+/* Untuk print layout */
+@media print {
+  .barcode-container {
+    page-break-inside: avoid;
+    margin: 10px;
+  }
+  
+  .download-barcode, 
+  .btn, 
+  .card-header, 
+  .sidebar, 
+  .top-nav {
+    display: none !important;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+.barcode-name {
+  margin-top: 5px;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barcode-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background-color: white;
+  border-radius: 5px;
+  max-width: 200px;
+}
+
+.barcode {
+  width: 100%;
+  max-width: 180px;
+}
+
+/* Untuk print layout */
+@media print {
+  .barcode-container {
+    page-break-inside: avoid;
+    margin: 10px;
+  }
+  
+  .download-barcode, 
+  .btn, 
+  .card-header, 
+  .sidebar, 
+  .top-nav {
+    display: none !important;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .barcode-name {
+    display: block !important;
+    margin-top: 5px;
+    font-weight: bold;
+  }
+}
 
 
 

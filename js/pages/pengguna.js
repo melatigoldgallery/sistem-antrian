@@ -11,6 +11,118 @@ import {
 let employees = [];
 let currentUserId = null;
 
+// Fungsi untuk menghasilkan barcode
+function generateBarcode(barcodeValue, elementId) {
+  try {
+    JsBarcode(`#${elementId}`, barcodeValue, {
+      format: "CODE128",
+      lineColor: "#000",
+      width: 2,
+      height: 50,
+      displayValue: false, // Ubah menjadi false untuk menghilangkan teks barcode
+      fontSize: 12,
+      margin: 5
+    });
+  } catch (error) {
+    console.error("Error generating barcode:", error);
+  }
+}
+// Fungsi untuk download semua barcode
+async function downloadAllBarcodes() {
+  try {
+    if (employees.length === 0) {
+      showNotification("error", "Tidak ada barcode untuk didownload");
+      return;
+    }
+    
+    // Tampilkan notifikasi proses
+    showNotification("info", "Memproses barcode, mohon tunggu...");
+    
+    // Gunakan pendekatan yang lebih sederhana dengan canvas langsung
+    const zip = new JSZip();
+    const barcodeFolder = zip.folder("barcodes");
+    
+    // Proses barcode satu per satu untuk menghindari masalah memori
+    for (let i = 0; i < employees.length; i++) {
+      const employee = employees[i];
+      const barcodeId = `barcode-${employee.id}`;
+      const barcodeElement = document.getElementById(barcodeId);
+      
+      if (!barcodeElement) continue;
+      
+      // Buat canvas untuk barcode
+      try {
+        // Buat container sementara untuk menggabungkan barcode dan nama
+        const container = document.createElement('div');
+        container.style.backgroundColor = 'white';
+        container.style.padding = '10px';
+        container.style.textAlign = 'center';
+        container.style.width = '200px';
+        container.style.display = 'inline-block';
+        
+        // Clone barcode element
+        const barcodeClone = barcodeElement.cloneNode(true);
+        container.appendChild(barcodeClone);
+        
+        // Tambahkan nama karyawan
+        const nameElement = document.createElement('div');
+        nameElement.style.marginTop = '10px';
+        nameElement.style.fontWeight = 'bold';
+        nameElement.style.fontSize = '14px';
+        nameElement.textContent = employee.name;
+        container.appendChild(nameElement);
+        
+        // Tambahkan ke body sementara untuk dirender
+        document.body.appendChild(container);
+        
+        // Gunakan html2canvas untuk mengambil screenshot dari container
+        const canvas = await html2canvas(container, {
+          backgroundColor: "#ffffff",
+          scale: 2 // Higher resolution
+        });
+        
+        // Hapus container sementara
+        document.body.removeChild(container);
+        
+        // Konversi canvas ke blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        
+        // Tambahkan ke zip
+        const fileName = `barcode_${employee.name.replace(/\s+/g, '_')}.png`;
+        barcodeFolder.file(fileName, blob);
+        
+        // Update notifikasi
+        if (i % 5 === 0 || i === employees.length - 1) {
+          showNotification("info", `Memproses barcode ${i+1} dari ${employees.length}...`);
+        }
+      } catch (err) {
+        console.error(`Error processing barcode for ${employee.name}:`, err);
+        continue; // Lanjutkan ke barcode berikutnya jika ada error
+      }
+      
+      // Berikan waktu browser untuk "bernapas"
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    // Generate dan download zip file
+    showNotification("info", "Membuat file zip...");
+    const content = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: {
+        level: 6 // Level kompresi sedang
+      }
+    });
+    
+    saveAs(content, "all_barcodes.zip");
+    showNotification("success", "Semua barcode berhasil didownload!");
+  } catch (error) {
+    console.error("Error downloading all barcodes:", error);
+    showNotification("error", `Gagal mendownload semua barcode: ${error.message}`);
+  }
+}
+
+
 
 // Tambahkan fungsi untuk mengisi ID dan barcode otomatis
 async function populateAutoFields() {
@@ -37,7 +149,7 @@ async function loadEmployees() {
   }
 }
 
-// Update staff table
+// Modifikasi fungsi updateStaffTable untuk menampilkan barcode
 function updateStaffTable() {
   const tbody = document.getElementById('staffList');
   const emptyState = document.getElementById('emptyStaff');
@@ -55,10 +167,18 @@ function updateStaffTable() {
   
   employees.forEach(employee => {
     const row = document.createElement('tr');
+    const barcodeId = `barcode-${employee.id}`;
+    
     row.innerHTML = `
       <td>${employee.employeeId || '-'}</td>
       <td>${employee.name || '-'}</td>
       <td>${employee.barcode || '-'}</td>
+      <td>
+        <div class="barcode-container">
+          <svg id="${barcodeId}" class="barcode"></svg>
+          <div class="barcode-name">${employee.name}</div>
+        </div>
+      </td>
       <td>${formatEmployeeType(employee.type) || '-'}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary edit-staff" data-id="${employee.id}" data-bs-toggle="tooltip" title="Edit">
@@ -70,6 +190,11 @@ function updateStaffTable() {
       </td>
     `;
     tbody.appendChild(row);
+    
+    // Generate barcode untuk setiap karyawan
+    if (employee.barcode) {
+      generateBarcode(employee.barcode, barcodeId);
+    }
   });
   
   // Initialize tooltips
@@ -81,6 +206,7 @@ function updateStaffTable() {
   // Add event listeners to action buttons
   addActionButtonListeners();
 }
+
 
 // Helper function to format employee type
 function formatEmployeeType(type) {
@@ -119,7 +245,8 @@ function setupEventListeners() {
       console.error("Error refreshing barcode:", error);
     }
   });
-  
+    // Tambahkan event listener untuk download semua barcode
+    document.getElementById('downloadAllBarcodes')?.addEventListener('click', downloadAllBarcodes);
   // Export users
   document.getElementById('exportUsers')?.addEventListener('click', exportUsersToExcel);
   
@@ -128,8 +255,14 @@ function setupEventListeners() {
   
   // Confirm delete
   document.getElementById('confirmDelete')?.addEventListener('click', handleConfirmDelete);
+// Tambahkan ke setupEventListeners
+document.getElementById('printAllBarcodes')?.addEventListener('click', printAllBarcodes);
 }
 
+// Fungsi untuk mencetak semua barcode
+function printAllBarcodes() {
+  window.print();
+}
 // Add event listeners to action buttons
 function addActionButtonListeners() {
   // Edit button
@@ -270,15 +403,6 @@ function filterEmployees(filterType, value) {
 
     row.style.display = showRow ? "" : "none";
   });
-
-  // Update dropdown button text
-  if (filterType === "type") {
-    const buttonText = value === "all" ? "Filter Tipe" : value === "staff" ? "Staff" : "Office Boy";
-    document.getElementById("employeeFilterDropdown").innerHTML = `<i class="fas fa-user-tag"></i> ${buttonText}`;
-  } else if (filterType === "shift") {
-    const buttonText = value === "all" ? "Filter Shift" : value === "morning" ? "Shift Pagi" : "Shift Sore";
-    document.getElementById("shiftFilterDropdown").innerHTML = `<i class="fas fa-clock"></i> ${buttonText}`;
-  }
 }
 
 // Export users to Excel

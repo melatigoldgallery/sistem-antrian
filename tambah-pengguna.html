@@ -21,7 +21,13 @@
     <!-- Custom CSS -->
      <!-- SheetJS (untuk export Excel) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+  <!-- Barcode Generator -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<!-- Screenshot & Download -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  
+  <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Kelola Pengguna - Melati Gold Shop</title>
     <style>
 /* User Management specific styles */
@@ -339,21 +345,18 @@
               <div class="card-header d-flex justify-content-between align-items-center">
                 <h2><i class="fas fa-users"></i> Daftar Karyawan</h2>
                 <div class="card-actions">
-                  <div class="dropdown me-2">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="employeeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-user-tag"></i> Filter Tipe
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="employeeFilterDropdown">
-                      <li><a class="dropdown-item" href="#" data-employee-filter="all">Semua</a></li>
-                      <li><a class="dropdown-item" href="#" data-employee-filter="staff">Staff</a></li>
-                      <li><a class="dropdown-item" href="#" data-employee-filter="ob">Office Boy</a></li>
-                    </ul>
-                  </div>
+                  <button class="btn btn-sm btn-outline-success me-2" id="downloadAllBarcodes">
+                    <i class="fas fa-barcode"></i> Download Barcode
+                  </button>                  
+                  <button class="btn btn-sm btn-outline-secondary me-2" id="printAllBarcodes">
+                    <i class="fas fa-print"></i> Cetak Barcode
+                  </button>
                   <button class="btn btn-sm btn-outline-primary" id="exportUsers">
                     <i class="fas fa-download"></i> Export
                   </button>
                 </div>
               </div>
+              
               <div class="card-body">
                 <div class="table-responsive">
                   <table class="table table-hover">
@@ -362,6 +365,7 @@
                         <th>ID Karyawan</th>
                         <th>Nama</th>
                         <th>Barcode</th>
+                        <th>Barcode Visual</th>
                         <th>Tipe</th>
                         <th>Aksi</th>
                       </tr>
@@ -444,6 +448,8 @@
     <!-- Custom JS -->
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/pengguna.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </body>
   </html>
   
