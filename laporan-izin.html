@@ -352,21 +352,7 @@
                     </div>
                   </div>
                   <div class="row">
-                    <div class="col-md-8">
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="rejectedFilter" value="rejected" checked />
-                        <label class="form-check-label" for="rejectedFilter">
-                          <span class="badge bg-danger">Belum Diganti</span>
-                        </label>
-                      </div>
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="replacedFilter" value="replaced" checked />
-                        <label class="form-check-label" for="replacedFilter">
-                          <span class="badge bg-success">Sudah Diganti</span>
-                        </label>
-                      </div>
-                    </div>
-                    <div class="col-md-4 d-flex justify-content-end align-items-end">
+                    <div class="d-flex justify-content-end align-items-end">
                       <button id="generateReportBtn" class="btn btn-primary">
                         <i class="fas fa-sync-alt me-2"></i>
                         Generate Laporan
@@ -502,10 +488,9 @@
                         <th>Jenis Pengganti</th>
                         <th>Detail Pengganti</th>
                         <th>Status</th>
-                        <th>Tanggal Keputusan</th>
                         <th>Status Ganti</th>
                       </tr>
-                    </thead>
+                    </thead>                   
                     <tbody id="leaveReportList"></tbody>
                   </table>
                   <!-- Add this to laporan-izin.html after the table -->

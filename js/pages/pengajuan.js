@@ -1,7 +1,7 @@
-//import { checkAuthState } from './auth.js';
 import { getEmployees } from "../services/employee-service.js";
 import { submitLeaveRequest, getLeaveRequestsByEmployee } from "../services/leave-service.js";
-import { uploadFile } from "../services/file-service.js";
+import { uploadFile, checkTemporaryFiles } from "../services/cloudinary-service.js";
+
 // Initialize data
 let employees = [];
 let leaveHistory = [];
@@ -16,28 +16,32 @@ function calculateDaysBetween(startDate, endDate) {
 
 // Function to add a new date input field
 function addReplacementDateField() {
-  const container = document.getElementById('replacementDatesContainer');
+  const container = document.getElementById("replacementDatesContainer");
   if (!container) return;
-  
+
   const index = container.children.length;
-  
-  const dateItem = document.createElement('div');
-  dateItem.className = 'mb-3 replacement-date-item';
+
+  const dateItem = document.createElement("div");
+  dateItem.className = "mb-3 replacement-date-item";
   dateItem.innerHTML = `
     <label for="replacementDate${index}" class="form-label">Tanggal Ganti Libur ${index + 1}</label>
     <div class="input-group">
       <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
       <input type="date" class="form-control replacement-date" id="replacementDate${index}" />
-      ${index > 0 ? '<button type="button" class="btn btn-outline-danger remove-date"><i class="fas fa-times"></i></button>' : ''}
+      ${
+        index > 0
+          ? '<button type="button" class="btn btn-outline-danger remove-date"><i class="fas fa-times"></i></button>'
+          : ""
+      }
     </div>
   `;
-  
+
   container.appendChild(dateItem);
-  
+
   // Add event listener to remove button if it exists
-  const removeBtn = dateItem.querySelector('.remove-date');
+  const removeBtn = dateItem.querySelector(".remove-date");
   if (removeBtn) {
-    removeBtn.addEventListener('click', function() {
+    removeBtn.addEventListener("click", function () {
       container.removeChild(dateItem);
       updateReplacementDateLabels();
     });
@@ -46,15 +50,15 @@ function addReplacementDateField() {
 
 // Function to update labels after removing a date field
 function updateReplacementDateLabels() {
-  const dateItems = document.querySelectorAll('.replacement-date-item');
+  const dateItems = document.querySelectorAll(".replacement-date-item");
   dateItems.forEach((item, index) => {
-    const label = item.querySelector('label');
+    const label = item.querySelector("label");
     if (label) {
       label.textContent = `Tanggal Ganti Libur ${index + 1}`;
-      label.setAttribute('for', `replacementDate${index}`);
+      label.setAttribute("for", `replacementDate${index}`);
     }
-    
-    const input = item.querySelector('input');
+
+    const input = item.querySelector("input");
     if (input) {
       input.id = `replacementDate${index}`;
     }
@@ -63,20 +67,20 @@ function updateReplacementDateLabels() {
 
 // Function to update the UI based on leave duration
 function updateLeaveReplacementUI() {
-  const startDate = document.getElementById('leaveStartDate')?.value;
-  const endDate = document.getElementById('leaveEndDate')?.value;
-  const replacementType = document.getElementById('replacementType')?.value;
-  const multiDateWarning = document.getElementById('multiDateWarning');
-  const addMoreDatesBtn = document.getElementById('addMoreDates');
-  const container = document.getElementById('replacementDatesContainer');
-  
+  const startDate = document.getElementById("leaveStartDate")?.value;
+  const endDate = document.getElementById("leaveEndDate")?.value;
+  const replacementType = document.getElementById("replacementType")?.value;
+  const multiDateWarning = document.getElementById("multiDateWarning");
+  const addMoreDatesBtn = document.getElementById("addMoreDates");
+  const container = document.getElementById("replacementDatesContainer");
+
   // Only proceed if we have both dates and replacement type is libur
-  if (!(startDate && endDate && replacementType === 'libur')) {
-    if (multiDateWarning) multiDateWarning.style.display = 'none';
-    if (addMoreDatesBtn) addMoreDatesBtn.style.display = 'none';
+  if (!(startDate && endDate && replacementType === "libur")) {
+    if (multiDateWarning) multiDateWarning.style.display = "none";
+    if (addMoreDatesBtn) addMoreDatesBtn.style.display = "none";
     return;
   }
-  
+
   // Reset container to have only one date field
   if (container) {
     container.innerHTML = `
@@ -89,24 +93,23 @@ function updateLeaveReplacementUI() {
       </div>
     `;
   }
-  
+
   const dayCount = calculateDaysBetween(startDate, endDate);
-  
+
   if (dayCount > 1) {
     // Show warning and add button for multiple days
-    if (document.getElementById('totalDaysCount')) 
-      document.getElementById('totalDaysCount').textContent = dayCount;
-    if (multiDateWarning) multiDateWarning.style.display = 'block';
-    if (addMoreDatesBtn) addMoreDatesBtn.style.display = 'block';
-    
+    if (document.getElementById("totalDaysCount")) document.getElementById("totalDaysCount").textContent = dayCount;
+    if (multiDateWarning) multiDateWarning.style.display = "block";
+    if (addMoreDatesBtn) addMoreDatesBtn.style.display = "block";
+
     // Add date fields for each day (minus one because we already have one field)
     for (let i = 1; i < dayCount; i++) {
       addReplacementDateField();
     }
   } else {
     // Hide warning and add button for single day
-    if (multiDateWarning) multiDateWarning.style.display = 'none';
-    if (addMoreDatesBtn) addMoreDatesBtn.style.display = 'none';
+    if (multiDateWarning) multiDateWarning.style.display = "none";
+    if (addMoreDatesBtn) addMoreDatesBtn.style.display = "none";
   }
 }
 
@@ -126,7 +129,7 @@ document.getElementById("leaveType")?.addEventListener("change", function () {
     replacementTypeSelect.value = "";
     replacementTypeSelect.disabled = false;
   }
-  
+
   // Enable all options first
   if (replacementTypeSelect) {
     Array.from(replacementTypeSelect.options).forEach((option) => {
@@ -220,21 +223,88 @@ document.getElementById("hasMedicalCertificate")?.addEventListener("change", fun
 document.getElementById("medicalCertificateFile")?.addEventListener("change", function () {
   const maxSize = 2 * 1024 * 1024; // 2MB
   const file = this.files[0];
-  
+
   if (file) {
     if (file.size > maxSize) {
       showFeedback("error", "Ukuran file melebihi 2MB. Silakan pilih file yang lebih kecil.");
       this.value = ""; // Reset input file
+      return;
     }
-    
+
     const validTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
     if (!validTypes.includes(file.type)) {
       showFeedback("error", "Format file tidak didukung. Gunakan JPG, PNG, atau PDF.");
       this.value = ""; // Reset input file
+      return;
     }
+
+    // Show file preview if valid
+    showFilePreview(file);
+  } else {
+    hideFilePreview();
   }
 });
 
+// Function to show file preview
+function showFilePreview(file) {
+  const previewContainer = document.getElementById("filePreviewContainer");
+  if (!previewContainer) return;
+
+  // Create preview container if it doesn't exist
+  if (!document.getElementById("filePreviewName")) {
+    previewContainer.innerHTML = `
+      <div class="card">
+        <div class="card-body p-2">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-file-medical me-2 text-primary"></i>
+            <span id="filePreviewName"></span>
+            <button type="button" class="btn btn-sm btn-link text-danger ms-auto" id="removeFileBtn">
+              <i class="fas fa-times"></i> Hapus
+            </button>
+          </div>
+          <div id="imagePreview" class="mt-2" style="display: none;">
+            <img src="" class="img-fluid img-thumbnail" style="max-height: 150px;" />
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add event listener to remove button
+    document.getElementById("removeFileBtn")?.addEventListener("click", function () {
+      document.getElementById("medicalCertificateFile").value = "";
+      hideFilePreview();
+    });
+  }
+
+  // Update preview
+  const previewName = document.getElementById("filePreviewName");
+  const imagePreview = document.getElementById("imagePreview");
+  const previewImage = imagePreview?.querySelector("img");
+
+  if (previewName) previewName.textContent = file.name;
+  previewContainer.style.display = "block";
+
+  // Show image preview for images
+  if (file.type.startsWith("image/") && imagePreview && previewImage) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      previewImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    imagePreview.style.display = "block";
+  } else if (file.type === "application/pdf" && imagePreview) {
+    // For PDF, show icon
+    imagePreview.style.display = "none";
+  } else {
+    if (imagePreview) imagePreview.style.display = "none";
+  }
+}
+
+// Function to hide file preview
+function hideFilePreview() {
+  const previewContainer = document.getElementById("filePreviewContainer");
+  if (previewContainer) previewContainer.style.display = "none";
+}
 
 // Event listener for radio button jenis cuti
 document.querySelectorAll('input[name="leaveTypeRadio"]')?.forEach((radio) => {
@@ -246,7 +316,7 @@ document.querySelectorAll('input[name="leaveTypeRadio"]')?.forEach((radio) => {
   });
 });
 
-// Event listener for replacement type selection - FIXED
+// Event listener for replacement type selection
 document.getElementById("replacementType")?.addEventListener("change", function () {
   const liburSection = document.getElementById("replacementLibur");
   const jamSection = document.getElementById("replacementJam");
@@ -266,13 +336,198 @@ document.getElementById("replacementType")?.addEventListener("change", function 
 });
 
 // Add event listeners for date inputs
-document.getElementById('leaveStartDate')?.addEventListener('change', updateLeaveReplacementUI);
-document.getElementById('leaveEndDate')?.addEventListener('change', updateLeaveReplacementUI);
+document.getElementById("leaveStartDate")?.addEventListener("change", updateLeaveReplacementUI);
+document.getElementById("leaveEndDate")?.addEventListener("change", updateLeaveReplacementUI);
 
 // Add event listener for the "Add More Dates" button
-document.getElementById('addMoreDates')?.addEventListener('click', addReplacementDateField);
+document.getElementById("addMoreDates")?.addEventListener("click", addReplacementDateField);
 
-// Pada bagian submit form, modifikasi untuk menangani multi-hari
+// Function to compress image before upload
+async function compressImage(file, maxWidth = 1200, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      resolve(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Canvas to Blob failed"));
+              return;
+            }
+
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now(),
+            });
+
+            resolve(compressedFile);
+          },
+          file.type,
+          quality
+        );
+      };
+      img.onerror = (error) => {
+        reject(error);
+      };
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+  });
+}
+
+// Function to retry upload with exponential backoff
+async function retryUpload(file, path, maxRetries = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Percobaan upload ke-${attempt}...`);
+      return await uploadFile(file, path);
+    } catch (error) {
+      console.warn(`Percobaan ke-${attempt} gagal:`, error);
+      lastError = error;
+
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s, ...
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error("Gagal mengunggah file setelah beberapa percobaan");
+}
+
+// Function to validate file
+function validateFile(file) {
+  const maxSize = 2 * 1024 * 1024; // 2MB
+  if (file.size > maxSize) {
+    return {
+      valid: false,
+      message: "Ukuran file melebihi 2MB. Silakan pilih file yang lebih kecil.",
+    };
+  }
+
+  const validTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+  if (!validTypes.includes(file.type)) {
+    return {
+      valid: false,
+      message: "Format file tidak didukung. Gunakan JPG, PNG, atau PDF.",
+    };
+  }
+
+  return { valid: true };
+}
+
+async function checkInternetConnection() {
+  try {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // Set timeout untuk request
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    // Gunakan mode 'no-cors' untuk menghindari masalah CORS
+    const response = await fetch("https://www.cloudinary.com/favicon.ico", {
+      method: "HEAD",
+      signal,
+      mode: "no-cors", // Tambahkan ini
+    });
+
+    clearTimeout(timeoutId);
+    return true; // Jika berhasil mencapai sini, berarti online
+  } catch (error) {
+    return false;
+  }
+}
+
+// Function to handle offline mode
+function handleOfflineMode() {
+  const offlineAlert = document.createElement("div");
+  offlineAlert.className = "alert alert-warning offline-alert";
+  offlineAlert.innerHTML = `
+    <i class="fas fa-wifi-slash me-2"></i>
+    <strong>Anda sedang offline.</strong> File akan disimpan sementara dan diunggah saat koneksi tersedia.
+  `;
+
+  const formFeedback = document.getElementById("formFeedback");
+  if (formFeedback) {
+    formFeedback.parentNode.insertBefore(offlineAlert, formFeedback);
+  }
+}
+
+// Function to check pending uploads
+function checkPendingUploads() {
+  const tempFiles = checkTemporaryFiles();
+  if (tempFiles && tempFiles.length > 0) {
+    showFeedback(
+      "warning",
+      `Terdapat ${tempFiles.length} file yang belum terunggah karena masalah koneksi. 
+      <button class="btn btn-sm btn-outline-warning ms-2" id="uploadPendingBtn">
+        <i class="fas fa-cloud-upload-alt me-1"></i> Unggah Sekarang
+      </button>`,
+      false,
+      10000
+    );
+
+    document.getElementById("uploadPendingBtn")?.addEventListener("click", async function () {
+      this.disabled = true;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Mengunggah...';
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const tempFile of tempFiles) {
+        try {
+          if (tempFile.dataUrl) {
+            const response = await fetch(tempFile.dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], tempFile.name, { type: tempFile.type });
+
+            await uploadFile(file, tempFile.path);
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          console.error("Error uploading pending file:", error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showFeedback("success", `Berhasil mengunggah ${successCount} file.`);
+      }
+      if (failCount > 0) {
+        showFeedback("error", `Gagal mengunggah ${failCount} file.`);
+      }
+    });
+  }
+}
+
+// Submit form event listener
 document.getElementById("leaveForm")?.addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -298,26 +553,34 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     const leaveEndDate = document.getElementById("leaveEndDate").value;
     const leaveReason = document.getElementById("leaveReason").value;
     const replacementType = document.getElementById("replacementType").value;
-    
+
+    // Validasi tanggal
+    if (new Date(leaveStartDate) > new Date(leaveEndDate)) {
+      showFeedback("error", "Tanggal mulai tidak boleh lebih besar dari tanggal selesai!");
+      submitBtn.innerHTML = originalBtnText;
+      submitBtn.disabled = false;
+      return;
+    }
+
     // Hitung jumlah hari izin
     const startDate = new Date(leaveStartDate);
     const endDate = new Date(leaveEndDate);
     const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const isMultiDay = dayDiff > 1;
-    
+
     // Format tanggal untuk tampilan
     const formattedStartDate = new Date(leaveStartDate).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
-      year: "numeric"
+      year: "numeric",
     });
-    
+
     const formattedEndDate = new Date(leaveEndDate).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
-      year: "numeric"
+      year: "numeric",
     });
-    
+
     // Format tanggal izin untuk tampilan
     let leaveDate;
     if (leaveStartDate === leaveEndDate) {
@@ -325,27 +588,71 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     } else {
       leaveDate = `${formattedStartDate} s/d ${formattedEndDate}`;
     }
-    
+
     let replacementDetails;
     let medicalCertificateFileInfo = null;
 
     // Proses berdasarkan jenis izin dan pengganti
     if (leaveType === "sakit") {
       const hasMedicalCertificate = document.getElementById("hasMedicalCertificate").checked;
+
       // Upload file surat keterangan sakit jika ada
       if (hasMedicalCertificate) {
         const fileInput = document.getElementById("medicalCertificateFile");
         if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          
+          // Validasi file
+          const validation = validateFile(file);
+          if (!validation.valid) {
+            showFeedback("error", validation.message);
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+            return;
+          }
+
           // Tampilkan indikator upload
           showFeedback("info", '<i class="fas fa-upload me-2"></i> Mengunggah surat keterangan sakit...', false);
-          
+
           try {
-            // Upload file dan dapatkan informasinya
-            medicalCertificateFileInfo = await uploadFile(
-              fileInput.files[0], 
-              `medical-certificates/${employeeId}`
+            // Kompresi gambar jika ukurannya besar
+            let fileToUpload = file;
+            if (file.type.startsWith("image/") && file.size > 1024 * 1024) {
+              try {
+                fileToUpload = await compressImage(file);
+                console.log(`File dikompresi dari ${file.size} menjadi ${fileToUpload.size} bytes`);
+              } catch (compressError) {
+                console.warn("Gagal mengompresi gambar:", compressError);
+              }
+            }
+
+            // Upload file dengan retry mechanism
+            const uploadResult = await retryUpload(
+              fileToUpload,
+              `medical-certificates/${employeeId}`,
+              3 // maksimal 3 kali percobaan
             );
+            
+            console.log("Upload result:", uploadResult); // Debugging
+
+            // Simpan informasi file
+            medicalCertificateFileInfo = {
+              url: uploadResult.url,
+              publicId: uploadResult.publicId,
+              name: file.name,
+              type: file.type,
+              size: file.size
+            };
+
+            // Jika file disimpan sementara (offline)
+            if (uploadResult.isOffline) {
+              showFeedback(
+                "warning",
+                "File disimpan sementara karena Anda sedang offline. File akan diunggah otomatis saat koneksi tersedia."
+              );
+            }
           } catch (uploadError) {
+            console.error("Error uploading file:", uploadError);
             showFeedback("error", `Gagal mengunggah file: ${uploadError.message}`);
             submitBtn.innerHTML = originalBtnText;
             submitBtn.disabled = false;
@@ -353,6 +660,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
           }
         }
       }
+
       replacementDetails = {
         type: "sakit",
         needReplacement: replacementType !== "tidak",
@@ -360,47 +668,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         medicalCertificateFile: medicalCertificateFileInfo
       };
       
-      // Add replacement details based on type
-      if (replacementType === "libur") {
-        const replacementDates = [];
-        document.querySelectorAll('.replacement-date').forEach(input => {
-          if (input.value) {
-            const formattedDate = new Date(input.value).toLocaleDateString("id-ID", {
-              weekday: "long", year: "numeric", month: "long", day: "numeric"
-            });
-            
-            replacementDates.push({
-              date: input.value,
-              formattedDate: formattedDate
-            });
-          }
-        });
-        
-        if (replacementDates.length === 0) {
-          showFeedback("error", "Tanggal pengganti harus diisi!");
-          submitBtn.innerHTML = originalBtnText;
-          submitBtn.disabled = false;
-          return;
-        }
-        
-        replacementDetails.dates = replacementDates;
-      } else if (replacementType === "jam") {
-        const replacementHourDate = document.getElementById("replacementHourDate").value;
-        const replacementHours = document.getElementById("replacementHours").value;
-        
-        if (!replacementHourDate || !replacementHours) {
-          showFeedback("error", "Tanggal dan jumlah jam pengganti harus diisi!");
-          submitBtn.innerHTML = originalBtnText;
-          submitBtn.disabled = false;
-          return;
-        }
-        
-        replacementDetails.date = replacementHourDate;
-        replacementDetails.hours = replacementHours;
-        replacementDetails.formattedDate = new Date(replacementHourDate).toLocaleDateString("id-ID", {
-          weekday: "long", year: "numeric", month: "long", day: "numeric"
-        });
-      }
+      console.log("Replacement details with medical certificate:", replacementDetails); // Debugging
     } else if (leaveType === "cuti") {
       const cutiType = document.querySelector('input[name="leaveTypeRadio"]:checked')?.value || "regular";
       let specialReason = null;
@@ -418,26 +686,29 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     } else if (replacementType === "libur") {
       // Collect all replacement dates
       const replacementDates = [];
-      document.querySelectorAll('.replacement-date').forEach(input => {
+      document.querySelectorAll(".replacement-date").forEach((input) => {
         if (input.value) {
           const formattedDate = new Date(input.value).toLocaleDateString("id-ID", {
-            weekday: "long", year: "numeric", month: "long", day: "numeric"
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           });
-          
+
           replacementDates.push({
             date: input.value,
-            formattedDate: formattedDate
+            formattedDate: formattedDate,
           });
         }
       });
-      
+
       if (replacementDates.length === 0) {
         showFeedback("error", "Tanggal pengganti harus diisi!");
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
         return;
       }
-      
+
       replacementDetails = {
         type: "libur",
         needReplacement: true,
@@ -490,8 +761,13 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       year: new Date(leaveStartDate).getFullYear(), // For yearly reports
       // Tambahkan informasi multi-hari jika perlu
       isMultiDay: isMultiDay,
-      dayCount: dayDiff
+      dayCount: dayDiff,
+      // Tambahkan timestamp untuk sorting
+      submissionDate: new Date().toISOString(),
+      status: "Menunggu Persetujuan",
     };
+    
+    console.log("Final leave request data:", leaveRequest); // Debugging
 
     // Submit the leave request
     await submitLeaveRequest(leaveRequest);
@@ -499,13 +775,20 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
     this.reset();
 
-    // Hide all sections
-    document.getElementById("replacementLibur").style.display = "none";
-    document.getElementById("replacementJam").style.display = "none";
-    document.getElementById("sickLeaveSection").style.display = "none";
-    document.getElementById("leaveSection").style.display = "none";
-    document.getElementById("multiDateWarning").style.display = "none";
+    // Perbaikan: Periksa apakah elemen ada sebelum mengakses propertinya
+    const elementsToHide = [
+      "replacementLibur",
+      "replacementJam",
+      "sickLeaveSection",
+      "leaveSection",
+      "multiDateWarning",
+      "filePreviewContainer",
+    ];
 
+    elementsToHide.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.style.display = "none";
+    });
     // Reload leave history
     await loadLeaveHistory(employeeId);
   } catch (error) {
@@ -519,24 +802,29 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
 });
 
 
-
-
-// Function to show feedback messages
-function showFeedback(type, message) {
+// Function to show feedback messages with custom duration
+function showFeedback(type, message, autoHide = true, duration = 5000) {
   const feedbackElement = document.getElementById("formFeedback");
   if (!feedbackElement) return;
 
-  feedbackElement.className = `alert alert-${type === "error" ? "danger" : "success"} mb-4`;
-  feedbackElement.innerHTML = `<i class="fas fa-${type === "error" ? "exclamation-circle" : "check-circle"} me-2"></i> ${message}`;
+  feedbackElement.className = `alert alert-${
+    type === "error" ? "danger" : type === "warning" ? "warning" : type === "info" ? "info" : "success"
+  } mb-4`;
+  feedbackElement.innerHTML = message;
   feedbackElement.style.display = "block";
 
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    feedbackElement.style.display = "none";
-  }, 5000);
+  // Auto-hide after specified duration if autoHide is true
+  if (autoHide) {
+    setTimeout(() => {
+      feedbackElement.style.display = "none";
+    }, duration);
+  }
+
+  // Scroll to feedback element
+  feedbackElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-// Update leave history table untuk menampilkan rentang tanggal
+// Update leave history table
 function updateLeaveHistoryTable() {
   const tbody = document.getElementById("leaveHistoryList");
   const emptyState = document.getElementById("emptyLeaveHistory");
@@ -554,7 +842,7 @@ function updateLeaveHistoryTable() {
 
   // Sort by submission date (newest first)
   const sortedHistory = [...leaveHistory].sort((a, b) => {
-    return new Date(b.submissionDate) - new Date(a.submissionDate);
+    return new Date(b.submissionDate || 0) - new Date(a.submissionDate || 0);
   });
 
   // Display only the 5 most recent requests
@@ -601,106 +889,129 @@ function updateLeaveHistoryTable() {
     <td>${leaveDateDisplay}</td>
     <td>${leaveTypeDisplay}<br><small class="text-muted">${record.reason}</small></td>
     <td>${replacementTypeDisplay}</td>
-    <td><span class="status-badge ${statusClass}">${record.status}</span></td>
+    <td><span class="status-badge ${statusClass}">${record.status || "Menunggu Persetujuan"}</span></td>
   `;
 
-  tbody.appendChild(row);
-});
+    tbody.appendChild(row);
+  });
 }
 
 // Function to load employee data
 async function loadEmployees() {
-try {
-  employees = await getEmployees();
-} catch (error) {
-  console.error("Error loading employees:", error);
-  showFeedback("error", "Gagal memuat data karyawan. Silakan refresh halaman.");
-}
+  try {
+    employees = await getEmployees();
+  } catch (error) {
+    console.error("Error loading employees:", error);
+    showFeedback("error", "Gagal memuat data karyawan. Silakan refresh halaman.");
+  }
 }
 
 // Function to load leave history for an employee
 async function loadLeaveHistory(employeeId) {
-try {
-  if (!employeeId) return;
-  
-  // Save current employee ID to localStorage
-  localStorage.setItem("currentEmployeeId", employeeId);
-  
-  leaveHistory = await getLeaveRequestsByEmployee(employeeId);
-  updateLeaveHistoryTable();
-} catch (error) {
-  console.error("Error loading leave history:", error);
-  showFeedback("error", "Gagal memuat riwayat izin. Silakan refresh halaman.");
-}
+  try {
+    if (!employeeId) return;
+
+    // Save current employee ID to localStorage
+    localStorage.setItem("currentEmployeeId", employeeId);
+
+    leaveHistory = await getLeaveRequestsByEmployee(employeeId);
+    updateLeaveHistoryTable();
+  } catch (error) {
+    console.error("Error loading leave history:", error);
+    showFeedback("error", "Gagal memuat riwayat izin. Silakan refresh halaman.");
+  }
 }
 
 // Initialize date inputs with min date validation
 function initDateInputs() {
-const today = new Date();
-const tomorrow = new Date(today);
-tomorrow.setDate(tomorrow.getDate() + 1);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-const formattedTomorrow = tomorrow.toISOString().split('T')[0];
+  const formattedTomorrow = tomorrow.toISOString().split("T")[0];
 
-const startDateInput = document.getElementById('leaveStartDate');
-const endDateInput = document.getElementById('leaveEndDate');
+  const startDateInput = document.getElementById("leaveStartDate");
+  const endDateInput = document.getElementById("leaveEndDate");
 
-if (startDateInput) {
-  startDateInput.min = formattedTomorrow;
-}
+  if (startDateInput) {
+    startDateInput.min = formattedTomorrow;
+  }
 
-if (endDateInput) {
-  endDateInput.min = formattedTomorrow;
-}
+  if (endDateInput) {
+    endDateInput.min = formattedTomorrow;
+  }
 }
 
 // Reset button functionality
 document.querySelector('button[type="reset"]')?.addEventListener("click", () => {
-// Hide all sections
-const sections = [
-  "replacementLibur", 
-  "replacementJam", 
-  "sickLeaveSection", 
-  "leaveSection", 
-  "multiDateWarning", 
-  "formFeedback"
-];
+  // Hide all sections
+  const sections = [
+    "replacementLibur",
+    "replacementJam",
+    "sickLeaveSection",
+    "leaveSection",
+    "multiDateWarning",
+    "formFeedback",
+    "filePreviewContainer",
+  ];
 
-sections.forEach(id => {
-  const element = document.getElementById(id);
-  if (element) element.style.display = "none";
+  sections.forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.style.display = "none";
+  });
+
+  // Reset replacement dates container to only have one date field
+  const container = document.getElementById("replacementDatesContainer");
+  if (container) {
+    container.innerHTML = `
+      <div class="mb-3 replacement-date-item">
+        <label for="replacementDate0" class="form-label">Tanggal Ganti Libur 1</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+          <input type="date" class="form-control replacement-date" id="replacementDate0" />
+        </div>
+      </div>
+    `;
+  }
+
+  // Hide add more dates button
+  const addMoreDatesBtn = document.getElementById("addMoreDates");
+  if (addMoreDatesBtn) {
+    addMoreDatesBtn.style.display = "none";
+  }
 });
 
-// Reset replacement dates container to only have one date field
-const container = document.getElementById('replacementDatesContainer');
-if (container) {
-  container.innerHTML = `
-    <div class="mb-3 replacement-date-item">
-      <label for="replacementDate0" class="form-label">Tanggal Ganti Libur 1</label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-        <input type="date" class="form-control replacement-date" id="replacementDate0" />
-      </div>
-    </div>
-  `;
-}
+// Event listeners for online/offline status
+window.addEventListener("online", function () {
+  document.querySelectorAll(".offline-alert").forEach((el) => el.remove());
+  showFeedback("success", "Koneksi internet tersedia. File yang disimpan sementara dapat diunggah sekarang.");
+  checkPendingUploads();
+});
 
-// Hide add more dates button
-const addMoreDatesBtn = document.getElementById('addMoreDates');
-if (addMoreDatesBtn) {
-  addMoreDatesBtn.style.display = "none";
-}
+window.addEventListener("offline", function () {
+  showFeedback("warning", "Anda sedang offline. File akan disimpan sementara dan diunggah saat koneksi tersedia.");
+  handleOfflineMode();
 });
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
-loadEmployees();
-initDateInputs();
+  loadEmployees();
+  initDateInputs();
 
-// Check for saved employee ID
-const savedEmployeeId = localStorage.getItem("currentEmployeeId");
-if (savedEmployeeId && document.getElementById("employeeId")) {
-  document.getElementById("employeeId").value = savedEmployeeId;
-  loadLeaveHistory(savedEmployeeId);
-}
+  // Periksa koneksi internet
+  checkInternetConnection().then((isOnline) => {
+    if (!isOnline) {
+      handleOfflineMode();
+    }
+  });
+
+  // Tambahkan pemeriksaan file yang belum terunggah
+  checkPendingUploads();
+
+  // Check for saved employee ID
+  const savedEmployeeId = localStorage.getItem("currentEmployeeId");
+  if (savedEmployeeId && document.getElementById("employeeId")) {
+    document.getElementById("employeeId").value = savedEmployeeId;
+    loadLeaveHistory(savedEmployeeId);
+  }
 });

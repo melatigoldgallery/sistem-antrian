@@ -326,6 +326,12 @@ async function generateReport() {
     currentAttendanceData = attendanceData;
     filteredData = [...attendanceData];
     
+    // Get leave count for the date range
+    const leaveCount = await getLeaveCountByDateRange(startDate, endDate);
+    
+    // Store leave count in a global variable for use in updateSummaryCards
+    window.currentLeaveCount = leaveCount;
+    
     // Update UI
     if (attendanceData.length > 0) {
       updateSummaryCards();
@@ -355,6 +361,7 @@ async function generateReport() {
     showAlert("danger", `<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan: ${error.message}`);
   }
 }
+
 
 // Get array of dates in range
 function getDatesInRange(startDate, endDate) {
@@ -437,18 +444,8 @@ function updateSummaryCards() {
   const onTimeCount = filteredData.filter(record => record.status === "Tepat Waktu").length;
   const lateCount = filteredData.filter(record => record.status === "Terlambat").length;
   
-  // Calculate average late minutes
-  let totalLateMinutes = 0;
-  let lateRecordsCount = 0;
-  
-  filteredData.forEach(record => {
-    if (record.status === "Terlambat" && record.lateMinutes) {
-      totalLateMinutes += record.lateMinutes;
-      lateRecordsCount++;
-    }
-  });
-  
-  const avgLateMinutes = lateRecordsCount > 0 ? Math.round(totalLateMinutes / lateRecordsCount) : 0;
+  // Gunakan data izin yang telah diambil sebelumnya
+  const leaveCount = window.currentLeaveCount || 0;
   
   // Update UI with null checks
   const totalAttendanceEl = document.getElementById("totalAttendance");
@@ -460,9 +457,52 @@ function updateSummaryCards() {
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) lateCountEl.textContent = lateCount;
   
-  const avgLateTimeEl = document.getElementById("avgLateTime");
-  if (avgLateTimeEl) avgLateTimeEl.textContent = `${avgLateMinutes} menit`;
+  const leaveCountEl = document.getElementById("leaveCount");
+  if (leaveCountEl) leaveCountEl.textContent = leaveCount;
 }
+
+// Fungsi untuk mengambil data izin berdasarkan rentang tanggal
+async function getLeaveCountByDateRange(startDate, endDate) {
+  try {
+    // Import fungsi dari report-service.js
+    const { getLeaveRequestsByMonth } = await import("../services/report-service.js");
+    
+    // Konversi string tanggal ke objek Date
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Hitung bulan dan tahun untuk rentang tanggal
+    const startMonth = start.getMonth() + 1; // getMonth() returns 0-11
+    const startYear = start.getFullYear();
+    const endMonth = end.getMonth() + 1;
+    const endYear = end.getFullYear();
+    
+    let totalLeaveCount = 0;
+    
+    // Jika rentang tanggal dalam bulan yang sama
+    if (startMonth === endMonth && startYear === endYear) {
+      const result = await getLeaveRequestsByMonth(startMonth, startYear);
+      totalLeaveCount = result.leaveRequests.length;
+    } else {
+      // Jika rentang tanggal mencakup beberapa bulan
+      for (let year = startYear; year <= endYear; year++) {
+        const monthStart = (year === startYear) ? startMonth : 1;
+        const monthEnd = (year === endYear) ? endMonth : 12;
+        
+        for (let month = monthStart; month <= monthEnd; month++) {
+          const result = await getLeaveRequestsByMonth(month, year);
+          totalLeaveCount += result.leaveRequests.length;
+        }
+      }
+    }
+    
+    return totalLeaveCount;
+  } catch (error) {
+    console.error("Error getting leave count:", error);
+    return 0;
+  }
+}
+
 
 // Display current page of data
 function displayCurrentPage() {
@@ -757,12 +797,30 @@ function exportToExcel() {
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
     
-    // Prepare worksheet data
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Prepare title and information
+    const title = "Laporan Kehadiran Karyawan";
+    const dateRange = `Periode: ${formatDateForDisplay(startDate)} - ${formatDateForDisplay(endDate)}`;
+    const printDate = `Dicetak pada: ${new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+    
+    // Create worksheet with headers and data
     const wsData = [
+      [title], // Title row
+      [dateRange], // Date range row
+      [printDate], // Print date row
+      [], // Empty row for spacing
       [
         "No", "ID Karyawan", "Nama", "Tanggal", "Tipe Karyawan", "Shift", 
         "Jam Masuk", "Jam Keluar", "Durasi Kerja", "Status"
-      ]
+      ] // Header row
     ];
     
     // Add data rows
@@ -785,10 +843,8 @@ function exportToExcel() {
       ]);
     });
     
-    // Create worksheet and workbook
+    // Create worksheet
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kehadiran");
     
     // Set column widths
     const colWidths = [
@@ -804,6 +860,19 @@ function exportToExcel() {
       { wch: 20 }  // Status
     ];
     ws['!cols'] = colWidths;
+    
+    // Merge cells for title and info rows
+    ws['!merges'] = [
+      // Merge cells for title (A1:J1)
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+      // Merge cells for date range (A2:J2)
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
+      // Merge cells for print date (A3:J3)
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 9 } }
+    ];
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kehadiran");
     
     // Generate filename
     const fileName = `Laporan_Kehadiran_${formatDateForFilename(startDate)}_${formatDateForFilename(endDate)}.xlsx`;
@@ -824,6 +893,7 @@ function exportToExcel() {
     );
   }
 }
+
 
 // Export to PDF
 function exportToPDF() {

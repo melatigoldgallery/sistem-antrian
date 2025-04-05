@@ -4,7 +4,7 @@
   --primary-light: #4895ef;
   --primary-dark: #3f37c9;
   --secondary-color: #f72585;
-  --success-color: #4cc9f0;
+  --success-color: #05d828;
   --warning-color: #f8961e;
   --danger-color: #f94144;
   --light-color: #f8f9fa;
@@ -624,8 +624,8 @@ body {
 }
 
 .empty-image {
-  width: 150px;
-  height: 150px;
+  width: 200px;
+  height: 200px;
   margin-bottom: 20px;
   opacity: 0.7;
 }
@@ -1214,4 +1214,132 @@ textarea.form-control {
   30%, 50%, 70% { transform: translate3d(-2px, 0, 0); }
   40%, 60% { transform: translate3d(2px, 0, 0); }
 }
+
+/* Replacement Status Button Styling */
+.replacement-status-btn.btn-success {
+  background-color: #1a9e5c ;
+  color: white;
+  border-color: transparent;
+  padding: 0.25rem;
+  transition: all 0.2s ease;
+  border-radius: 10px;
+  font-size: 0.7rem;
+}
+
+.replacement-status-btn.btn-danger {
+  background-color: var(--danger-color);
+  border-color:transparent;
+  color: white;
+  padding: 0.25rem;
+  transition: all 0.2s ease;
+  border-radius: 10px;
+  font-size: 0.7rem;
+}
+
+.replacement-status-btn.btn-success:hover {
+  background-color: #23c574 ;
+  border-color: #23c574;
+  box-shadow: transparent;
+}
+
+.replacement-status-btn.btn-danger:hover,
+.replacement-status-btn.btn-danger:focus {
+  background-color: #e63b3e;
+  border-color: #e02d30;
+
+}
+
+/* Status Text Styling */
+.status-sudah-diganti {
+  color: #1a9e5c ;
+  font-weight: 600;
+  position: relative;
+  padding-left: 18px;
+}
+
+
+.status-belum-diganti {
+  color: var(--danger-color);
+  font-weight: 500;
+  position: relative;
+  padding-left: 18px;
+}
+
+/* Status colors for different states */
+
+
+.status-ditolak {
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+.status-pending {
+  color: var(--warning-color);
+  font-weight: 600;
+}
+
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Add animation for loading state */
+.replacement-status-btn .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Improve table row styling for multi-day leaves */
+.first-day-row {
+  border-top: 2px solid var(--primary-light);
+}
+
+/* Add a subtle background to highlight multi-day leave rows */
+tr:has(.badge.bg-info) {
+  background-color: rgba(67, 97, 238, 0.03);
+}
+
+/* Make the badge more subtle */
+.badge.bg-info {
+  background-color: rgba(76, 201, 240, 0.2) !important;
+  color: var(--primary-dark);
+  font-weight: 500;
+  padding: 0.25em 0.6em;
+  font-size: 0.7em;
+}
+/* Styling khusus untuk tombol approve/reject di bagian menunggu persetujuan */
+.approve-btn, .reject-btn {
+  font-size: 0.7rem !important;  /* Ukuran font lebih kecil */
+  padding: 0.15rem 0.4rem !important;  /* Padding lebih kecil */
+  line-height: 1 !important;  /* Line height lebih kecil */
+  border-radius: 4px !important;  /* Border radius lebih kecil */
+}
+
+/* Override Bootstrap button styles */
+.btn-sm.approve-btn, .btn-sm.reject-btn {
+  padding: 0.3rem 0.4rem !important;
+  font-size: 0.7rem !important;
+}
+
+/* Hover effect untuk tombol approve */
+.approve-btn:hover {
+  background-color: #1a9e5c !important;  /* Warna hijau lebih gelap saat hover */
+  border-color: #178f52 !important;
+}
+
+/* Hover effect untuk tombol reject */
+.reject-btn:hover {
+  background-color: #d32f2f !important;  /* Warna merah lebih gelap saat hover */
+  border-color: #c62828 !important;
+}
+
+
+
+
 

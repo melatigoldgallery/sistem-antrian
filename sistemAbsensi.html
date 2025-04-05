@@ -191,7 +191,7 @@
           </div>
           <div class="content-wrapper">
             <!-- Shift Info Card -->
-            <div class="card shift-info-card">
+            <div class="card shift-info-card mb-0">
               <div class="card-header">
                 <h2>
                   <i class="fas fa-clock"></i>
@@ -275,9 +275,8 @@
                 </div>
               </div>
             </div>
-
-            <!-- Quick Stats -->
-            <div class="stats-cards">
+                      <!-- Quick Stats -->
+            <div class="stats-cards m-0">
               <div class="stat-card">
                 <div class="stat-card-icon bg-primary">
                   <i class="fas fa-user-check"></i>
@@ -308,6 +307,7 @@
                 </div>
               </div>
             </div>
+            
 
             <!-- Scanner Section -->
             <div class="card scanner-card">
@@ -321,9 +321,17 @@
                   Refresh
                 </button>
               </div>
+                <div class="alert alert-info m-2">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-calendar-day me-2"></i>
+                <div>
+                  <strong>Absensi Hari Ini:</strong> <span id="dateInfo">-</span>
+                </div>
+              </div>
+            </div>
               <div class="card-body">
                 <div class="scanner-container">
-                  <div class="scan-type-selector mb-3">
+                  <div class="scan-type-selector mb-0">
                     <div class="form-check form-check-inline">
                       <input class="form-check-input" type="radio" name="scanType" id="scanTypeIn" value="in" checked />
                       <label class="form-check-label" for="scanTypeIn">
@@ -339,8 +347,8 @@
                       </label>
                     </div>
                   </div>
-
-                  <div class="shift-selector mb-3">
+                  
+                  <div class="shift-selector mb-0">
                     <div class="form-check form-check-inline">
                       <input
                         class="form-check-input"
@@ -348,6 +356,7 @@
                         name="shiftOption"
                         id="shiftMorning"
                         value="morning"
+                        checked
                       />
                       <label class="form-check-label" for="shiftMorning">Shift Pagi</label>
                     </div>
@@ -362,6 +371,19 @@
                       <label class="form-check-label" for="shiftAfternoon">Shift Sore</label>
                     </div>
                   </div>
+                  <div class="alert alert-warning mb-3" id="shiftWarning">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-exclamation-triangle me-2"></i>
+                      <div>
+                        <strong>Perhatian!</strong> Pastikan memilih scan masuk atau pulang dan shift yang sesuai dengan jadwal kerja Anda:
+                        <ul class="mb-0 mt-1">
+                          <li><strong>Shift Pagi:</strong> Staff (08:45), OB (07:15)</li>
+                          <li><strong>Shift Sore:</strong> Staff (14:20), OB (13:30)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
 
                   <div class="scanner-input-group">
                     <input

@@ -1,102 +1,18 @@
 // Import semua service yang dibutuhkan
 import { findEmployeeByBarcode, getEmployees } from "../services/employee-service.js";
 import { recordAttendance, updateAttendanceOut, getTodayAttendance } from "../services/attendance-service.js";
+import { getLeaveRequestsByDate } from "../services/leave-service.js";
 
 // Initialize data
 let attendanceRecords = [];
 let employees = [];
+let leaveRequests = [];
 
 // Tambahkan cache untuk employees
 const employeeCache = new Map(); // Cache untuk karyawan berdasarkan barcode
 const attendanceCache = new Map(); // Cache untuk data kehadiran berdasarkan tanggal
 
-// Load today's attendance
-async function loadTodayAttendance() {
-  try {
-    attendanceRecords = await getTodayAttendance();
-    // Hapus panggilan ke updateAttendanceTable() karena tidak didefinisikan
-    // dan sepertinya tidak diperlukan lagi
-    updateStats();
-    
-    // Pastikan data hari ini ada di cache
-    const today = new Date().toISOString().split('T')[0];
-    if (!attendanceCache.has(today)) {
-      attendanceCache.set(today, [...attendanceRecords]);
-    }
-    
-    console.log(`Loaded ${attendanceRecords.length} attendance records for today`);
-  } catch (error) {
-    console.error("Error loading attendance:", error);
-    showScanResult("error", "Gagal memuat data kehadiran");
-  }
-}
-
-// Load employees and cache them
-async function loadEmployees() {
-  try {
-    if (employeeCache.size === 0) {
-      employees = await getEmployees();
-      
-      // Cache employees by barcode for faster lookup
-      employees.forEach(employee => {
-        if (employee.barcode) {
-          employeeCache.set(employee.barcode, employee);
-        }
-      });
-      
-      console.log(`Cached ${employeeCache.size} employees`);
-    }
-  } catch (error) {
-    console.error("Error loading employees:", error);
-  }
-}
-
-// Inisialisasi event listeners saat DOM sudah siap
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    // Setup barcode scanning
-    const barcodeInput = document.getElementById("barcodeInput");
-    if (barcodeInput) {
-      barcodeInput.addEventListener("keypress", async function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          await processBarcode();
-        }
-      });
-    }
-
-    const manualSubmit = document.getElementById("manualSubmit");
-    if (manualSubmit) {
-      manualSubmit.addEventListener("click", async function () {
-        await processBarcode();
-      });
-    }
-
-    // Setup refresh scanner button
-    const refreshScanner = document.getElementById("refreshScanner");
-    if (refreshScanner) {
-      refreshScanner.addEventListener("click", function () {
-        if (barcodeInput) {
-          barcodeInput.value = "";
-          barcodeInput.focus();
-        }
-        const scanResult = document.getElementById("scanResult");
-        if (scanResult) {
-          scanResult.style.display = "none";
-        }
-      });
-    }
-
-    // Load data
-    await Promise.all([loadEmployees(), loadTodayAttendance()]);
-
-    console.log("Attendance system initialized successfully");
-  } catch (error) {
-    console.error("Error initializing attendance system:", error);
-  }
-}); 
-
-// Process barcode scan
+// Process barcode scan - PINDAHKAN DEFINISI KE ATAS SEBELUM EXPORT
 async function processBarcode() {
   const barcode = document.getElementById("barcodeInput").value.trim();
 
@@ -215,6 +131,189 @@ async function processBarcode() {
   document.getElementById("barcodeInput").focus();
 }
 
+// Modifikasi fungsi loadTodayAttendance untuk memastikan data izin diambil dengan benar
+async function loadTodayAttendance() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Load attendance data
+    attendanceRecords = await getTodayAttendance();
+    
+    // Load leave requests for today - dengan penanganan error yang lebih baik
+    try {
+      console.log("Fetching leave requests for today:", today);
+      leaveRequests = await getLeaveRequestsByDate(today);
+      console.log(`Loaded ${leaveRequests.length} leave requests for today:`, leaveRequests);
+    } catch (leaveError) {
+      console.error("Error loading leave requests:", leaveError);
+      leaveRequests = []; // Set to empty array on error
+    }
+    
+    // Update UI
+    updateStats();
+    
+    // Pastikan data hari ini ada di cache
+    if (!attendanceCache.has(today)) {
+      attendanceCache.set(today, [...attendanceRecords]);
+    }
+    
+    console.log(`Loaded ${attendanceRecords.length} attendance records for today`);
+  } catch (error) {
+    console.error("Error loading attendance:", error);
+    showScanResult("error", "Gagal memuat data kehadiran");
+  }
+}
+
+// Tambahkan fungsi untuk menampilkan informasi tanggal
+function updateDateInfo() {
+  const today = new Date();
+  const dateInfoEl = document.getElementById("dateInfo");
+  
+  if (dateInfoEl) {
+    const options = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    
+    dateInfoEl.textContent = today.toLocaleDateString('id-ID', options);
+    console.log("Date info updated:", dateInfoEl.textContent);
+  } else {
+    console.warn("dateInfo element not found");
+  }
+}
+
+// Modifikasi fungsi updateStats untuk memastikan jumlah izin ditampilkan dengan benar
+function updateStats() {
+  const today = new Date().toISOString().split("T")[0];
+  const todayRecords = attendanceRecords.filter((record) => record.date === today);
+
+  const presentCount = todayRecords.length;
+  const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
+  
+  // Pastikan leaveRequests sudah diinisialisasi dan hanya hitung yang disetujui
+  const approvedLeaves = Array.isArray(leaveRequests) ? 
+    leaveRequests.filter(leave => {
+      const status = leave.status || '';
+      return ['approved', 'disetujui', 'Approved', 'Disetujui'].includes(status.toLowerCase());
+    }) : [];
+  
+  const leaveCount = approvedLeaves.length;
+  
+  console.log("Updating stats:", {
+    presentCount,
+    lateCount,
+    leaveCount,
+    totalLeaveRequests: leaveRequests.length,
+    approvedLeaves: approvedLeaves.length
+  });
+
+  // Update UI elements if they exist
+  const presentCountEl = document.getElementById("presentCount");
+  if (presentCountEl) {
+    presentCountEl.textContent = presentCount;
+    console.log("Updated presentCount:", presentCount);
+  } else {
+    console.warn("presentCount element not found");
+  }
+  
+  const lateCountEl = document.getElementById("lateCount");
+  if (lateCountEl) {
+    lateCountEl.textContent = lateCount;
+    console.log("Updated lateCount:", lateCount);
+  } else {
+    console.warn("lateCount element not found");
+  }
+  
+  // Update izin count
+  const leaveCountEl = document.getElementById("leaveCount");
+  if (leaveCountEl) {
+    leaveCountEl.textContent = leaveCount;
+    console.log("Updated leaveCount:", leaveCount);
+  } else {
+    console.warn("leaveCount element not found in DOM");
+    // Try to find the element by other means
+    console.log("Available elements with 'count' in ID:", 
+      Array.from(document.querySelectorAll('[id*="count"]')).map(el => el.id));
+  }
+  
+  // Update tanggal absensi
+  updateDateInfo();
+}
+
+// Inisialisasi event listeners saat DOM sudah siap
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    console.log("DOM Content Loaded - Initializing attendance system");
+    
+    // Setup barcode scanning
+    const barcodeInput = document.getElementById("barcodeInput");
+    if (barcodeInput) {
+      barcodeInput.addEventListener("keypress", async function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          await processBarcode();
+        }
+      });
+    }
+
+    const manualSubmit = document.getElementById("manualSubmit");
+    if (manualSubmit) {
+      manualSubmit.addEventListener("click", async function () {
+        await processBarcode();
+      });
+    }
+
+    // Setup refresh scanner button
+    const refreshScanner = document.getElementById("refreshScanner");
+    if (refreshScanner) {
+      refreshScanner.addEventListener("click", function () {
+        if (barcodeInput) {
+          barcodeInput.value = "";
+          barcodeInput.focus();
+        }
+        const scanResult = document.getElementById("scanResult");
+        if (scanResult) {
+          scanResult.style.display = "none";
+        }
+      });
+    }
+
+    // Load data
+    await Promise.all([loadEmployees(), loadTodayAttendance()]);
+
+    console.log("Attendance system initialized successfully");
+  } catch (error) {
+    console.error("Error initializing attendance system:", error);
+  }
+}); 
+
+// Helper function to format employee type
+function formatEmployeeType(type) {
+  return type === "staff" ? "Staff" : "Office Boy";
+}
+
+// Helper function to format shift
+function formatShift(shift) {
+  return shift === "morning" ? "Pagi" : "Sore";
+}
+
+// Show scan result message
+function showScanResult(type, message) {
+  const scanResult = document.getElementById("scanResult");
+  if (!scanResult) return;
+  
+  scanResult.className = "scan-result " + type;
+  scanResult.innerHTML = message;
+  scanResult.style.display = "block";
+
+  // Hide result after 3 seconds
+  setTimeout(() => {
+    scanResult.style.display = "none";
+  }, 3000);
+}
+
 // Get threshold time for lateness calculation
 function getThresholdTime(employeeType, shift) {
   const thresholds = {
@@ -247,49 +346,24 @@ function checkIfLate(timeString, employeeType, shift) {
   return time > threshold;
 }
 
-// Show scan result message
-function showScanResult(type, message) {
-  const scanResult = document.getElementById("scanResult");
-  if (!scanResult) return;
-  
-  scanResult.className = "scan-result " + type;
-  scanResult.innerHTML = message;
-  scanResult.style.display = "block";
-
-  // Hide result after 3 seconds
-  setTimeout(() => {
-    scanResult.style.display = "none";
-  }, 3000);
-}
-
-// Update statistics
-function updateStats() {
-  const today = new Date().toISOString().split("T")[0];
-  const todayRecords = attendanceRecords.filter((record) => record.date === today);
-
-  const presentCount = todayRecords.length;
-  const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
-
-  // Update UI elements if they exist
-  const presentCountEl = document.getElementById("presentCount");
-  if (presentCountEl) presentCountEl.textContent = presentCount;
-  
-  const lateCountEl = document.getElementById("lateCount");
-  if (lateCountEl) lateCountEl.textContent = lateCount;
-  
-  // Update izin count (jika ada)
-  const leaveCountEl = document.getElementById("leaveCount");
-  if (leaveCountEl) leaveCountEl.textContent = "0"; // Default ke 0 karena kita tidak lagi memuat data izin
-}
-
-// Helper function to format employee type
-function formatEmployeeType(type) {
-  return type === "staff" ? "Staff" : "Office Boy";
-}
-
-// Helper function to format shift
-function formatShift(shift) {
-  return shift === "morning" ? "Pagi" : "Sore";
+// Load employees and cache them
+async function loadEmployees() {
+  try {
+    if (employeeCache.size === 0) {
+      employees = await getEmployees();
+      
+      // Cache employees by barcode for faster lookup
+      employees.forEach(employee => {
+        if (employee.barcode) {
+          employeeCache.set(employee.barcode, employee);
+        }
+      });
+      
+      console.log(`Cached ${employeeCache.size} employees`);
+    }
+  } catch (error) {
+    console.error("Error loading employees:", error);
+  }
 }
 
 // Export fungsi dan cache yang diperlukan

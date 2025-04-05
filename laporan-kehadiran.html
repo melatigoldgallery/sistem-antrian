@@ -306,21 +306,7 @@
                   </div>
                 </div>
                 <div class="row">
-                  <div class="col-md-8">
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="lateFilter" value="late" checked />
-                      <label class="form-check-label" for="lateFilter">
-                        <span class="badge bg-danger">Terlambat</span>
-                      </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="leaveFilter" value="leave" checked />
-                      <label class="form-check-label" for="leaveFilter">
-                        <span class="badge bg-warning">Izin</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-4 d-flex justify-content-end align-items-end">
+                  <div class="d-flex justify-content-end align-items-end">
                     <button id="generateReportBtn" class="btn btn-primary">
                       <i class="fas fa-sync-alt me-2"></i>
                       Generate Laporan
@@ -352,7 +338,7 @@
                       <i class="fas fa-user-check"></i>
                     </div>
                     <div>
-                      <p class="summary-value text-success" id="ontimeCount">0</p>
+                      <p class="summary-value text-success" id="onTimeCount">0</p>
                       <p class="summary-label">Tepat Waktu</p>
                     </div>
                   </div>
@@ -372,14 +358,14 @@
                 </div>
               </div>
               <div class="col-md-3 mb-3">
-                <div class="card attendance-summary-card bg-danger bg-opacity-10">
+                <div class="card attendance-summary-card bg-info bg-opacity-10">
                   <div class="card-body d-flex align-items-center">
-                    <div class="summary-icon bg-danger">
-                      <i class="fas fa-user-times"></i>
+                    <div class="summary-icon bg-info">
+                      <i class="fas fa-calendar-check"></i>
                     </div>
                     <div>
-                      <p class="summary-value text-danger" id="absentCount">0</p>
-                      <p class="summary-label">Tidak Hadir</p>
+                      <p class="summary-value text-info" id="leaveCount">0</p>
+                      <p class="summary-label">Izin</p>
                     </div>
                   </div>
                 </div>
@@ -424,16 +410,16 @@
                   <table class="table table-hover" id="attendanceReportTable">
                     <thead>
                       <tr>
-                        <th>Tanggal</th>
+                        <th>No</th>
                         <th>ID Staff</th>
                         <th>Nama</th>
-                        <th>Tipe</th>
+                        <th>Tanggal</th>
+                        <th>Tipe Karyawan</th>
                         <th>Shift</th>
                         <th>Waktu Masuk</th>
-                        <th>Status</th>
                         <th>Waktu Pulang</th>
                         <th>Durasi Kerja</th>
-                        <th>Keterangan</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody id="attendanceReportList"></tbody>

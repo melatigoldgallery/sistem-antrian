@@ -45,7 +45,13 @@
             </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-ticket-alt"></i>
                 <span class="menu-text">Antrian</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -75,7 +81,13 @@
             </li>
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-clipboard-check"></i>
                 <span class="menu-text">Absensi</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -214,14 +226,13 @@
                     </div>
                     <div class="form-text">Untuk izin 1 hari, isi tanggal yang sama</div>
                   </div>
-                  
+
                   <div class="col-md-4">
                     <label for="leaveEndDate" class="form-label">Tanggal Selesai Izin</label>
                     <div class="input-group">
                       <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                       <input type="date" class="form-control" id="leaveEndDate" required />
                     </div>
-                    
                   </div>
 
                   <div class="col-12">
@@ -251,7 +262,7 @@
                     </div>
                     <div class="form-text">Pilih jenis izin yang sesuai</div>
                   </div>
-                  
+
                   <div class="col-md-6">
                     <label for="replacementType" class="form-label">Jenis Pengganti</label>
                     <div class="input-group">
@@ -265,7 +276,7 @@
                     </div>
                     <div class="form-text">Pilih bagaimana Anda akan mengganti waktu izin</div>
                   </div>
-                  
+
                   <!-- Tambahkan section untuk surat sakit -->
                   <div class="col-12">
                     <div id="sickLeaveSection" class="replacement-detail card mt-3" style="display: none">
@@ -277,25 +288,56 @@
                         <div class="mb-3">
                           <label for="hasMedicalCertificate" class="form-label">Surat Keterangan Sakit</label>
                           <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="hasMedicalCertificate">
+                            <input class="form-check-input" type="checkbox" id="hasMedicalCertificate" />
                             <label class="form-check-label" for="hasMedicalCertificate">
                               Saya memiliki surat keterangan sakit
                             </label>
                           </div>
                         </div>
-                        <div class="mb-3" id="medicalCertificateUpload" style="display: none;">
+                        <div class="mb-3" id="medicalCertificateUpload" style="display: none">
                           <label for="medicalCertificateFile" class="form-label">Unggah Surat Keterangan Sakit</label>
-                          <input class="form-control" type="file" id="medicalCertificateFile" accept="image/jpeg,image/png,image/jpg,application/pdf" max-size="2097152">
+                          <input
+                            class="form-control"
+                            type="file"
+                            id="medicalCertificateFile"
+                            accept="image/jpeg,image/png,image/jpg,application/pdf"
+                            max-size="2097152"
+                          />
                           <div class="form-text">Format yang diterima: JPG, PNG, PDF (Maks. 2MB)</div>
-                          <div class="progress mt-2" style="display: none;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                          <div class="progress mt-2" style="display: none">
+                            <div
+                              class="progress-bar progress-bar-striped progress-bar-animated"
+                              role="progressbar"
+                              style="width: 0%"
+                            ></div>
+                          </div>
+                          <!-- Tambahkan ini di dalam div medicalCertificateUpload -->
+                          <div class="mt-2" id="filePreviewContainer" style="display: none">
+                            <div class="card">
+                              <div class="card-body p-2">
+                                <div class="d-flex align-items-center">
+                                  <i class="fas fa-file-medical me-2 text-primary"></i>
+                                  <span id="filePreviewName">filename.jpg</span>
+                                  <button
+                                    type="button"
+                                    class="btn btn-sm btn-link text-danger ms-auto"
+                                    id="removeFileBtn"
+                                  >
+                                    <i class="fas fa-times"></i>
+                                    Hapus
+                                  </button>
+                                </div>
+                                <div id="imagePreview" class="mt-2" style="display: none">
+                                  <img src="" class="img-fluid img-thumbnail" style="max-height: 150px" />
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        
                       </div>
                     </div>
                   </div>
-                  
+
                   <!-- Tambahkan section untuk cuti -->
                   <div class="col-12">
                     <div id="leaveSection" class="replacement-detail card mt-1" style="display: none">
@@ -307,13 +349,17 @@
                         <div class="mb-3">
                           <label class="form-label">Jenis Cuti</label>
                           <div class="form-check">
-                            <input class="form-check-input" type="radio" name="leaveTypeRadio" id="specialLeave" value="special">
-                            <label class="form-check-label" for="specialLeave">
-                              Cuti Khusus
-                            </label>
+                            <input
+                              class="form-check-input"
+                              type="radio"
+                              name="leaveTypeRadio"
+                              id="specialLeave"
+                              value="special"
+                            />
+                            <label class="form-check-label" for="specialLeave">Cuti Khusus</label>
                           </div>
                         </div>
-                        <div class="mb-3" id="specialLeaveReason" style="display: none;">
+                        <div class="mb-3" id="specialLeaveReason" style="display: none">
                           <label for="specialLeaveDetail" class="form-label">Alasan Cuti Khusus</label>
                           <select class="form-select" id="specialLeaveDetail">
                             <option value="" selected disabled>Pilih Alasan Cuti Khusus</option>
@@ -326,7 +372,7 @@
                       </div>
                     </div>
                   </div>
-                  
+
                   <!-- Section Ganti Libur - UPDATED -->
                   <div class="col-12">
                     <div id="replacementLibur" class="replacement-detail card mt-3" style="display: none">
@@ -335,9 +381,11 @@
                           <i class="fas fa-calendar-day me-2"></i>
                           Detail Ganti Libur
                         </h6>
-                        <div id="multiDateWarning" class="alert alert-info" style="display: none;">
+                        <div id="multiDateWarning" class="alert alert-info" style="display: none">
                           <i class="fas fa-info-circle me-2"></i>
-                          Anda mengajukan izin untuk <span id="totalDaysCount">0</span> hari. Silakan pilih tanggal ganti libur untuk setiap hari.
+                          Anda mengajukan izin untuk
+                          <span id="totalDaysCount">0</span>
+                          hari. Silakan pilih tanggal ganti libur untuk setiap hari.
                         </div>
                         <div id="replacementDatesContainer">
                           <!-- First date input field with the correct class -->
@@ -349,13 +397,19 @@
                             </div>
                           </div>
                         </div>
-                        <button type="button" id="addMoreDates" class="btn btn-sm btn-outline-primary mt-2" style="display: none;">
-                          <i class="fas fa-plus me-1"></i> Tambah Tanggal Ganti
+                        <button
+                          type="button"
+                          id="addMoreDates"
+                          class="btn btn-sm btn-outline-primary mt-2"
+                          style="display: none"
+                        >
+                          <i class="fas fa-plus me-1"></i>
+                          Tambah Tanggal Ganti
                         </button>
                       </div>
                     </div>
                   </div>
-                  
+
                   <!-- Section Ganti Jam -->
                   <div class="col-12">
                     <div id="replacementJam" class="replacement-detail card mt-3" style="display: none">
@@ -375,7 +429,14 @@
                           <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
                           <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
-                            <input type="number" class="form-control" id="replacementHours" min="1" max="12" placeholder="Masukkan jumlah jam" />
+                            <input
+                              type="number"
+                              class="form-control"
+                              id="replacementHours"
+                              min="1"
+                              max="12"
+                              placeholder="Masukkan jumlah jam"
+                            />
                             <span class="input-group-text">jam</span>
                           </div>
                           <div class="form-text">Maksimal 12 jam per hari</div>
@@ -397,7 +458,7 @@
                 </form>
               </div>
             </div>
-  
+
             <!-- Information Card -->
             <div class="card">
               <div class="card-header">
@@ -418,7 +479,7 @@
                     <li>Status pengajuan dapat dilihat di menu "Laporan Izin"</li>
                   </ul>
                 </div>
-                
+
                 <div class="row mt-4">
                   <div class="col-md-6">
                     <div class="card h-100">
@@ -428,8 +489,8 @@
                           Ganti Libur
                         </h5>
                         <p class="card-text">
-                          Opsi ini memungkinkan Anda mengganti hari izin dengan bekerja di hari libur Anda. 
-                          Pastikan tanggal pengganti sudah dikonfirmasi dengan supervisor.
+                          Opsi ini memungkinkan Anda mengganti hari izin dengan bekerja di hari libur Anda. Pastikan
+                          tanggal pengganti sudah dikonfirmasi dengan supervisor.
                         </p>
                       </div>
                     </div>
@@ -442,8 +503,8 @@
                           Ganti Jam
                         </h5>
                         <p class="card-text">
-                          Opsi ini memungkinkan Anda mengganti jam kerja yang hilang dengan bekerja lebih lama 
-                          di hari yang ditentukan. Maksimal jam pengganti adalah 12 jam per hari.
+                          Opsi ini memungkinkan Anda mengganti jam kerja yang hilang dengan bekerja lebih lama di hari
+                          yang ditentukan. Maksimal jam pengganti adalah 12 jam per hari.
                         </p>
                       </div>
                     </div>
@@ -454,10 +515,9 @@
           </div>
         </div>
       </main>
-    </div>  
+    </div>
     <script type="module" src="js/configFirebase.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/pengajuan.js"></script>
   </body>
 </html>
-

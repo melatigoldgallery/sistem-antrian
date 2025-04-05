@@ -1,4 +1,4 @@
-import { getLeaveRequestsByMonth, clearLeaveRequestsCache } from "../services/leave-service.js";
+import { getLeaveRequestsByMonth, clearLeaveCache } from "../services/leave-service.js";
 import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 import { attendanceCache } from "../services/attendance-service.js"; // Impor dari attendance-service
 
@@ -404,7 +404,7 @@ function updateSummaryCards() {
   document.getElementById("pendingLeaves").textContent = pendingLeaves;
 }
 
-// Populate leave table with data
+// Fix the populateLeaveTable function to handle undefined values
 function populateLeaveTable(appendMode = false) {
   const tbody = document.getElementById("leaveReportList");
   if (!tbody) return;
@@ -431,9 +431,9 @@ function populateLeaveTable(appendMode = false) {
       const replacementInfo = getReplacementInfo(record);
       const row = document.createElement("tr");
 
-      // Add data attributes for filtering
-      row.dataset.status = record.status.toLowerCase();
-      row.dataset.replacementStatus = (record.replacementStatus || "Belum Diganti").toLowerCase().replace(/\s+/g, "-");
+      // Add data attributes for filtering - add null checks
+      row.dataset.status = (record.status || 'unknown').toLowerCase();
+      row.dataset.replacementStatus = ((record.replacementStatus || "Belum Diganti").toLowerCase()).replace(/\s+/g, "-");
       row.dataset.replacementType = record.replacementType || "";
       row.dataset.leaveId = record.id || "";
 
@@ -461,10 +461,9 @@ function populateLeaveTable(appendMode = false) {
             : "Tidak Ada"
         }</td>
         <td>${replacementInfo}</td>
-        <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-        <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
-        <td class="status-${(record.replacementStatus || "Belum Diganti").toLowerCase().replace(/\s+/g, "-")}">${
-        record.replacementStatus || "Belum Diganti"      }</td>
+        <td class="status-${(record.status || 'unknown').toLowerCase()}">${record.status || 'Unknown'}</td>
+        <td class="status-${((record.replacementStatus || "Belum Diganti").toLowerCase()).replace(/\s+/g, "-")}">${
+        record.replacementStatus || "Belum Diganti"}</td>
         `;
         fragment.appendChild(row);
       } else {
@@ -502,9 +501,9 @@ function populateLeaveTable(appendMode = false) {
           const attendanceStatus = attendanceStatusArray[i] || 'Tidak Diketahui';
           const attendanceClass = attendanceStatus === "Hadir" ? "text-success" : "text-muted";
           
-          // Add data attributes for filtering
-          row.dataset.status = record.status.toLowerCase();
-          row.dataset.replacementStatus = dayStatus.toLowerCase().replace(/\s+/g, "-");
+          // Add data attributes for filtering - add null checks
+          row.dataset.status = (record.status || 'unknown').toLowerCase();
+          row.dataset.replacementStatus = (dayStatus || 'belum-diganti').toLowerCase().replace(/\s+/g, "-");
           row.dataset.replacementType = record.replacementType || "";
           row.dataset.leaveId = record.id || "";
           row.dataset.dayIndex = i;
@@ -521,29 +520,28 @@ function populateLeaveTable(appendMode = false) {
           }
           
           row.innerHTML = `
-            <td>${startIndex + index + 1}-${i+1}</td>
-            <td>${record.employeeId || '-'}</td>
-            <td>${record.name || '-'}</td>
-            <td>${formatDate(record.submitDate)}</td>
-            <td>
-              ${formattedDate} 
-              <span class="badge bg-info">Hari ${i+1}/${dayDiff}</span>
-              <span class="badge bg-${attendanceStatus === 'Hadir' ? 'danger' : 'secondary'} ms-1">
-                ${attendanceStatus === 'Hadir' ? 'Hadir Meski Izin' : 'Tidak Hadir'}
-              </span>
-            </td>
-            <td>${record.reason || '-'}</td>
-            <td>${
-              record.replacementType === "libur"
-                ? "Ganti Libur"
-                : record.replacementType === "jam"
-                ? "Ganti Jam"
-                : "Tidak Ada"
-            }</td>
-            <td>${replacementInfo}</td>
-            <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-            <td>${record.decisionDate ? formatDate(record.decisionDate) : "-"}</td>
-            <td class="status-${dayStatus.toLowerCase().replace(/\s+/g, "-")}">${dayStatus}</td>
+          <td>${startIndex + index + 1}-${i+1}</td>
+          <td>${record.employeeId || '-'}</td>
+          <td>${record.name || '-'}</td>
+          <td>${formatDate(record.submitDate)}</td>
+          <td>
+            ${formattedDate} 
+            <span class="badge bg-info">Hari ${i+1}/${dayDiff}</span>
+            <span class="badge bg-${attendanceStatus === 'Hadir' ? 'danger' : 'secondary'} ms-1">
+              ${attendanceStatus === 'Hadir' ? 'Hadir Meski Izin' : 'Tidak Hadir'}
+            </span>
+          </td>
+          <td>${record.reason || '-'}</td>
+          <td>${
+            record.replacementType === "libur"
+              ? "Ganti Libur"
+              : record.replacementType === "jam"
+              ? "Ganti Jam"
+              : "Tidak Ada"
+          }</td>
+          <td>${replacementInfo}</td>
+          <td class="status-${(record.status || 'unknown').toLowerCase()}">${record.status || 'Unknown'}</td>
+          <td class="status-${(dayStatus || 'belum-diganti').toLowerCase().replace(/\s+/g, "-")}">${dayStatus}</td>
           `;
           
           fragment.appendChild(row);
@@ -553,6 +551,7 @@ function populateLeaveTable(appendMode = false) {
   
     tbody.appendChild(fragment);
   }
+
   
   // Helper function to format replacement information
   function getReplacementInfo(record) {
@@ -615,66 +614,74 @@ function populateLeaveTable(appendMode = false) {
     }
   }
   
-  // Filter leave data
-  function filterLeaveData(filterType, value) {
-    const rows = document.querySelectorAll("#leaveReportList tr");
-  
-    rows.forEach((row) => {
-      let showRow = true;
-  
-      if (value !== "all") {
-        if (filterType === "status") {
-          const statusCell = row.querySelector("td:nth-child(9)").textContent.toLowerCase();
-          showRow =
-            (value === "approved" && (statusCell === "approved" || statusCell === "disetujui")) ||
-            (value === "rejected" && (statusCell === "rejected" || statusCell === "ditolak")) ||
-            (value === "pending" && statusCell === "pending");
-        } else if (filterType === "replacement") {
-          const replacementCell = row.querySelector("td:nth-child(11)").textContent.toLowerCase();
-          showRow =
-            (value === "sudah" && replacementCell === "sudah diganti") ||
-            (value === "belum" && replacementCell === "belum diganti");
-        }
+ // Filter leave data
+function filterLeaveData(filterType, value) {
+  const rows = document.querySelectorAll("#leaveReportList tr");
+
+  rows.forEach((row) => {
+    let showRow = true;
+
+    if (value !== "all") {
+      if (filterType === "status") {
+        const statusCell = row.querySelector("td:nth-child(9)");
+        const statusText = statusCell ? statusCell.textContent.toLowerCase() : '';
+        
+        showRow =
+          (value === "approved" && (statusText === "approved" || statusText === "disetujui")) ||
+          (value === "rejected" && (statusText === "rejected" || statusText === "ditolak")) ||
+          (value === "pending" && statusText === "pending");
+      } else if (filterType === "replacement") {
+        const replacementCell = row.querySelector("td:nth-child(11)");
+        const replacementText = replacementCell ? replacementCell.textContent.toLowerCase() : '';
+        
+        showRow =
+          (value === "sudah" && replacementText === "sudah diganti") ||
+          (value === "belum" && replacementText === "belum diganti");
       }
-  
-      row.style.display = showRow ? "" : "none";
-    });
-  
-    // Update dropdown button text
-    if (filterType === "status") {
-      let buttonText = "Filter Status";
-      if (value === "approved") buttonText = "Disetujui";
-      else if (value === "rejected") buttonText = "Ditolak";
-      else if (value === "pending") buttonText = "Pending";
-  
-      document.getElementById("statusFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
-    } else if (filterType === "replacement") {
-      let buttonText = "Filter Pengganti";
-      if (value === "sudah") buttonText = "Sudah Diganti";
-      else if (value === "belum") buttonText = "Belum Diganti";
-  
-      document.getElementById(
-        "replacementFilterDropdown"
-      ).innerHTML = `<i class="fas fa-exchange-alt"></i> ${buttonText}`;
     }
+
+    row.style.display = showRow ? "" : "none";
+  });
+
+  // Update dropdown button text
+  if (filterType === "status") {
+    let buttonText = "Filter Status";
+    if (value === "approved") buttonText = "Disetujui";
+    else if (value === "rejected") buttonText = "Ditolak";
+    else if (value === "pending") buttonText = "Pending";
+
+    document.getElementById("statusFilterDropdown").innerHTML = `<i class="fas fa-filter"></i> ${buttonText}`;
+  } else if (filterType === "replacement") {
+    let buttonText = "Filter Pengganti";
+    if (value === "sudah") buttonText = "Sudah Diganti";
+    else if (value === "belum") buttonText = "Belum Diganti";
+
+    document.getElementById(
+      "replacementFilterDropdown"
+    ).innerHTML = `<i class="fas fa-exchange-alt"></i> ${buttonText}`;
   }
+}
+
   
   // Filter by replacement type
-  function filterByReplacementType(value) {
-    const rows = document.querySelectorAll("#leaveReportList tr");
-  
-    rows.forEach((row) => {
-      if (value === "all") {
-        row.style.display = "";
-      } else {
-        const replacementTypeCell = row.querySelector("td:nth-child(7)").textContent.toLowerCase();
-        const showRow =
-          (value === "libur" && replacementTypeCell.includes("libur")) ||
-          (value === "jam" && replacementTypeCell.includes("jam"));
-        row.style.display = showRow ? "" : "none";
-      }
-    });
-  }
+function filterByReplacementType(value) {
+  const rows = document.querySelectorAll("#leaveReportList tr");
+
+  rows.forEach((row) => {
+    if (value === "all") {
+      row.style.display = "";
+    } else {
+      const replacementTypeCell = row.querySelector("td:nth-child(7)");
+      const replacementTypeText = replacementTypeCell ? replacementTypeCell.textContent.toLowerCase() : '';
+      
+      const showRow =
+        (value === "libur" && replacementTypeText.includes("libur")) ||
+        (value === "jam" && replacementTypeText.includes("jam"));
+      row.style.display = showRow ? "" : "none";
+    }
+  });
+}
+
   
   // Show delete confirmation modal
   function showDeleteConfirmation() {
@@ -691,60 +698,61 @@ function populateLeaveTable(appendMode = false) {
   }
   
   // Delete month data
-  async function deleteMonthData() {
-    try {
-      const month = parseInt(document.getElementById("monthSelector").value);
-      const year = parseInt(document.getElementById("yearSelector").value);
-      
-      // Show loading in modal
-      const confirmBtn = document.getElementById("confirmDeleteBtn");
-      const originalBtnText = confirmBtn.innerHTML;
-      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
-      confirmBtn.disabled = true;
-      
-      // Delete data
-      const deletedCount = await deleteLeaveRequestsByMonth(month, year);
-      
-      // Hide modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
-      modal.hide();
-      
-      // Show success message
-      showAlert(
-        "success", 
-        `<i class="fas fa-check-circle me-2"></i> Berhasil menghapus ${deletedCount} data izin untuk bulan ${monthNames[month - 1]} ${year}`
-      );
-      
-      // Clear cache
-      clearLeaveRequestsCache();
-      
-      // Reset UI
-      hideReportElements();
-      document.getElementById("noDataMessage").style.display = "block";
-      
-      // Reset button
-      confirmBtn.innerHTML = originalBtnText;
-      confirmBtn.disabled = false;
-      
-    } catch (error) {
-      console.error("Error deleting data:", error);
-      
-      // Show error
-      showAlert(
-        "danger",
-        `<i class="fas fa-exclamation-circle me-2"></i> Gagal menghapus data: ${error.message}`
-      );
-      
-      // Reset button
-      const confirmBtn = document.getElementById("confirmDeleteBtn");
-      confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
-      confirmBtn.disabled = false;
-      
-      // Hide modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
-      modal.hide();
-    }
+async function deleteMonthData() {
+  try {
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+    
+    // Show loading in modal
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    const originalBtnText = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
+    confirmBtn.disabled = true;
+    
+    // Delete data
+    const deletedCount = await deleteLeaveRequestsByMonth(month, year);
+    
+    // Hide modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
+    modal.hide();
+    
+    // Show success message
+    showAlert(
+      "success", 
+      `<i class="fas fa-check-circle me-2"></i> Berhasil menghapus ${deletedCount} data izin untuk bulan ${monthNames[month - 1]} ${year}`
+    );
+    
+    // Clear cache - use the correct function name
+    clearLeaveCache();
+    
+    // Reset UI
+    hideReportElements();
+    document.getElementById("noDataMessage").style.display = "block";
+    
+    // Reset button
+    confirmBtn.innerHTML = originalBtnText;
+    confirmBtn.disabled = false;
+    
+  } catch (error) {
+    console.error("Error deleting data:", error);
+    
+    // Show error
+    showAlert(
+      "danger",
+      `<i class="fas fa-exclamation-circle me-2"></i> Gagal menghapus data: ${error.message}`
+    );
+    
+    // Reset button
+    const confirmBtn = document.getElementById("confirmDeleteBtn");
+    confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
+    confirmBtn.disabled = false;
+    
+    // Hide modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmModal"));
+    modal.hide();
   }
+}
+
   
   // Export to Excel
   function exportToExcel() {
@@ -762,7 +770,7 @@ function populateLeaveTable(appendMode = false) {
         [
           "No", "ID Staff", "Nama", "Tanggal Pengajuan", "Tanggal Izin", 
           "Alasan", "Jenis Pengganti", "Detail Pengganti", "Status", 
-          "Tanggal Keputusan", "Status Ganti", "Status Kehadiran"
+          "Status Ganti", "Status Kehadiran"
         ]
       ];
       

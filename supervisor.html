@@ -20,169 +20,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Status Pengajuan Izin - Melati Gold Shop</title>
-    <style>
-      /* Tambahkan di bagian style yang sudah ada */
-  .first-day-row {
-    border-top: 2px solid var(--primary-color);
-  }
-  
-  .badge.bg-info {
-    font-size: 0.7rem;
-    margin-left: 5px;
-    vertical-align: middle;
-  }
-  
-  /* Styling untuk mengelompokkan baris dari izin yang sama */
-  tr[data-leave-id] {
-    transition: background-color 0.2s;
-  }
-  
-  tr[data-leave-id]:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-  }
-  /* Styling untuk baris multi-hari */
-  .first-day-row {
-    border-top: 2px solid var(--primary-color);
-  }
-  
-  /* Styling untuk badge hari */
-  .badge.bg-info {
-    font-size: 0.7rem;
-    margin-left: 5px;
-    vertical-align: middle;
-  }
-  
-  /* Styling untuk status */
-  .status-sudah-diganti {
-    color: var(--success-color);
-    font-weight: 600;
-  }
-  
-  .status-belum-diganti {
-    color: var(--gray-600);
-    font-weight: 600;
-  }
-  
-  .status-approved, .status-disetujui {
-    color: var(--success-color);
-    font-weight: 600;
-  }
-  
-  .status-rejected, .status-ditolak {
-    color: var(--danger-color);
-    font-weight: 600;
-  }
-  
-  .status-pending {
-    color: var(--warning-color);
-    font-weight: 600;
-  }
-  
-  /* Styling untuk badge hari */
-  .day-badge {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    background-color: var(--info-color);
-    color: white;
-    margin-left: 5px;
-  }
-      .status-badge {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 500;
-      }
-      .status-badge.approved, .status-disetujui {
-        background-color: rgba(76, 201, 240, 0.1);
-        color: var(--success-color);
-      }
-      .status-badge.rejected, .status-ditolak {
-        background-color: rgba(249, 65, 68, 0.1);
-        color: var(--danger-color);
-      }
-      .status-badge.pending {
-        background-color: rgba(248, 150, 30, 0.1);
-        color: var(--warning-color);
-      }
-      .status-sudah-diganti {
-        color: var(--success-color);
-        font-weight: 600;
-      }
-      .status-belum-diganti {
-        color: var(--gray-600);
-        font-weight: 500;
-      }
-      .action-buttons .btn {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-      }
-      .leave-detail-row {
-        background-color: rgba(248, 249, 250, 0.5);
-      }
-      .leave-detail-content {
-        padding: 15px;
-      }
-      .detail-label {
-        font-weight: 500;
-        color: var(--gray-700);
-      }
-      .detail-value {
-        color: var(--gray-800);
-      }
-      .table-responsive {
-        overflow-x: auto;
-      }
-      .table th {
-        white-space: nowrap;
-        background-color: var(--gray-100);
-      }
-      .table td {
-        vertical-align: middle;
-      }
-      .card-header-tabs {
-        margin-right: -1.25rem;
-        margin-bottom: -0.75rem;
-        margin-left: -1.25rem;
-        border-bottom: 0;
-      }
-      .nav-tabs .nav-link {
-        color: var(--gray-600);
-        font-weight: 500;
-      }
-      .nav-tabs .nav-link.active {
-        color: var(--primary-color);
-        font-weight: 600;
-      }
-      .tab-content {
-        padding-top: 1.5rem;
-      }
-      .empty-state {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        text-align: center;
-        color: var(--gray-600);
-      }
-      .empty-image {
-        max-width: 200px;
-        margin-bottom: 1rem;
-        opacity: 0.7;
-      }
-      .loading-spinner {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 2rem;
-      }
-      .replacement-status-btn {
-        white-space: nowrap;
-      }
-    </style>
   </head>
   <body>
     <div class="app-container">
@@ -469,11 +306,11 @@
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>ID Karyawan</th>
+                          <th>ID Staff</th>
                           <th>Nama</th>
                           <th>Tanggal Izin</th>
                           <th>Alasan</th>
-                          <th>Jenis Pengganti</th>
+                          <th>Detail Pengganti</th>
                           <th>Aksi</th>
                         </tr>
                       </thead>
@@ -504,14 +341,13 @@
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>ID Karyawan</th>
+                          <th>ID Staff</th>
                           <th>Nama</th>
                           <th>Tanggal Izin</th>
                           <th>Alasan</th>
-                          <th>Jenis Pengganti</th>
+                          <th>Detail Pengganti</th>
                           <th>Status</th>
-                          <th>Tanggal Keputusan</th>
-                          <th>Status Penggantian</th>
+                          <th>Status Ganti</th>
                           <th>Aksi</th>
                         </tr>
                       </thead>
