@@ -21,53 +21,7 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Buyback Perhiasan - Melati Gold Shop</title>
     <style>
-      .result-item {
-        padding: 15px;
-        border-radius: var(--border-radius);
-        background-color: white;
-        box-shadow: var(--box-shadow);
-        margin-bottom: 15px;
-        transition: transform 0.3s ease;
-      }
-      .result-item:hover {
-        transform: translateY(-3px);
-      }
-      .buyback-notes {
-        background-color: rgba(67, 97, 238, 0.05);
-        border-left: 4px solid var(--primary-color);
-        padding: 15px;
-        border-radius: 0 var(--border-radius) var(--border-radius) 0;
-      }
-      .condition-list {
-        list-style-type: none;
-        padding-left: 0;
-      }
-      .condition-list li {
-        padding: 8px 0;
-        border-bottom: 1px solid var(--gray-200);
-      }
-      .condition-list li:last-child {
-        border-bottom: none;
-      }
-      .condition-list li ul {
-        margin-top: 8px;
-        padding-left: 20px;
-        list-style-type: disc;
-      }
-      .modal-body .result-item {
-        box-shadow: none;
-        border: 1px solid var(--gray-200);
-      }
-      #penerimaanForm .table th {
-        background-color: var(--primary-color);
-        color: white;
-        font-weight: 500;
-        white-space: nowrap;
-      }
-      .hapus-baris {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-      }
+      
     </style>
   </head>
   <body>
@@ -94,7 +48,13 @@
             </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-ticket-alt"></i>
                 <span class="menu-text">Antrian</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -124,7 +84,13 @@
             </li>
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-clipboard-check"></i>
                 <span class="menu-text">Absensi</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -144,12 +110,6 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="tambah-pengguna.html">
-                      <i class="fas fa-user-plus"></i>
-                      <span class="menu-text">Tambah Pengguna</span>
-                    </a>
-                  </li>
-                  <li class="nav-item">
                     <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
@@ -161,11 +121,36 @@
                       <span class="menu-text">Laporan Izin</span>
                     </a>
                   </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
                   <li class="nav-item">
-                    <a class="nav-link" href="supervisor.html">
-                      <i class="fas fa-file-medical"></i>
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
                       <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
                     </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
                   </li>
                 </ul>
               </div>

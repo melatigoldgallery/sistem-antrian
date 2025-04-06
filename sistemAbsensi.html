@@ -55,7 +55,13 @@
         </li>
         <!-- Antrian dropdown menu -->
         <li class="nav-item">
-          <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+          <a
+            class="nav-link collapsed"
+            href="#"
+            data-bs-toggle="collapse"
+            data-bs-target="#antrianSubmenu"
+            aria-expanded="false"
+          >
             <i class="fas fa-ticket-alt"></i>
             <span class="menu-text">Antrian</span>
             <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -85,7 +91,13 @@
         </li>
         <!-- Absensi dropdown menu -->
         <li class="nav-item">
-          <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+          <a
+            class="nav-link collapsed"
+            href="#"
+            data-bs-toggle="collapse"
+            data-bs-target="#absensiSubmenu"
+            aria-expanded="false"
+          >
             <i class="fas fa-clipboard-check"></i>
             <span class="menu-text">Absensi</span>
             <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -105,12 +117,6 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="tambah-pengguna.html">
-                  <i class="fas fa-user-plus"></i>
-                  <span class="menu-text">Tambah Pengguna</span>
-                </a>
-              </li>
-              <li class="nav-item">
                 <a class="nav-link" href="laporan-kehadiran.html">
                   <i class="fas fa-file-alt"></i>
                   <span class="menu-text">Laporan Kehadiran</span>
@@ -122,11 +128,36 @@
                   <span class="menu-text">Laporan Izin</span>
                 </a>
               </li>
+              <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
               <li class="nav-item">
-                <a class="nav-link" href="supervisor.html">
-                  <i class="fas fa-file-medical"></i>
+                <a
+                  class="nav-link collapsed supervisor-toggle"
+                  href="#"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#supervisorSubmenu"
+                  aria-expanded="false"
+                >
+                  <i class="fas fa-user-tie"></i>
                   <span class="menu-text">Supervisor</span>
+                  <i class="fas fa-chevron-down submenu-icon"></i>
                 </a>
+                <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                  <ul class="nav flex-column ms-3">
+                    <li class="nav-item">
+                      <a class="nav-link" href="supervisor.html">
+                        <i class="fas fa-desktop"></i>
+                        <span class="menu-text">Status Pengajuan Izin</span>
+                      </a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="tambah-pengguna.html">
+                        <i class="fas fa-user-cog"></i>
+                        <span class="menu-text">Tambah Pengguna</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
               </li>
             </ul>
           </div>
@@ -378,7 +409,7 @@
                         <strong>Perhatian!</strong> Pastikan memilih scan masuk atau pulang dan shift yang sesuai dengan jadwal kerja Anda:
                         <ul class="mb-0 mt-1">
                           <li><strong>Shift Pagi:</strong> Staff (08:45), OB (07:15)</li>
-                          <li><strong>Shift Sore:</strong> Staff (14:20), OB (13:30)</li>
+                          <li><strong>Shift Sore:</strong> Staff (14:20), OB (13:45)</li>
                         </ul>
                       </div>
                     </div>

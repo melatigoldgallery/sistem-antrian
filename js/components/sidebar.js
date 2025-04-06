@@ -1,20 +1,7 @@
 // sidebar.js - Handles all sidebar functionality
 
-export function sidebarToggle() {
-    toggleSidebar();
-    setupDropdownToggles();
-    setupMobileSidebar();
-    highlightActiveMenu();
-}
-
-/**
- * Setup sidebar toggle (collapse/expand)
- */
-/**
- * Setup dropdown toggles in sidebar
- * Uses the working code you provided
- */
-function toggleSidebar() { // Fungsi ini sebelumnya bernama setupSidebarToggle
+// Definisikan fungsi setupSidebarToggle terlebih dahulu
+function setupSidebarToggle() {
     const menuToggle = document.querySelector(".menu-toggle");
     const appContainer = document.querySelector(".app-container");
 
@@ -24,11 +11,31 @@ function toggleSidebar() { // Fungsi ini sebelumnya bernama setupSidebarToggle
         });
     }
 }
+
+// Kemudian definisikan fungsi sidebarToggle yang mengekspor
+export function sidebarToggle() {
+    setupSidebarToggle();
+    setupDropdownToggles();
+    setupMobileSidebar();
+    highlightActiveMenu();
+}
+
+/**
+ * Setup dropdown toggles in sidebar
+ */
 function setupDropdownToggles() {
     console.log("Setting up dropdown toggles");
     const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
     
     dropdownToggles.forEach(toggle => {
+      // Skip if this is the supervisor toggle (will be handled separately)
+      if (toggle.classList.contains('supervisor-toggle') || 
+          toggle.getAttribute('data-bs-target') === '#supervisorSubmenu' ||
+          toggle.textContent.includes('Supervisor')) {
+        console.log("Skipping supervisor toggle in sidebar.js");
+        return;
+      }
+      
       toggle.addEventListener('click', function(e) {
         e.preventDefault();
         
@@ -69,7 +76,6 @@ function setupDropdownToggles() {
       });
     });
   }
-  
 
 /**
  * Setup mobile sidebar functionality

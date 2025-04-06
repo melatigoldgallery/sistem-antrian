@@ -25,114 +25,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Laporan Izin - Melati Gold Shop</title>
-    <style>
-      .status-approved {
-        color: var(--success-color);
-        font-weight: 600;
-      }
-      .status-rejected {
-        color: var(--danger-color);
-        font-weight: 600;
-      }
-      .status-pending {
-        color: var(--warning-color);
-        font-weight: 600;
-      }
-      .status-sudah-diganti {
-        color: var(--success-color);
-      }
-      .status-belum-diganti {
-        color: var(--gray-600);
-      }
-      .report-controls {
-        background-color: var(--gray-100);
-        border-radius: var(--border-radius);
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: var(--box-shadow);
-      }
-      .summary-card {
-        transition: transform 0.3s ease;
-      }
-      .summary-card:hover {
-        transform: translateY(-5px);
-      }
-      .summary-value {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0;
-      }
-      .table-container {
-        max-height: 500px;
-        overflow-y: auto;
-        margin-bottom: 20px;
-        border-radius: var(--border-radius);
-        box-shadow: var(--box-shadow);
-      }
-      #leaveReportTable {
-        margin-bottom: 0;
-      }
-      #leaveReportTable th {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-      }
-      .first-day-row {
-        border-top: 2px solid var(--primary-color);
-      }
-      
-      .badge.bg-info {
-        font-size: 0.7rem;
-        margin-left: 5px;
-        vertical-align: middle;
-      }
-      
-      /* Styling untuk mengelompokkan baris dari izin yang sama */
-      tr[data-leave-id] {
-        transition: background-color 0.2s;
-      }
-      
-      tr[data-leave-id]:hover {
-        background-color: rgba(0, 123, 255, 0.05);
-      }
-      
-      /* Styling untuk status */
-      .status-sudah-diganti {
-        color: var(--success-color);
-        font-weight: 600;
-      }
-      
-      .status-belum-diganti {
-        color: var(--gray-600);
-        font-weight: 600;
-      }
-      
-      .status-approved, .status-disetujui {
-        color: var(--success-color);
-        font-weight: 600;
-      }
-      
-      .status-rejected, .status-ditolak {
-        color: var(--danger-color);
-        font-weight: 600;
-      }
-      
-      .status-pending {
-        color: var(--warning-color);
-        font-weight: 600;
-      }
-      
-      /* Styling untuk badge hari */
-      .day-badge {
-        display: inline-block;
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 0.7rem;
-        background-color: var(--info-color);
-        color: white;
-        margin-left: 5px;
-      }
-    </style>
   </head>
   <body>
     <div class="app-container">
@@ -220,12 +112,6 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="tambah-pengguna.html">
-                      <i class="fas fa-user-plus"></i>
-                      <span class="menu-text">Tambah Pengguna</span>
-                    </a>
-                  </li>
-                  <li class="nav-item">
                     <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
@@ -237,11 +123,36 @@
                       <span class="menu-text">Laporan Izin</span>
                     </a>
                   </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
                   <li class="nav-item">
-                    <a class="nav-link" href="supervisor.html">
-                      <i class="fas fa-file-medical"></i>
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
                       <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
                     </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -437,24 +348,6 @@
                   Data Izin Karyawan
                 </h2>
                 <div class="card-actions">
-                  <div class="dropdown me-2">
-                    <button
-                      class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      id="statusFilterDropdown"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <i class="fas fa-filter"></i>
-                      Filter Status
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
-                      <li><a class="dropdown-item" href="#" data-status-filter="all">Semua Status</a></li>
-                      <li><a class="dropdown-item" href="#" data-status-filter="approved">Disetujui</a></li>
-                      <li><a class="dropdown-item" href="#" data-status-filter="rejected">Ditolak</a></li>
-                      <li><a class="dropdown-item" href="#" data-status-filter="pending">Pending</a></li>
-                    </ul>
-                  </div>
                   <div class="dropdown">
                     <button
                       class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -482,7 +375,6 @@
                         <th>No</th>
                         <th>ID Staff</th>
                         <th>Nama</th>
-                        <th>Tanggal Pengajuan</th>
                         <th>Tanggal Izin</th>
                         <th>Alasan</th>
                         <th>Jenis Pengganti</th>
@@ -490,7 +382,8 @@
                         <th>Status</th>
                         <th>Status Ganti</th>
                       </tr>
-                    </thead>                   
+                    </thead>
+                                      
                     <tbody id="leaveReportList"></tbody>
                   </table>
                   <!-- Add this to laporan-izin.html after the table -->

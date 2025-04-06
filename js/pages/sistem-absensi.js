@@ -1,6 +1,11 @@
 // Import semua service yang dibutuhkan
 import { findEmployeeByBarcode, getEmployees } from "../services/employee-service.js";
-import { recordAttendance, updateAttendanceOut, getTodayAttendance } from "../services/attendance-service.js";
+import {
+  recordAttendance,
+  updateAttendanceOut,
+  getTodayAttendance,
+  getLocalDateString,
+} from "../services/attendance-service.js";
 import { getLeaveRequestsByDate } from "../services/leave-service.js";
 
 // Initialize data
@@ -23,20 +28,20 @@ let isOpeningAudioAvailable = true;
 function checkAudioAvailability(audioPath) {
   return new Promise((resolve, reject) => {
     const audio = new Audio(audioPath);
-    
+
     audio.oncanplaythrough = () => {
       resolve(true);
     };
-    
+
     audio.onerror = () => {
       resolve(false);
     };
-    
+
     // Set timeout untuk menghindari hanging
     setTimeout(() => {
       resolve(false);
     }, 2000);
-    
+
     // Coba load audio
     audio.load();
   });
@@ -45,7 +50,7 @@ function checkAudioAvailability(audioPath) {
 // Fungsi untuk memeriksa ketersediaan audio pembuka
 async function checkOpeningAudio() {
   try {
-    isOpeningAudioAvailable = await checkAudioAvailability('audio/antrian.mp3');
+    isOpeningAudioAvailable = await checkAudioAvailability("audio/antrian.mp3");
     console.log("Opening audio available:", isOpeningAudioAvailable);
   } catch (error) {
     console.error("Error checking audio availability:", error);
@@ -56,80 +61,80 @@ async function checkOpeningAudio() {
 function playNotificationSound(type) {
   // Jika suara dinonaktifkan, keluar dari fungsi
   if (!soundEnabled) return;
-  
+
   try {
     // Hentikan semua suara yang sedang diputar
     window.speechSynthesis.cancel();
-    
+
     // Putar audio pembuka terlebih dahulu
-    const openingAudio = new Audio('audio/antrian.mp3');
-    
+    const openingAudio = new Audio("audio/antrian.mp3");
+
     // Set volume audio pembuka
     openingAudio.volume = 0.7;
-    
+
     // Buat instance SpeechSynthesisUtterance untuk pesan
     const utterance = new SpeechSynthesisUtterance();
-    
+
     // Set bahasa ke Indonesia
-    utterance.lang = 'id-ID';
-    
+    utterance.lang = "id-ID";
+
     // Set volume dan kecepatan untuk kejelasan yang lebih baik
-    utterance.volume = 1;    // 0 to 1
-    utterance.rate = 0.8;    // Sedikit lebih lambat untuk kejelasan
-    utterance.pitch = 1.1;   // Sedikit lebih tinggi untuk kejelasan
-    
+    utterance.volume = 1; // 0 to 1
+    utterance.rate = 0.8; // Sedikit lebih lambat untuk kejelasan
+    utterance.pitch = 1.1; // Sedikit lebih tinggi untuk kejelasan
+
     // Gunakan suara Indonesia yang telah dimuat
     if (indonesianVoice) {
       utterance.voice = indonesianVoice;
     }
-    
+
     // Set teks berdasarkan tipe notifikasi
-    switch(type) {
-      case 'success-in':
+    switch (type) {
+      case "success-in":
         utterance.text = "Absensi berhasil";
         break;
-      case 'success-out':
+      case "success-out":
         utterance.text = "Berhasil scen pulang";
         break;
-      case 'already-in':
+      case "already-in":
         utterance.text = "Kamu sudah scen";
         break;
-      case 'already-out':
+      case "already-out":
         utterance.text = "Kamu sudah scen pulang";
         break;
-      case 'late':
+      case "late":
         utterance.text = "Kamu terlambat";
         break;
-      case 'not-found':
+      case "not-found":
         utterance.text = "Barcode tidak terdaftar";
         break;
-      case 'error':
+      case "error":
         utterance.text = "Terjadi kesalahan";
         break;
       default:
         utterance.text = "Operasi berhasil";
     }
-    
+
     // Tambahkan event untuk debugging
     utterance.onstart = () => {
       console.log("Speech started:", utterance.text);
     };
-    
+
     utterance.onend = () => {
       console.log("Speech ended");
     };
-    
+
     utterance.onerror = (event) => {
       console.error("Speech error:", event);
     };
-    
+
     // Putar audio pembuka dan kemudian baca teks
     openingAudio.onended = () => {
       // Berikan jeda kecil setelah audio pembuka
       setTimeout(() => {
         // Putar suara
         window.speechSynthesis.speak(utterance);
-        
+
         // Pastikan suara diputar (workaround untuk bug di beberapa browser)
         setTimeout(() => {
           if (window.speechSynthesis.paused) {
@@ -138,16 +143,16 @@ function playNotificationSound(type) {
         }, 100);
       }, 300); // Jeda 300ms setelah audio pembuka
     };
-    
+
     // Tangani error pada audio pembuka
     openingAudio.onerror = (error) => {
       console.error("Error playing opening audio:", error);
       // Jika audio pembuka gagal, langsung baca teks
       window.speechSynthesis.speak(utterance);
     };
-    
+
     // Mulai putar audio pembuka
-    openingAudio.play().catch(error => {
+    openingAudio.play().catch((error) => {
       console.error("Error playing opening audio:", error);
       // Jika audio pembuka gagal, langsung baca teks
       window.speechSynthesis.speak(utterance);
@@ -157,44 +162,39 @@ function playNotificationSound(type) {
   }
 }
 
-
 // Fungsi untuk menginisialisasi dan memuat suara Indonesia
 function initSpeechSynthesis() {
-  if ('speechSynthesis' in window) {
+  if ("speechSynthesis" in window) {
     console.log("Speech synthesis supported");
-    
+
     // Fungsi untuk mencari suara Indonesia
     const findIndonesianVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      console.log("Available voices:", voices.map(v => `${v.name} (${v.lang})`).join(', '));
-      
+      console.log("Available voices:", voices.map((v) => `${v.name} (${v.lang})`).join(", "));
+
       // Cari suara Indonesia atau Melayu (sebagai fallback)
-      const idVoice = voices.find(voice => 
-        voice.lang.includes('id-ID') || voice.lang.includes('id')
-      );
-      
+      const idVoice = voices.find((voice) => voice.lang.includes("id-ID") || voice.lang.includes("id"));
+
       // Jika tidak ada suara Indonesia, coba cari suara Melayu
-      const msVoice = voices.find(voice => 
-        voice.lang.includes('ms-MY') || voice.lang.includes('ms')
-      );
-      
+      const msVoice = voices.find((voice) => voice.lang.includes("ms-MY") || voice.lang.includes("ms"));
+
       // Jika masih tidak ada, gunakan suara default
-      indonesianVoice = idVoice || msVoice || voices.find(v => v.default) || voices[0];
-      
+      indonesianVoice = idVoice || msVoice || voices.find((v) => v.default) || voices[0];
+
       if (indonesianVoice) {
         console.log("Selected voice:", indonesianVoice.name, indonesianVoice.lang);
-        
+
         // Test suara
         const testUtterance = new SpeechSynthesisUtterance("Sistem absensi siap digunakan");
         testUtterance.voice = indonesianVoice;
-        testUtterance.lang = 'id-ID';
+        testUtterance.lang = "id-ID";
         testUtterance.volume = 0.5; // Lebih pelan untuk test
         window.speechSynthesis.speak(testUtterance);
       } else {
         console.warn("No suitable voice found");
       }
     };
-    
+
     // Periksa apakah suara sudah dimuat
     if (window.speechSynthesis.getVoices().length > 0) {
       findIndonesianVoice();
@@ -216,10 +216,10 @@ function fixSpeechSynthesisBugs() {
       window.speechSynthesis.resume();
     }
   }, 5000);
-  
+
   // Bug di beberapa browser: speechSynthesis tidak berfungsi setelah tab tidak aktif
   // Solusi: reset saat tab menjadi aktif
-  document.addEventListener('visibilitychange', () => {
+  document.addEventListener("visibilitychange", () => {
     if (!document.hidden && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -229,32 +229,29 @@ function fixSpeechSynthesisBugs() {
 // Fungsi untuk mengaktifkan/menonaktifkan suara
 function toggleSound() {
   soundEnabled = !soundEnabled;
-  
+
   // Update icon
-  const soundIcon = document.querySelector('#toggleSound + label i');
+  const soundIcon = document.querySelector("#toggleSound + label i");
   if (soundIcon) {
-    soundIcon.className = soundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+    soundIcon.className = soundEnabled ? "fas fa-volume-up" : "fas fa-volume-mute";
   }
-  
+
   // Simpan preferensi di localStorage
-  localStorage.setItem('soundEnabled', soundEnabled);
-  
+  localStorage.setItem("soundEnabled", soundEnabled);
+
   // Notifikasi
-  showScanResult(
-    "info", 
-    `Suara notifikasi ${soundEnabled ? 'diaktifkan' : 'dinonaktifkan'}`
-  );
-  
+  showScanResult("info", `Suara notifikasi ${soundEnabled ? "diaktifkan" : "dinonaktifkan"}`);
+
   // Jika diaktifkan, putar suara konfirmasi
   if (soundEnabled) {
     const confirmUtterance = new SpeechSynthesisUtterance("Suara notifikasi diaktifkan");
-    confirmUtterance.lang = 'id-ID';
+    confirmUtterance.lang = "id-ID";
     confirmUtterance.volume = 0.8;
-    
+
     if (indonesianVoice) {
       confirmUtterance.voice = indonesianVoice;
     }
-    
+
     window.speechSynthesis.speak(confirmUtterance);
   }
 }
@@ -297,7 +294,15 @@ async function processBarcode() {
     // Current time
     const now = new Date();
     const timeString = now.toTimeString().split(" ")[0];
-    const today = now.toISOString().split("T")[0];
+    
+    // PERBAIKAN: Gunakan tanggal dari timestamp untuk konsistensi
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    console.log("Today's date for attendance (from timestamp):", today);
+    console.log("Current time:", now);
 
     if (scanType === "in") {
       // Check if already checked in
@@ -338,6 +343,7 @@ async function processBarcode() {
         date: today,
       };
 
+      console.log("Saving attendance record:", attendance);
       await recordAttendance(attendance);
 
       showScanResult(
@@ -375,6 +381,7 @@ async function processBarcode() {
       }
 
       // Update attendance with checkout time
+      console.log("Updating attendance record with checkout time:", existingRecord.id, now);
       await updateAttendanceOut(existingRecord.id, now);
 
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
@@ -392,18 +399,21 @@ async function processBarcode() {
   // Clear input
   document.getElementById("barcodeInput").value = "";
   document.getElementById("barcodeInput").focus();
+  
+  // Log tanggal absensi yang disimpan untuk debugging
+  const attendanceDate = today;
+  console.log("Attendance date being saved:", attendanceDate);
 }
-
 
 
 // Modifikasi fungsi loadTodayAttendance untuk memastikan data izin diambil dengan benar
 async function loadTodayAttendance() {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = new Date().toISOString().split("T")[0];
+
     // Load attendance data
     attendanceRecords = await getTodayAttendance();
-    
+
     // Load leave requests for today - dengan penanganan error yang lebih baik
     try {
       console.log("Fetching leave requests for today:", today);
@@ -413,15 +423,15 @@ async function loadTodayAttendance() {
       console.error("Error loading leave requests:", leaveError);
       leaveRequests = []; // Set to empty array on error
     }
-    
+
     // Update UI
     updateStats();
-    
+
     // Pastikan data hari ini ada di cache
     if (!attendanceCache.has(today)) {
       attendanceCache.set(today, [...attendanceRecords]);
     }
-    
+
     console.log(`Loaded ${attendanceRecords.length} attendance records for today`);
   } catch (error) {
     console.error("Error loading attendance:", error);
@@ -433,16 +443,16 @@ async function loadTodayAttendance() {
 function updateDateInfo() {
   const today = new Date();
   const dateInfoEl = document.getElementById("dateInfo");
-  
+
   if (dateInfoEl) {
-    const options = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     };
-    
-    dateInfoEl.textContent = today.toLocaleDateString('id-ID', options);
+
+    dateInfoEl.textContent = today.toLocaleDateString("id-ID", options);
     console.log("Date info updated:", dateInfoEl.textContent);
   } else {
     console.warn("dateInfo element not found");
@@ -456,22 +466,23 @@ function updateStats() {
 
   const presentCount = todayRecords.length;
   const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
-  
+
   // Pastikan leaveRequests sudah diinisialisasi dan hanya hitung yang disetujui
-  const approvedLeaves = Array.isArray(leaveRequests) ? 
-    leaveRequests.filter(leave => {
-      const status = leave.status || '';
-      return ['approved', 'disetujui', 'Approved', 'Disetujui'].includes(status.toLowerCase());
-    }) : [];
-  
+  const approvedLeaves = Array.isArray(leaveRequests)
+    ? leaveRequests.filter((leave) => {
+        const status = leave.status || "";
+        return ["approved", "disetujui", "Approved", "Disetujui"].includes(status.toLowerCase());
+      })
+    : [];
+
   const leaveCount = approvedLeaves.length;
-  
+
   console.log("Updating stats:", {
     presentCount,
     lateCount,
     leaveCount,
     totalLeaveRequests: leaveRequests.length,
-    approvedLeaves: approvedLeaves.length
+    approvedLeaves: approvedLeaves.length,
   });
 
   // Update UI elements if they exist
@@ -482,7 +493,7 @@ function updateStats() {
   } else {
     console.warn("presentCount element not found");
   }
-  
+
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) {
     lateCountEl.textContent = lateCount;
@@ -490,7 +501,7 @@ function updateStats() {
   } else {
     console.warn("lateCount element not found");
   }
-  
+
   // Update izin count
   const leaveCountEl = document.getElementById("leaveCount");
   if (leaveCountEl) {
@@ -499,10 +510,12 @@ function updateStats() {
   } else {
     console.warn("leaveCount element not found in DOM");
     // Try to find the element by other means
-    console.log("Available elements with 'count' in ID:", 
-      Array.from(document.querySelectorAll('[id*="count"]')).map(el => el.id));
+    console.log(
+      "Available elements with 'count' in ID:",
+      Array.from(document.querySelectorAll('[id*="count"]')).map((el) => el.id)
+    );
   }
-  
+
   // Update tanggal absensi
   updateDateInfo();
 }
@@ -513,17 +526,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM Content Loaded - Initializing attendance system");
     // Periksa ketersediaan audio pembuka
     await checkOpeningAudio();
-    
+
     // Inisialisasi Web Speech API
     initSpeechSynthesis();
-    
+
     // Perbaiki bug umum pada Web Speech API
     fixSpeechSynthesisBugs();
-    
+
     // Preload audio untuk mengurangi delay
     if (isOpeningAudioAvailable) {
-      const preloadAudio = new Audio('audio/antrian.mp3');
-      preloadAudio.preload = 'auto';
+      const preloadAudio = new Audio("audio/antrian.mp3");
+      preloadAudio.preload = "auto";
       preloadAudio.load();
     }
     // Setup barcode scanning
@@ -566,7 +579,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
-}); 
+});
 
 // Helper function to format employee type
 function formatEmployeeType(type) {
@@ -582,7 +595,7 @@ function formatShift(shift) {
 function showScanResult(type, message) {
   const scanResult = document.getElementById("scanResult");
   if (!scanResult) return;
-  
+
   scanResult.className = "scan-result " + type;
   scanResult.innerHTML = message;
   scanResult.style.display = "block";
@@ -601,8 +614,8 @@ function getThresholdTime(employeeType, shift) {
       afternoon: new Date("1970-01-01T14:20:00"),
     },
     ob: {
-      morning: new Date("1970-01-01T07:30:00"),
-      afternoon: new Date("1970-01-01T13:30:00"),
+      morning: new Date("1970-01-01T07:15:00"),
+      afternoon: new Date("1970-01-01T13:45:00"),
     },
   };
 
@@ -615,7 +628,6 @@ function getThresholdTime(employeeType, shift) {
 
   return thresholds[employeeType][shift];
 }
-
 
 // Check if employee is late based on type and shift
 function checkIfLate(timeString, employeeType, shift) {
@@ -631,14 +643,14 @@ async function loadEmployees() {
   try {
     if (employeeCache.size === 0) {
       employees = await getEmployees();
-      
+
       // Cache employees by barcode for faster lookup
-      employees.forEach(employee => {
+      employees.forEach((employee) => {
         if (employee.barcode) {
           employeeCache.set(employee.barcode, employee);
         }
       });
-      
+
       console.log(`Cached ${employeeCache.size} employees`);
     }
   } catch (error) {

@@ -107,12 +107,6 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="tambah-pengguna.html">
-                      <i class="fas fa-user-plus"></i>
-                      <span class="menu-text">Tambah Pengguna</span>
-                    </a>
-                  </li>
-                  <li class="nav-item">
                     <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
@@ -124,11 +118,36 @@
                       <span class="menu-text">Laporan Izin</span>
                     </a>
                   </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
                   <li class="nav-item">
-                    <a class="nav-link" href="supervisor.html">
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
                       <i class="fas fa-user-tie"></i>
                       <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
                     </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -274,24 +293,36 @@
               </ul>
             </div>
             <div class="card-body">
-              <div class="d-flex justify-content-between mb-3">
-                <div class="d-flex">
-                  <div class="input-group me-2" style="width: 300px">
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="searchInput"
-                      placeholder="Cari nama atau ID karyawan..."
-                    />
-                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
-                      <i class="fas fa-search"></i>
-                    </button>
+              <div id="filterContainer" class="d-none">
+                <div class="d-flex justify-content-between mb-3">
+                  <div class="d-flex">
+                    <div class="input-group me-2" style="width: 300px">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="searchInput"
+                        placeholder="Cari nama atau ID karyawan..."
+                      />
+                      <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="filter-container">
+                    <div class="d-flex align-items-center">
+                      <label class="me-2">Filter Status:</label>
+                      <select id="replacementStatusFilter" class="form-select" style="width: 200px">
+                        <option value="" selected>-- Pilih Status --</option>
+                        <option value="Belum Diganti">Belum Diganti</option>
+                        <option value="Sudah Diganti">Sudah Diganti</option>
+                      </select>
+                      <button id="applyFilterBtn" class="btn btn-primary ms-2">
+                        <i class="fas fa-filter me-1"></i>
+                        Terapkan
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <button id="refreshButton" class="btn btn-primary">
-                  <i class="fas fa-sync-alt me-2"></i>
-                  Refresh Data
-                </button>
               </div>
 
               <div class="tab-content" id="leaveRequestTabContent">
@@ -546,7 +577,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Modal untuk menampilkan surat keterangan sakit -->
     <div
       class="modal fade"
@@ -576,10 +607,42 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Script imports -->
     <script type="module" src="js/configFirebase.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/supervisor.js"></script>
+    <!-- Tambahkan script ini sebelum </body> -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Fungsi untuk logout
+        window.handleLogout = function () {
+          console.log("Logout clicked");
+          // Hapus status autentikasi
+          sessionStorage.removeItem("supervisorAuthenticated");
+
+          // Redirect ke halaman utama
+          window.location.href = "dashboard.html";
+        };
+
+        // Buka dropdown Absensi secara otomatis
+        const absensiDropdown = document.getElementById("absensiSubmenu");
+        const absensiToggle = document.querySelector('[data-bs-target="#absensiSubmenu"]');
+
+        if (absensiDropdown && absensiToggle) {
+          const absensiCollapse = new bootstrap.Collapse(absensiDropdown, { toggle: false });
+          absensiCollapse.show();
+          absensiToggle.setAttribute("aria-expanded", "true");
+          absensiToggle.classList.remove("collapsed");
+        }
+
+        // Mencegah dropdown Absensi tertutup saat mengklik di dalamnya
+        if (absensiDropdown) {
+          absensiDropdown.addEventListener("click", function (event) {
+            event.stopPropagation();
+          });
+        }
+      });
+    </script>
   </body>
 </html>

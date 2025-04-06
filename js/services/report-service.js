@@ -15,6 +15,8 @@ import { attendanceCache } from "./attendance-service.js";
 // Get attendance by date range with pagination
 export async function getAttendanceByDateRange(startDate, endDate, lastDoc = null, itemsPerPage = 20) {
   try {
+    console.log("Fetching attendance for date range:", startDate, "to", endDate);
+    
     const attendanceCollection = collection(db, "attendance");
     let q;
     
@@ -41,13 +43,25 @@ export async function getAttendanceByDateRange(startDate, endDate, lastDoc = nul
 
     const snapshot = await getDocs(q);
     
+    console.log(`Found ${snapshot.docs.length} attendance records`);
+    
     const attendanceRecords = snapshot.docs.map((doc) => {
       const data = doc.data();
+      
+      // Log data untuk debugging
+      console.log("Raw record data:", {
+        id: doc.id,
+        date: data.date,
+        timeIn: data.timeIn ? data.timeIn.toDate() : null
+      });
+      
+      // Pastikan tanggal yang digunakan adalah tanggal dari Firestore
+      // JANGAN mengubah format tanggal di sini
       return {
         id: doc.id,
         ...data,
         // Convert Firestore Timestamp to JS Date
-        timeIn: data.timeIn.toDate(),
+        timeIn: data.timeIn ? data.timeIn.toDate() : null,
         timeOut: data.timeOut ? data.timeOut.toDate() : null,
       };
     });
@@ -68,6 +82,7 @@ export async function getAttendanceByDateRange(startDate, endDate, lastDoc = nul
     throw error;
   }
 }
+
 
 // Delete attendance by date range
 export async function deleteAttendanceByDateRange(startDate, endDate) {

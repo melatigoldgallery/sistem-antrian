@@ -4,14 +4,22 @@ import {
   updateLeaveRequestStatus,
   updateReplacementStatus,
   clearLeaveCache,
+  leaveCache,
+  leaveMonthCache,
+  getLeaveRequestById
 } from "../services/leave-service.js";
 
 // Initialize data
 let pendingLeaves = [];
 let allLeaves = [];
+// Filter variables
+let currentReplacementFilter = "";
+let filterApplied = false; // Flag untuk menandai apakah filter sudah diterapkan
+let lastDataRefresh = 0; // Timestamp terakhir refresh data
+const CACHE_DURATION = 60 * 60 * 1000;; // 1 jam dalam milidetik
 
 // Fungsi untuk memuat pengajuan izin yang menunggu persetujuan
-async function loadPendingLeaveRequests() {
+async function loadPendingLeaveRequests(forceRefresh = false) {
   try {
     const tbody = document.getElementById("pendingLeaveList");
     if (tbody) {
@@ -19,19 +27,23 @@ async function loadPendingLeaveRequests() {
       tbody.innerHTML = "";
     }
 
-    console.log("Fetching all leave requests to filter pending ones...");
+    // Cek apakah perlu refresh data dari server
+    const now = Date.now();
+    const shouldRefresh = forceRefresh || !lastDataRefresh || (now - lastDataRefresh > CACHE_DURATION);
     
-    // Dapatkan semua pengajuan izin
-    const allRequests = await getAllLeaveRequests();
-    console.log("Total leave requests:", allRequests.length);
-    
-    // Filter secara manual untuk mendapatkan yang menunggu persetujuan
-    pendingLeaves = allRequests.filter(request => {
-      return request.status === "Menunggu Persetujuan";
-    });
-    
-    console.log("Filtered pending leave requests:", pendingLeaves);
-    console.log("Number of pending requests:", pendingLeaves.length);
+    if (shouldRefresh) {
+      console.log("Fetching pending leave requests from server...");
+      
+      // Dapatkan pengajuan izin yang menunggu persetujuan
+      const pendingRequests = await getPendingLeaveRequests();
+      console.log("Pending leave requests fetched:", pendingRequests.length);
+      
+      // Update data dan timestamp
+      pendingLeaves = pendingRequests;
+      lastDataRefresh = now;
+    } else {
+      console.log("Using cached pending leave requests data");
+    }
 
     if (!pendingLeaves || pendingLeaves.length === 0) {
       // Show empty state if exists, but don't add any text to the table
@@ -57,56 +69,102 @@ async function loadPendingLeaveRequests() {
   }
 }
 
-// Fungsi untuk mengambil data pengajuan izin yang menunggu persetujuan
-async function fetchPendingLeaves() {
-  try {
-    // Tampilkan loading state
-    const loadingIndicator = document.getElementById("pendingLoadingIndicator");
-    if (loadingIndicator) loadingIndicator.style.display = "block";
-
-    // Ambil data dari Firebase
-    const pendingLeaves = await getLeaveRequestsByStatus("Menunggu Persetujuan");
-
-    console.log("Data pengajuan yang diambil:", pendingLeaves); // Debugging
-
-    // Update tabel
-    updatePendingLeaveTable(pendingLeaves);
-
-    // Sembunyikan loading state
-    if (loadingIndicator) loadingIndicator.style.display = "none";
-  } catch (error) {
-    console.error("Error fetching pending leaves:", error);
-    showAlert("error", "Gagal memuat data pengajuan izin");
-
-    // Sembunyikan loading state
-    const loadingIndicator = document.getElementById("pendingLoadingIndicator");
-    if (loadingIndicator) loadingIndicator.style.display = "none";
-  }
-}
-// Load all leave requests
-async function loadAllLeaveRequests() {
+async function loadAllLeaveRequests(forceRefresh = false) {
   try {
     const tbody = document.getElementById("leaveHistoryList");
+    const emptyState = document.getElementById("emptyAllRequests");
+    
+    // Jika filter belum diterapkan, tampilkan pesan dan sembunyikan tabel
+    if (!filterApplied) {
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Silakan pilih filter status penggantian terlebih dahulu</td></tr>';
+      }
+      
+      // Sembunyikan empty state jika ada
+      if (emptyState) emptyState.style.display = "none";
+      
+      // Reset data
+      allLeaves = [];
+      
+      // Update stats
+      updateStats();
+      return;
+    }
+    
+    // Tampilkan loading state
     if (tbody) {
       tbody.innerHTML =
         '<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin me-2"></i> Memuat data...</td></tr>';
     }
 
-    console.log("Fetching all leave requests...");
-    allLeaves = await getAllLeaveRequests();
-    console.log("All leave requests:", allLeaves); // Debug log
+    // Cek apakah perlu refresh data dari server
+    const now = Date.now();
+    const shouldRefresh = forceRefresh || !lastDataRefresh || (now - lastDataRefresh > CACHE_DURATION);
+    
+    // Cek apakah data sudah ada di cache
+    const cacheKey = `filter_${currentReplacementFilter}`;
+    const cachedData = sessionStorage.getItem(cacheKey);
+    
+    if (!shouldRefresh && cachedData) {
+      console.log("Using cached filtered leave requests data");
+      allLeaves = JSON.parse(cachedData);
+    } else {
+      console.log("Fetching all leave requests...");
+      let allRequestsData = await getAllLeaveRequests();
+      console.log("Total leave requests before filtering:", allRequestsData.length);
+      
+      // Filter berdasarkan status penggantian jika filter dipilih
+      if (currentReplacementFilter) {
+        console.log(`Filtering by replacement status: ${currentReplacementFilter}`);
+        
+        allRequestsData = allRequestsData.filter(request => {
+          // Periksa apakah ini multi-day leave
+          const isMultiDay = request.leaveStartDate && request.leaveEndDate && 
+                            request.leaveStartDate !== request.leaveEndDate;
+          
+          if (isMultiDay && request.replacementStatusArray) {
+            // Untuk multi-day, periksa apakah ada status yang sesuai filter
+            if (currentReplacementFilter === "Sudah Diganti") {
+              return request.replacementStatusArray.some(s => s === "Sudah Diganti");
+            } else if (currentReplacementFilter === "Belum Diganti") {
+              return request.replacementStatusArray.some(s => s === "Belum Diganti" || !s);
+            }
+          } else {
+            // Untuk single-day, periksa replacementStatus
+            // Jika status belum diganti, juga periksa null/undefined/empty
+            if (currentReplacementFilter === "Belum Diganti") {
+              return !request.replacementStatus || 
+                     request.replacementStatus === "" || 
+                     request.replacementStatus === "Belum Diganti";
+            } else {
+              return request.replacementStatus === currentReplacementFilter;
+            }
+          }
+          return false;
+        });
+      }
+      
+      console.log("Filtered leave requests count:", allRequestsData.length);
+      
+      // Update allLeaves dengan data yang sudah difilter
+      allLeaves = allRequestsData;
+      
+      // Simpan hasil filter ke sessionStorage
+      sessionStorage.setItem(cacheKey, JSON.stringify(allLeaves));
+      
+      // Update timestamp refresh
+      lastDataRefresh = now;
+    }
 
     if (!allLeaves || allLeaves.length === 0) {
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Belum ada data pengajuan izin</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data pengajuan izin dengan status tersebut</td></tr>';
       }
 
       // Show empty state if exists
-      const emptyState = document.getElementById("emptyAllRequests");
       if (emptyState) emptyState.style.display = "flex";
     } else {
       // Hide empty state if exists
-      const emptyState = document.getElementById("emptyAllRequests");
       if (emptyState) emptyState.style.display = "none";
 
       updateLeaveHistoryTable();
@@ -141,8 +199,6 @@ function updatePendingLeaveTable() {
   const sortedLeaves = [...pendingLeaves].sort((a, b) => {
     return new Date(b.submissionDate || 0) - new Date(a.submissionDate || 0);
   });
-  
-  console.log("Sorted pending leaves:", sortedLeaves);
   
   sortedLeaves.forEach((record) => {
     // Debug log untuk memeriksa data surat keterangan sakit
@@ -226,7 +282,26 @@ function updatePendingLeaveTable() {
         this.disabled = true;
 
         await updateLeaveRequestStatus(id, "Disetujui");
-        await refreshData();
+        
+        // Update local data instead of full refresh
+        const recordIndex = pendingLeaves.findIndex(item => item.id === id);
+        if (recordIndex !== -1) {
+          // Remove from pending leaves
+          const updatedRecord = {...pendingLeaves[recordIndex], status: "Disetujui"};
+          pendingLeaves.splice(recordIndex, 1);
+          
+          // Add to all leaves if it matches the current filter
+          if (filterApplied) {
+            if (currentReplacementFilter === "Belum Diganti") {
+              allLeaves.unshift(updatedRecord);
+            }
+          }
+          
+          // Update UI
+          updatePendingLeaveTable();
+          if (filterApplied) updateLeaveHistoryTable();
+          updateStats();
+        }
 
         // Show success message
         showAlert("success", "Pengajuan izin berhasil disetujui!");
@@ -250,7 +325,17 @@ function updatePendingLeaveTable() {
         this.disabled = true;
 
         await updateLeaveRequestStatus(id, "Ditolak");
-        await refreshData();
+        
+        // Update local data instead of full refresh
+        const recordIndex = pendingLeaves.findIndex(item => item.id === id);
+        if (recordIndex !== -1) {
+          // Remove from pending leaves
+          pendingLeaves.splice(recordIndex, 1);
+          
+          // Update UI
+          updatePendingLeaveTable();
+          updateStats();
+        }
 
         // Show success message
         showAlert("success", "Pengajuan izin berhasil ditolak.");
@@ -265,8 +350,6 @@ function updatePendingLeaveTable() {
     });
   });
 }
-
-
 
 // Update leave history table
 function updateLeaveHistoryTable() {
@@ -471,43 +554,6 @@ function updateLeaveHistoryTable() {
 
   // Add event listeners to buttons
   addEventListenersToButtons();
-
-  // Add event listeners to replacement status buttons
-  document.querySelectorAll(".replacement-status-btn").forEach((button) => {
-    button.addEventListener("click", async function () {
-      try {
-        const id = this.getAttribute("data-id");
-        const currentStatus = this.getAttribute("data-status");
-        const dayIndex = this.getAttribute("data-day-index");
-        const newStatus = currentStatus === "Sudah Diganti" ? "Belum Diganti" : "Sudah Diganti";
-
-        // Show loading state
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        this.disabled = true;
-
-        // Jika ada dayIndex, update status untuk hari tertentu
-        if (dayIndex !== null) {
-          await updateReplacementStatus(id, newStatus, parseInt(dayIndex));
-        } else {
-          await updateReplacementStatus(id, newStatus);
-        }
-
-        await refreshData();
-
-        // Show success message
-        showAlert("success", `Status ganti berhasil diubah menjadi "${newStatus}"`);
-      } catch (error) {
-        console.error("Error updating replacement status:", error);
-        showAlert("danger", "Terjadi kesalahan saat mengubah status ganti: " + error.message);
-
-        // Reset button
-        const currentStatus = this.getAttribute("data-status");
-        const buttonText = currentStatus === "Sudah Diganti" ? "Batalkan" : "Sudah Diganti";
-        this.textContent = buttonText;
-        this.disabled = false;
-      }
-    });
-  });
 }
 
 // Helper function to format replacement information
@@ -554,10 +600,9 @@ function formatDate(date) {
   });
 }
 
-// Update stats cards
 function updateStats() {
-  // Count total requests
-  const totalRequests = pendingLeaves.length + allLeaves.length;
+  // Count total requests - gunakan jumlah semua pengajuan dari allLeaves
+  const totalRequests = allLeaves.length;
   document.getElementById("totalRequests").textContent = totalRequests;
 
   // Count approved requests
@@ -570,18 +615,6 @@ function updateStats() {
 
   // Count pending requests
   document.getElementById("pendingRequests").textContent = pendingLeaves.length;
-
-  // Count multi-day leave requests
-  const multiDayRequests = allLeaves.filter(
-    (item) => item.leaveStartDate && item.leaveEndDate && item.leaveStartDate !== item.leaveEndDate
-  ).length;
-
-  // Count replaced status
-  const replacedRequests = allLeaves.filter((item) => item.replacementStatus === "Sudah Diganti").length;
-
-  console.log(
-    `Stats updated: Total=${totalRequests}, Approved=${approvedRequests}, Rejected=${rejectedRequests}, Pending=${pendingLeaves.length}, Multi-day=${multiDayRequests}, Replaced=${replacedRequests}`
-  );
 }
 
 // Show alert message
@@ -622,21 +655,23 @@ function showAlert(type, message, autoHide = true) {
   }
 }
 
-// Refresh all data
-async function refreshData() {
+// Optimized refresh function that only updates what's needed
+async function refreshData(forceRefresh = false) {
   try {
-    // Reset data arrays
-    pendingLeaves = [];
-    allLeaves = [];
-    
-    // Clear cache to ensure fresh data
-    clearLeaveCache();
-    
     // Show loading message
     showAlert("info", '<i class="fas fa-sync fa-spin me-2"></i> Memperbarui data...', false);
 
-    // Load data in parallel
-    await Promise.all([loadPendingLeaveRequests(), loadAllLeaveRequests()]);
+    // Determine which tab is active
+    const activeTab = document.querySelector('.nav-link.active[data-bs-toggle="tab"]');
+    const targetId = activeTab ? activeTab.getAttribute("data-bs-target") : null;
+    
+    if (targetId === "#pending-requests" || !targetId) {
+      // Only refresh pending requests if on that tab
+      await loadPendingLeaveRequests(forceRefresh);
+    } else if (targetId === "#all-requests" && filterApplied) {
+      // Only refresh all requests if on that tab and filter is applied
+      await loadAllLeaveRequests(forceRefresh);
+    }
 
     // Hide loading message
     const alertContainer = document.getElementById("alertContainer");
@@ -645,21 +680,156 @@ async function refreshData() {
     }
 
     console.log("Data refreshed successfully");
-    console.log("Pending leaves:", pendingLeaves.length);
-    console.log("All leaves:", allLeaves.length);
   } catch (error) {
     console.error("Error refreshing data:", error);
     showAlert("danger", "Terjadi kesalahan saat memuat ulang data: " + error.message);
   }
 }
 
+// Optimized function to update a single leave request status
+async function updateSingleLeaveStatus(id, newStatus) {
+  try {
+    await updateLeaveRequestStatus(id, newStatus);
+    
+    // Update local data
+    const pendingIndex = pendingLeaves.findIndex(item => item.id === id);
+    if (pendingIndex !== -1) {
+      const updatedRecord = {...pendingLeaves[pendingIndex], status: newStatus};
+      
+      // Remove from pending
+      pendingLeaves.splice(pendingIndex, 1);
+      
+      // If approved and matches current filter, add to allLeaves
+      if (newStatus === "Disetujui" && filterApplied) {
+        if (currentReplacementFilter === "Belum Diganti") {
+          // By default, newly approved leaves have "Belum Diganti" status
+          allLeaves.unshift(updatedRecord);
+        }
+      }
+      
+      // Update UI without full refresh
+      updatePendingLeaveTable();
+      if (filterApplied) updateLeaveHistoryTable();
+      updateStats();
+      
+      return true;
+    }
+    
+    // If not found in pending, check if it's in allLeaves
+    const allIndex = allLeaves.findIndex(item => item.id === id);
+    if (allIndex !== -1) {
+      // Update status
+      allLeaves[allIndex].status = newStatus;
+      
+      // Update UI
+      updateLeaveHistoryTable();
+      updateStats();
+      
+      return true;
+    }
+    
+    // If we get here, we need to refresh data
+    return false;
+  } catch (error) {
+    console.error("Error updating leave status:", error);
+    throw error;
+  }
+}
+
+// Optimized function to update replacement status
+async function updateSingleReplacementStatus(id, newStatus, dayIndex = null) {
+  try {
+    await updateReplacementStatus(id, newStatus, dayIndex);
+    
+    // Find the record in allLeaves
+    const recordIndex = allLeaves.findIndex(item => item.id === id);
+    if (recordIndex !== -1) {
+      const record = allLeaves[recordIndex];
+      
+      // Check if it's a multi-day leave
+      const isMultiDay = record.leaveStartDate && record.leaveEndDate && 
+                        record.leaveStartDate !== record.leaveEndDate;
+      
+      if (isMultiDay && dayIndex !== null) {
+        // Update specific day in replacementStatusArray
+        if (!record.replacementStatusArray) {
+          const dayDiff = Math.ceil(
+            (new Date(record.leaveEndDate) - new Date(record.leaveStartDate)) / (1000 * 60 * 60 * 24)
+          ) + 1;
+          record.replacementStatusArray = Array(dayDiff).fill("Belum Diganti");
+        }
+        
+        record.replacementStatusArray[dayIndex] = newStatus;
+        
+        // Update overall status based on all days
+        record.replacementStatus = record.replacementStatusArray.every(s => s === "Sudah Diganti") 
+          ? "Sudah Diganti" 
+          : "Belum Diganti";
+      } else {
+        // Update single-day status
+        record.replacementStatus = newStatus;
+      }
+      
+      // Check if record still matches filter
+      const stillMatches = checkIfMatchesFilter(record);
+      
+      if (!stillMatches) {
+        // Remove from current view if it no longer matches filter
+        allLeaves.splice(recordIndex, 1);
+      }
+      
+      // Update UI
+      updateLeaveHistoryTable();
+      updateStats();
+      
+      // Update session storage cache
+      const cacheKey = `filter_${currentReplacementFilter}`;
+      sessionStorage.setItem(cacheKey, JSON.stringify(allLeaves));
+      
+      return true;
+    }
+    
+    // If record not found, we need to refresh data
+    return false;
+  } catch (error) {
+    console.error("Error updating replacement status:", error);
+    throw error;
+  }
+}
+
+// Helper function to check if a record matches the current filter
+function checkIfMatchesFilter(record) {
+  if (!currentReplacementFilter) return true;
+  
+  const isMultiDay = record.leaveStartDate && record.leaveEndDate && 
+                    record.leaveStartDate !== record.leaveEndDate;
+  
+  if (isMultiDay && record.replacementStatusArray) {
+    if (currentReplacementFilter === "Sudah Diganti") {
+      return record.replacementStatusArray.some(s => s === "Sudah Diganti");
+    } else if (currentReplacementFilter === "Belum Diganti") {
+      return record.replacementStatusArray.some(s => s === "Belum Diganti" || !s);
+    }
+  } else {
+    if (currentReplacementFilter === "Belum Diganti") {
+      return !record.replacementStatus || 
+             record.replacementStatus === "" || 
+             record.replacementStatus === "Belum Diganti";
+    } else {
+      return record.replacementStatus === currentReplacementFilter;
+    }
+  }
+  
+  return false;
+}
 
 // Setup refresh button
 function setupRefreshButton() {
   const refreshButton = document.getElementById("refreshButton");
   if (refreshButton) {
     refreshButton.addEventListener("click", () => {
-      refreshData();
+      // Force refresh from server
+      refreshData(true);
     });
   }
 }
@@ -799,40 +969,136 @@ function viewMedicalCertificate(fileInfo) {
   }
 }
 
-
-
-
-
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
-  // Load initial data
-  refreshData();
+   // Inisialisasi tampilan filter container berdasarkan tab aktif
+   const activeTab = document.querySelector('.nav-link.active[data-bs-toggle="tab"]');
+   if (activeTab) {
+     const targetId = activeTab.getAttribute("data-bs-target");
+     const filterContainer = document.getElementById("filterContainer");
+     
+     if (targetId === "#all-requests") {
+       // Tampilkan filter container jika tab aktif adalah all-requests
+       if (filterContainer) {
+         filterContainer.classList.remove("d-none");
+       }
+     } else {
+       // Sembunyikan filter container untuk tab lainnya
+       if (filterContainer) {
+         filterContainer.classList.add("d-none");
+       }
+     }
+   }
+   
+   // Load initial data untuk pending requests saja
+   loadPendingLeaveRequests();
 
-  // Setup refresh button
-  setupRefreshButton();
+// Setup tab change event to refresh data
+const leaveRequestTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+leaveRequestTabs.forEach((tab) => {
+  tab.addEventListener("shown.bs.tab", function (event) {
+    const targetId = event.target.getAttribute("data-bs-target");
+    console.log("Tab changed to:", targetId);
 
-  // Setup tab change event to refresh data
-  const leaveRequestTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
-  leaveRequestTabs.forEach((tab) => {
-    tab.addEventListener("shown.bs.tab", function (event) {
-      const targetId = event.target.getAttribute("data-bs-target");
-      console.log("Tab changed to:", targetId);
+    // Dapatkan container filter
+    const filterContainer = document.getElementById("filterContainer");
 
-      if (targetId === "#all-requests") {
-        // Refresh all requests when switching to the tab
+    if (targetId === "#all-requests") {
+      // Tampilkan filter container
+      if (filterContainer) {
+        filterContainer.classList.remove("d-none");
+      }
+      
+      // Hanya muat data jika filter sudah diterapkan
+      if (filterApplied) {
         loadAllLeaveRequests();
-      } else if (targetId === "#pending-requests") {
-        // Refresh pending requests when switching to the tab
-        loadPendingLeaveRequests();
+      }
+    } else if (targetId === "#pending-requests") {
+      // Sembunyikan filter container
+      if (filterContainer) {
+        filterContainer.classList.add("d-none");
+      }
+      
+      // Check if data is stale (older than cache duration)
+      const now = Date.now();
+      if (!lastDataRefresh || (now - lastDataRefresh > CACHE_DURATION)) {
+        loadPendingLeaveRequests(true);
+      } else {
+        // Just update the UI with existing data
+        updatePendingLeaveTable();
+      }
+    }
+  });
+});
+
+  // Setup filter button
+  const applyFilterBtn = document.getElementById("applyFilterBtn");
+  const replacementStatusFilter = document.getElementById("replacementStatusFilter");
+  
+  if (applyFilterBtn && replacementStatusFilter) {
+    applyFilterBtn.addEventListener("click", function() {
+      const selectedFilter = replacementStatusFilter.value;
+      
+      // Validasi filter
+      if (!selectedFilter) {
+        showAlert("warning", "Silakan pilih status penggantian terlebih dahulu", true);
+        return;
+      }
+      
+      // Check if filter has changed
+      const filterChanged = currentReplacementFilter !== selectedFilter;
+      
+      // Set filter dan tandai bahwa filter sudah diterapkan
+      currentReplacementFilter = selectedFilter;
+      filterApplied = true;
+      
+      // Tampilkan loading message
+      showAlert("info", '<i class="fas fa-sync fa-spin me-2"></i> Memuat data...', false);
+      
+      // Refresh data dengan filter baru jika filter berubah atau data sudah lama
+      const now = Date.now();
+      const dataIsStale = !lastDataRefresh || (now - lastDataRefresh > CACHE_DURATION);
+      
+      if (filterChanged || dataIsStale) {
+        // Clear session storage for this filter
+        const cacheKey = `filter_${currentReplacementFilter}`;
+        sessionStorage.removeItem(cacheKey);
+        
+        loadAllLeaveRequests(true).then(() => {
+          // Sembunyikan loading message setelah selesai
+          const alertContainer = document.getElementById("alertContainer");
+          if (alertContainer) {
+            alertContainer.style.display = "none";
+          }
+          
+          // Tampilkan pesan sukses
+          showAlert("success", `Data berhasil difilter: ${selectedFilter}`, true);
+        });
+      } else {
+        // Use cached data
+        loadAllLeaveRequests(false).then(() => {
+          // Sembunyikan loading message setelah selesai
+          const alertContainer = document.getElementById("alertContainer");
+          if (alertContainer) {
+            alertContainer.style.display = "none";
+          }
+          
+          // Tampilkan pesan sukses
+          showAlert("success", `Data berhasil difilter: ${selectedFilter}`, true);
+        });
       }
     });
-  });
+  }
+
   // Setup search functionality
   const searchInput = document.getElementById("searchInput");
   const searchBtn = document.getElementById("searchBtn");
 
   if (searchInput && searchBtn) {
-    searchBtn.addEventListener("click", function () {
+    // Debounce function to limit how often search is performed
+    let searchTimeout;
+    
+    const performSearch = () => {
       const searchTerm = searchInput.value.toLowerCase().trim();
 
       if (searchTerm === "") {
@@ -875,6 +1141,22 @@ document.addEventListener("DOMContentLoaded", () => {
               }
             }
 
+            // Tambahkan tombol untuk melihat surat keterangan sakit jika ada
+            let medicalCertButton = "";
+            if (
+              record.leaveType === "sakit" &&
+              record.replacementDetails &&
+              record.replacementDetails.hasMedicalCertificate &&
+              record.replacementDetails.medicalCertificateFile &&
+              record.replacementDetails.medicalCertificateFile.url
+            ) {
+              medicalCertButton = `
+                <button class="btn btn-sm btn-info view-cert-btn ms-2" data-id="${record.id}">
+                  <i class="fas fa-file-medical me-1"></i> Lihat Surat
+                </button>
+              `;
+            }
+
             row.innerHTML = `
             <td>${record.employeeId || "-"}</td>
             <td>${record.name || "-"}</td>
@@ -885,6 +1167,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="action-buttons">
                 <button class="approve-btn btn btn-success btn-sm" data-id="${record.id}">Setuju</button>
                 <button class="reject-btn btn btn-danger btn-sm" data-id="${record.id}">Tolak</button>
+                ${medicalCertButton}
               </div>
             </td>
           `;
@@ -937,13 +1220,30 @@ document.addEventListener("DOMContentLoaded", () => {
               // Use btn-danger for "Batalkan" and btn-success for "Sudah Diganti"
               const buttonClass = replacementStatus === "Sudah Diganti" ? "btn-danger" : "btn-success";
 
+              // Tambahkan tombol untuk melihat surat keterangan sakit jika ada
+              let medicalCertButton = "";
+              if (
+                record.leaveType === "sakit" &&
+                record.replacementDetails &&
+                record.replacementDetails.hasMedicalCertificate &&
+                record.replacementDetails.medicalCertificateFile &&
+                record.replacementDetails.medicalCertificateFile.url
+              ) {
+                medicalCertButton = `
+                  <button class="btn btn-sm btn-info view-cert-btn ms-1" data-id="${record.id}">
+                    <i class="fas fa-file-medical"></i>
+                  </button>
+                `;
+              }
+
               // Hanya tampilkan tombol aksi jika status pengajuan adalah Approved/Disetujui
               const actionButton =
                 record.status === "Approved" || record.status === "Disetujui"
                   ? `<button class="replacement-status-btn ${buttonClass} btn-sm" data-id="${record.id}" data-status="${replacementStatus}">
                 ${buttonText}
-              </button>`
-                  : "-";
+              </button>
+              ${medicalCertButton}`
+                  : medicalCertButton || "-";
 
               row.innerHTML = `
               <td>${record.employeeId || "-"}</td>
@@ -978,6 +1278,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
               // Pastikan replacementStatusArray ada
               const replacementStatusArray = record.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+
+              // Tambahkan tombol untuk melihat surat keterangan sakit jika ada
+              let medicalCertButton = "";
+              if (
+                record.leaveType === "sakit" &&
+                record.replacementDetails &&
+                record.replacementDetails.hasMedicalCertificate &&
+                record.replacementDetails.medicalCertificateFile &&
+                record.replacementDetails.medicalCertificateFile.url
+              ) {
+                medicalCertButton = `
+                  <button class="btn btn-sm btn-info view-cert-btn ms-1" data-id="${record.id}">
+                    <i class="fas fa-file-medical"></i>
+                  </button>
+                `;
+              }
 
               // Buat baris untuk setiap hari
               for (let i = 0; i < dayDiff; i++) {
@@ -1019,12 +1335,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 // Hanya tampilkan tombol aksi jika status pengajuan adalah Approved/Disetujui
-                const actionButton =
-                  record.status === "Approved" || record.status === "Disetujui"
-                    ? `<button class="replacement-status-btn ${buttonClass} btn-sm" data-id="${record.id}" data-status="${dayStatus}" data-day-index="${i}">
+                let actionButton = "-";
+                if (record.status === "Approved" || record.status === "Disetujui") {
+                  actionButton = `<button class="replacement-status-btn ${buttonClass} btn-sm" data-id="${record.id}" data-status="${dayStatus}" data-day-index="${i}">
                   ${buttonText}
-                </button>`
-                    : "-";
+                </button>`;
+                  
+                  // Tambahkan tombol lihat surat hanya pada baris pertama
+                  if (i === 0 && medicalCertButton) {
+                    actionButton += medicalCertButton;
+                  }
+                } else if (i === 0 && medicalCertButton) {
+                  // Jika tidak disetujui tapi ada surat keterangan sakit, tetap tampilkan tombol lihat surat di baris pertama
+                  actionButton = medicalCertButton;
+                }
 
                 row.innerHTML = `
                 <td>${record.employeeId || "-"}</td>
@@ -1048,21 +1372,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Re-add event listeners after updating the tables
       addEventListenersToButtons();
+    };
+    
+    searchBtn.addEventListener("click", function() {
+      // Clear any pending search
+      clearTimeout(searchTimeout);
+      performSearch();
     });
 
-    // Add event listener for Enter key
-    searchInput.addEventListener("keyup", function (event) {
+    // Add event listener for Enter key with debounce
+    searchInput.addEventListener("keyup", function(event) {
       if (event.key === "Enter") {
-        searchBtn.click();
+        // Clear any pending search
+        clearTimeout(searchTimeout);
+        performSearch();
+      } else {
+        // Debounce for typing
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 500);
       }
     });
   }
+  
+  // Setup refresh button
+  setupRefreshButton();
 });
 
 // Function to add event listeners to all buttons
 function addEventListenersToButtons() {
-  // Existing code...
-  
   // Add event listeners to approve/reject buttons
   document.querySelectorAll(".approve-btn").forEach((button) => {
     button.addEventListener("click", async function() {
@@ -1072,8 +1409,13 @@ function addEventListenersToButtons() {
         this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         this.disabled = true;
 
-        await updateLeaveRequestStatus(id, "Disetujui");
-        await refreshData();
+        // Try to update just this record
+        const success = await updateSingleLeaveStatus(id, "Disetujui");
+        
+        if (!success) {
+          // If local update failed, do a full refresh
+          await refreshData(true);
+        }
 
         // Show success message
         showAlert("success", "Pengajuan izin berhasil disetujui!");
@@ -1096,73 +1438,97 @@ function addEventListenersToButtons() {
         this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         this.disabled = true;
 
-        await updateLeaveRequestStatus(id, "Ditolak");
-        await refreshData();
-
-        // Show success message
-        showAlert("success", "Pengajuan izin berhasil ditolak.");
-      } catch (error) {
-        console.error("Error rejecting leave request:", error);
-        showAlert("danger", "Terjadi kesalahan saat menolak pengajuan izin.");
-
-        // Reset button
-        this.textContent = "Tolak";
-        this.disabled = false;
-      }
-    });
-  });
-
-  // Add event listeners to replacement status buttons
-  document.querySelectorAll(".replacement-status-btn").forEach((button) => {
-    button.addEventListener("click", async function() {
-      try {
-        const id = this.getAttribute("data-id");
-        const currentStatus = this.getAttribute("data-status");
-        const dayIndex = this.getAttribute("data-day-index");
-        const newStatus = currentStatus === "Sudah Diganti" ? "Belum Diganti" : "Sudah Diganti";
-
-        // Show loading state
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        this.disabled = true;
-
-        // Jika ada dayIndex, update status untuk hari tertentu
-        if (dayIndex !== null) {
-          await updateReplacementStatus(id, newStatus, parseInt(dayIndex));
-        } else {
-          await updateReplacementStatus(id, newStatus);
-        }
-
-        await refreshData();
-
-        // Show success message
-        showAlert("success", `Status ganti berhasil diubah menjadi "${newStatus}"`);
-      } catch (error) {
-        console.error("Error updating replacement status:", error);
-        showAlert("danger", "Terjadi kesalahan saat mengubah status ganti: " + error.message);
-
-        // Reset button
-        const currentStatus = this.getAttribute("data-status");
-        const buttonText = currentStatus === "Sudah Diganti" ? "Batalkan" : "Sudah Diganti";
-        this.textContent = buttonText;
-        this.disabled = false;
-      }
-    });
-  });
+        // Try to update just this record
+        const success = await updateSingleLeaveStatus(id, "Ditolak");
+        
+        if (!success) {
+            // If local update failed, do a full refresh
+            await refreshData(true);
+          }
   
-  // Add event listeners to view certificate buttons
-  document.querySelectorAll(".view-cert-btn").forEach((button) => {
-    button.addEventListener("click", function() {
-      const id = this.getAttribute("data-id");
-      const record = [...pendingLeaves, ...allLeaves].find((item) => item.id === id);
-      
-      if (record && record.replacementDetails && record.replacementDetails.medicalCertificateFile) {
-        console.log("Viewing medical certificate for record:", id);
-        console.log("Certificate data:", record.replacementDetails.medicalCertificateFile);
-        viewMedicalCertificate(record.replacementDetails.medicalCertificateFile);
-      } else {
-        showAlert("warning", "Tidak ada surat keterangan sakit yang tersedia");
-      }
+          // Show success message
+          showAlert("success", "Pengajuan izin berhasil ditolak.");
+        } catch (error) {
+          console.error("Error rejecting leave request:", error);
+          showAlert("danger", "Terjadi kesalahan saat menolak pengajuan izin.");
+  
+          // Reset button
+          this.textContent = "Tolak";
+          this.disabled = false;
+        }
+      });
     });
-  });
-}
+  
+    // Add event listeners to replacement status buttons
+    document.querySelectorAll(".replacement-status-btn").forEach((button) => {
+      button.addEventListener("click", async function() {
+        try {
+          const id = this.getAttribute("data-id");
+          const currentStatus = this.getAttribute("data-status");
+          const dayIndex = this.getAttribute("data-day-index");
+          const newStatus = currentStatus === "Sudah Diganti" ? "Belum Diganti" : "Sudah Diganti";
+  
+          // Show loading state
+          this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+          this.disabled = true;
+  
+          // Try to update just this record
+          const success = await updateSingleReplacementStatus(id, newStatus, dayIndex !== null ? parseInt(dayIndex) : null);
+          
+          if (!success) {
+            // If local update failed, do a full refresh
+            await refreshData(true);
+          }
+  
+          // Show success message
+          showAlert("success", `Status ganti berhasil diubah menjadi "${newStatus}"`);
+        } catch (error) {
+          console.error("Error updating replacement status:", error);
+          showAlert("danger", "Terjadi kesalahan saat mengubah status ganti: " + error.message);
+  
+          // Reset button
+          const currentStatus = this.getAttribute("data-status");
+          const buttonText = currentStatus === "Sudah Diganti" ? "Batalkan" : "Sudah Diganti";
+          this.textContent = buttonText;
+          this.disabled = false;
+        }
+      });
+    });
+    
+    // Add event listeners to view certificate buttons
+    document.querySelectorAll(".view-cert-btn").forEach((button) => {
+      button.addEventListener("click", function() {
+        const id = this.getAttribute("data-id");
+        
+        // First check in pendingLeaves
+        let record = pendingLeaves.find((item) => item.id === id);
+        
+        // If not found, check in allLeaves
+        if (!record) {
+          record = allLeaves.find((item) => item.id === id);
+        }
+        
+        if (record && record.replacementDetails && record.replacementDetails.medicalCertificateFile) {
+          console.log("Viewing medical certificate for record:", id);
+          console.log("Certificate data:", record.replacementDetails.medicalCertificateFile);
+          viewMedicalCertificate(record.replacementDetails.medicalCertificateFile);
+        } else {
+          // If not found in local data, try to fetch from server
+          getLeaveRequestById(id)
+            .then(fetchedRecord => {
+              if (fetchedRecord && fetchedRecord.replacementDetails && fetchedRecord.replacementDetails.medicalCertificateFile) {
+                viewMedicalCertificate(fetchedRecord.replacementDetails.medicalCertificateFile);
+              } else {
+                showAlert("warning", "Tidak ada surat keterangan sakit yang tersedia");
+              }
+            })
+            .catch(error => {
+              console.error("Error fetching leave request:", error);
+              showAlert("warning", "Tidak dapat mengambil data surat keterangan sakit");
+            });
+        }
+      });
+    });
+  }
+        
 

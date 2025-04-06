@@ -28,76 +28,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Laporan Kehadiran - Melati Gold Shop</title>
-    <style>
-      .status-ontime {
-        color: #28a745;
-        font-weight: bold;
-      }
-      .status-late {
-        color: #ffc107;
-        font-weight: bold;
-      }
-      .status-absent {
-        color: #dc3545;
-        font-weight: bold;
-      }
-      .status-leave {
-        color: #6c757d;
-        font-weight: bold;
-      }
-      .export-btn {
-        margin-right: 10px;
-      }
-      .delete-btn {
-        background-color: #dc3545;
-        color: white;
-      }
-      .attendance-summary-card {
-        transition: all 0.3s ease;
-        border-radius: var(--border-radius);
-        overflow: hidden;
-        box-shadow: var(--box-shadow);
-        height: 100%;
-      }
-      .attendance-summary-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-      }
-      .summary-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-        font-size: 1.8rem;
-        color: white;
-      }
-      .summary-value {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0;
-      }
-      .summary-label {
-        font-size: 0.9rem;
-        color: var(--gray-600);
-        margin-bottom: 0;
-      }
-      .date-range-picker {
-        max-width: 400px;
-      }
-      #attendanceReportTable th {
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 1;
-      }
-      .table-container {
-        max-height: 600px;
-        overflow-y: auto;
-      }
-    </style>
   </head>
   <body>
     <div class="app-container">
@@ -185,12 +115,6 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="tambah-pengguna.html">
-                      <i class="fas fa-user-plus"></i>
-                      <span class="menu-text">Tambah Pengguna</span>
-                    </a>
-                  </li>
-                  <li class="nav-item">
                     <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
@@ -202,11 +126,36 @@
                       <span class="menu-text">Laporan Izin</span>
                     </a>
                   </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
                   <li class="nav-item">
-                    <a class="nav-link" href="supervisor.html">
-                      <i class="fas fa-file-medical"></i>
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
                       <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
                     </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
                   </li>
                 </ul>
               </div>

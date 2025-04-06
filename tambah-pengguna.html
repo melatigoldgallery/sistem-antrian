@@ -19,114 +19,16 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- Custom CSS -->
-     <!-- SheetJS (untuk export Excel) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- Barcode Generator -->
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<!-- Screenshot & Download -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-  
-  <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <!-- SheetJS (untuk export Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Barcode Generator -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- Screenshot & Download -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <title>Kelola Pengguna - Melati Gold Shop</title>
-    <style>
-/* User Management specific styles */
-.user-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Form styling enhancements */
-#staffForm {
-  background-color: var(--gray-100);
-  border-radius: var(--border-radius);
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-#staffForm .form-label {
-  font-weight: 500;
-  color: var(--gray-700);
-}
-
-#staffForm .form-control:focus,
-#staffForm .form-select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.1);
-}
-
-/* Table enhancements */
-.table th {
-  background-color: var(--primary-color);
-  color: white;
-  font-weight: 500;
-}
-
-.table tbody tr:hover {
-  background-color: rgba(67, 97, 238, 0.05);
-}
-
-/* Action buttons */
-.btn-outline-primary {
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.btn-outline-primary:hover {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.btn-outline-danger {
-  color: var(--danger-color);
-  border-color: var(--danger-color);
-}
-
-.btn-outline-danger:hover {
-  background-color: var(--danger-color);
-  color: white;
-}
-
-/* Modal enhancements */
-.modal-header {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.modal-footer {
-  background-color: var(--gray-100);
-}
-
-/* Empty state styling */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.empty-image {
-  width: 150px;
-  height: 150px;
-  margin-bottom: 20px;
-  opacity: 0.7;
-}
-
-.empty-state p {
-  color: var(--gray-600);
-  font-size: 1rem;
-}
-    </style>
   </head>
   <body>
     <div class="app-container">
@@ -137,17 +39,28 @@
           <h1 class="brand-name">Melati Gold</h1>
         </div>
         <div class="sidebar-menu">
-          <ul class="nav flex-column">
+          <ul class="nav flex-column" id="sidebarAccordion">
             <li class="nav-item">
-              <a class="nav-link" href="dashboard.html">
+              <a class="nav-link active" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
               </a>
             </li>
-            
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-ticket-alt"></i>
                 <span class="menu-text">Antrian</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -175,17 +88,15 @@
                 </ul>
               </div>
             </li>
-            
-            <li class="nav-item">
-              <a class="nav-link" href="buyback.html">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="menu-text">Buyback</span>
-              </a>
-            </li>
-            
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-clipboard-check"></i>
                 <span class="menu-text">Absensi</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -205,12 +116,6 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link active" href="tambah-pengguna.html">
-                      <i class="fas fa-user-plus"></i>
-                      <span class="menu-text">Tambah Pengguna</span>
-                    </a>
-                  </li>
-                  <li class="nav-item">
                     <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
@@ -222,11 +127,36 @@
                       <span class="menu-text">Laporan Izin</span>
                     </a>
                   </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
                   <li class="nav-item">
-                    <a class="nav-link" href="supervisor.html">
-                      <i class="fas fa-file-medical"></i>
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
                       <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
                     </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -288,12 +218,15 @@
               </ol>
             </nav>
           </div>
-          
+
           <div class="content-wrapper">
             <!-- Add Staff Card -->
             <div class="card mb-4">
               <div class="card-header">
-                <h2><i class="fas fa-user-plus"></i> Tambah Karyawan Baru</h2>
+                <h2>
+                  <i class="fas fa-user-plus"></i>
+                  Tambah Karyawan Baru
+                </h2>
               </div>
               <div class="card-body">
                 <form id="staffForm">
@@ -301,7 +234,7 @@
                     <div class="col-md-3 mb-3">
                       <label for="staffId" class="form-label">ID Karyawan</label>
                       <div class="input-group">
-                        <input type="text" class="form-control" id="staffId" placeholder="Auto-generated" readonly>
+                        <input type="text" class="form-control" id="staffId" placeholder="Auto-generated" readonly />
                         <button class="btn btn-outline-secondary refresh-id" type="button" title="Refresh ID">
                           <i class="fas fa-sync-alt"></i>
                         </button>
@@ -310,12 +243,24 @@
                     </div>
                     <div class="col-md-3 mb-3">
                       <label for="staffName" class="form-label">Nama Karyawan</label>
-                      <input type="text" class="form-control" id="staffName" placeholder="Masukkan nama karyawan" required>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="staffName"
+                        placeholder="Masukkan nama karyawan"
+                        required
+                      />
                     </div>
                     <div class="col-md-3 mb-3">
                       <label for="staffBarcode" class="form-label">Barcode</label>
                       <div class="input-group">
-                        <input type="text" class="form-control" id="staffBarcode" placeholder="Auto-generated" readonly>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="staffBarcode"
+                          placeholder="Auto-generated"
+                          readonly
+                        />
                         <button class="btn btn-outline-secondary refresh-barcode" type="button" title="Refresh Barcode">
                           <i class="fas fa-sync-alt"></i>
                         </button>
@@ -331,32 +276,39 @@
                       </select>
                     </div>
                   </div>
-                    <div class="col-md-6 mb-3">
-                      <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan
-                      </button>
+                  <div class="col-md-6 mb-3">
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-save"></i>
+                      Simpan
+                    </button>
                   </div>
                 </form>
               </div>
             </div>
-            
+
             <!-- Staff List Card -->
             <div class="card">
               <div class="card-header d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-users"></i> Daftar Karyawan</h2>
+                <h2>
+                  <i class="fas fa-users"></i>
+                  Daftar Karyawan
+                </h2>
                 <div class="card-actions">
                   <button class="btn btn-sm btn-outline-success me-2" id="downloadAllBarcodes">
-                    <i class="fas fa-barcode"></i> Download Barcode
-                  </button>                  
+                    <i class="fas fa-barcode"></i>
+                    Download Barcode
+                  </button>
                   <button class="btn btn-sm btn-outline-secondary me-2" id="printAllBarcodes">
-                    <i class="fas fa-print"></i> Cetak Barcode
+                    <i class="fas fa-print"></i>
+                    Cetak Barcode
                   </button>
                   <button class="btn btn-sm btn-outline-primary" id="exportUsers">
-                    <i class="fas fa-download"></i> Export
+                    <i class="fas fa-download"></i>
+                    Export
                   </button>
                 </div>
               </div>
-              
+
               <div class="card-body">
                 <div class="table-responsive">
                   <table class="table table-hover">
@@ -375,8 +327,8 @@
                     </tbody>
                   </table>
                 </div>
-                <div class="empty-state" id="emptyStaff" style="display: none;">
-                  <img src="img/empty-data.svg" alt="No Data" class="empty-image">
+                <div class="empty-state" id="emptyStaff" style="display: none">
+                  <img src="img/empty-data.svg" alt="No Data" class="empty-image" />
                   <p>Belum ada data karyawan</p>
                 </div>
               </div>
@@ -385,7 +337,7 @@
         </div>
       </main>
     </div>
-  
+
     <!-- Edit User Modal -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -396,18 +348,18 @@
           </div>
           <div class="modal-body">
             <form id="editUserForm">
-              <input type="hidden" id="editUserId">
+              <input type="hidden" id="editUserId" />
               <div class="mb-3">
                 <label for="editStaffId" class="form-label">ID Karyawan</label>
-                <input type="text" class="form-control" id="editStaffId" required>
+                <input type="text" class="form-control" id="editStaffId" required />
               </div>
               <div class="mb-3">
                 <label for="editStaffName" class="form-label">Nama Karyawan</label>
-                <input type="text" class="form-control" id="editStaffName" required>
+                <input type="text" class="form-control" id="editStaffName" required />
               </div>
               <div class="mb-3">
                 <label for="editStaffBarcode" class="form-label">Barcode</label>
-                <input type="text" class="form-control" id="editStaffBarcode" required>
+                <input type="text" class="form-control" id="editStaffBarcode" required />
               </div>
               <div class="mb-3">
                 <label for="editStaffType" class="form-label">Tipe Karyawan</label>
@@ -425,9 +377,15 @@
         </div>
       </div>
     </div>
-  
+
     <!-- Confirm Delete Modal -->
-    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div
+      class="modal fade"
+      id="confirmDeleteModal"
+      tabindex="-1"
+      aria-labelledby="confirmDeleteModalLabel"
+      aria-hidden="true"
+    >
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
@@ -435,7 +393,11 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p>Apakah Anda yakin ingin menghapus karyawan <strong id="deleteUserName"></strong>?</p>
+            <p>
+              Apakah Anda yakin ingin menghapus karyawan
+              <strong id="deleteUserName"></strong>
+              ?
+            </p>
             <p class="text-danger">Tindakan ini tidak dapat dibatalkan.</p>
           </div>
           <div class="modal-footer">
@@ -451,5 +413,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   </body>
-  </html>
-  
+</html>

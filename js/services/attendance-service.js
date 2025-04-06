@@ -12,15 +12,64 @@ import {
   orderBy,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-// Tambahkan cache untuk kehadiran
+// Tambahkan cache untuk kehadiran dengan timestamp
 export const attendanceCache = new Map();
+export const cacheMeta = new Map(); // Untuk menyimpan metadata cache (timestamp)
 
-// Record attendance (check-in)
+export function getLocalDateString() {
+  // Gunakan tanggal lokal Indonesia
+  const now = new Date();
+  
+  // Tambahkan logging untuk debugging
+  console.log("Raw Date:", now);
+  console.log("Timezone Offset:", now.getTimezoneOffset());
+  
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  
+  const formattedDate = `${year}-${month}-${day}`;
+  console.log("Formatted local date:", formattedDate);
+  
+  return formattedDate;
+}
+
+
+
+// Fungsi untuk memeriksa apakah cache perlu diperbarui (lebih dari 1 jam)
+export function shouldUpdateCache(cacheKey) {
+  if (!cacheMeta.has(cacheKey)) return true;
+  
+  const lastUpdate = cacheMeta.get(cacheKey);
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000; // 1 jam dalam milidetik
+  
+  return (now - lastUpdate) > oneHour;
+}
+
+// Fungsi untuk memperbarui timestamp cache
+export function updateCacheTimestamp(cacheKey) {
+  cacheMeta.set(cacheKey, Date.now());
+}
+
 export async function recordAttendance(attendance) {
   try {
     // Add timestamps
     attendance.timeIn = attendance.timeIn || Timestamp.now();
-    attendance.date = attendance.date || new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+    
+    // PERBAIKAN: Gunakan tanggal dari timeIn untuk konsistensi
+    if (!attendance.date) {
+      const timeInDate = attendance.timeIn instanceof Timestamp 
+        ? attendance.timeIn.toDate() 
+        : attendance.timeIn;
+      
+      const year = timeInDate.getFullYear();
+      const month = String(timeInDate.getMonth() + 1).padStart(2, '0');
+      const day = String(timeInDate.getDate()).padStart(2, '0');
+      
+      attendance.date = `${year}-${month}-${day}`;
+      console.log("Setting attendance date from timeIn:", attendance.date);
+    }
 
     // Convert Date objects to Firestore Timestamps
     if (attendance.timeIn instanceof Date) {
@@ -43,6 +92,7 @@ export async function recordAttendance(attendance) {
     };
     
     attendanceCache.get(dateKey).push(cachedAttendance);
+    updateCacheTimestamp(dateKey); // Perbarui timestamp cache
     
     return cachedAttendance;
   } catch (error) {
@@ -50,6 +100,7 @@ export async function recordAttendance(attendance) {
     throw error;
   }
 }
+
 
 // Update attendance with check-out time
 export async function updateAttendanceOut(id, timeOut) {
@@ -67,7 +118,8 @@ export async function updateAttendanceOut(id, timeOut) {
     for (const [dateKey, records] of attendanceCache.entries()) {
       const recordIndex = records.findIndex(record => record.id === id);
       if (recordIndex !== -1) {
-        records[recordIndex].timeOut = timeOut;
+        records[recordIndex].timeOut = timeOut instanceof Date ? timeOut : new Date();
+        updateCacheTimestamp(dateKey); // Perbarui timestamp cache
         break;
       }
     }
@@ -82,10 +134,11 @@ export async function updateAttendanceOut(id, timeOut) {
 // Get today's attendance
 export async function getTodayAttendance() {
   try {
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+    // Gunakan tanggal lokal untuk konsistensi
+    const today = getLocalDateString();
     
-    // Check if data is in cache
-    if (attendanceCache.has(today)) {
+    // Check if data is in cache and still valid
+    if (attendanceCache.has(today) && !shouldUpdateCache(today)) {
       console.log("Using cached attendance data for today");
       return attendanceCache.get(today);
     }
@@ -102,8 +155,9 @@ export async function getTodayAttendance() {
       timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
     }));
     
-    // Store in cache
+    // Store in cache with timestamp
     attendanceCache.set(today, attendanceData);
+    updateCacheTimestamp(today);
     
     return attendanceData;
   } catch (error) {
@@ -115,10 +169,12 @@ export async function getTodayAttendance() {
 // Get attendance by date range
 export async function getAttendanceByDateRange(startDate, endDate) {
   try {
-    // Check if all dates in range are in cache
+    const cacheKey = `${startDate}_${endDate}`;
+    
+    // Check if all dates in range are in cache and still valid
     const allDatesInCache = checkAllDatesInCache(startDate, endDate);
     
-    if (allDatesInCache) {
+    if (allDatesInCache && !shouldUpdateCache(cacheKey)) {
       console.log("Using cached attendance data for date range");
       return getCachedAttendanceByDateRange(startDate, endDate);
     }
@@ -146,6 +202,7 @@ export async function getAttendanceByDateRange(startDate, endDate) {
       const dateKey = record.date;
       if (!attendanceCache.has(dateKey)) {
         attendanceCache.set(dateKey, []);
+        updateCacheTimestamp(dateKey);
       }
       
       // Check if record already exists in cache
@@ -156,6 +213,9 @@ export async function getAttendanceByDateRange(startDate, endDate) {
         attendanceCache.get(dateKey)[existingIndex] = record;
       }
     });
+    
+    // Update timestamp for the date range
+    updateCacheTimestamp(cacheKey);
     
     return attendanceData;
   } catch (error) {
@@ -168,10 +228,22 @@ export async function getAttendanceByDateRange(startDate, endDate) {
 function checkAllDatesInCache(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
+  const cacheKey = `${startDate}_${endDate}`;
   
+  // If we have the combined cache key and it's still valid, use it
+  if (cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
+    return true;
+  }
+  
+  // Otherwise check each date
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-    const dateKey = date.toISOString().split('T')[0];
-    if (!attendanceCache.has(dateKey)) {
+    // Konversi ke format YYYY-MM-DD dengan zona waktu lokal
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
+    
+    if (!attendanceCache.has(dateKey) || shouldUpdateCache(dateKey)) {
       return false;
     }
   }
@@ -185,10 +257,21 @@ function getCachedAttendanceByDateRange(startDate, endDate) {
   const end = new Date(endDate);
   let result = [];
   
+  console.log("Getting cached attendance from", startDate, "to", endDate);
+  
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-    const dateKey = date.toISOString().split('T')[0];
+    // Konversi ke format YYYY-MM-DD dengan zona waktu lokal
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
+    
+    console.log("Checking cache for date:", dateKey);
+    
     if (attendanceCache.has(dateKey)) {
-      result = result.concat(attendanceCache.get(dateKey));
+      const cachedData = attendanceCache.get(dateKey);
+      console.log(`Found ${cachedData.length} records for ${dateKey}`);
+      result = result.concat(cachedData);
     }
   }
   
@@ -203,9 +286,18 @@ function getCachedAttendanceByDateRange(startDate, endDate) {
   return result;
 }
 
+
 // Get attendance by employee
 export async function getAttendanceByEmployee(employeeId) {
   try {
+    const cacheKey = `employee_${employeeId}`;
+    
+    // Check if employee data is in cache and still valid
+    if (cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
+      console.log("Using cached attendance data for employee");
+      return JSON.parse(localStorage.getItem(cacheKey) || "[]");
+    }
+    
     const attendanceCollection = collection(db, "attendance");
     const q = query(
       attendanceCollection,
@@ -215,13 +307,19 @@ export async function getAttendanceByEmployee(employeeId) {
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
+    const attendanceData = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore Timestamp to JS Date
       timeIn: doc.data().timeIn.toDate(),
       timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
     }));
+    
+    // Store in localStorage for larger datasets
+    localStorage.setItem(cacheKey, JSON.stringify(attendanceData));
+    updateCacheTimestamp(cacheKey);
+    
+    return attendanceData;
   } catch (error) {
     console.error("Error getting attendance by employee:", error);
     throw error;
@@ -231,12 +329,22 @@ export async function getAttendanceByEmployee(employeeId) {
 // Get single attendance record
 export async function getAttendanceById(id) {
   try {
-    // Check if record exists in cache
-    for (const records of attendanceCache.values()) {
-      const cachedRecord = records.find(record => record.id === id);
-      if (cachedRecord) {
-        console.log("Using cached attendance record");
-        return cachedRecord;
+    const cacheKey = `record_${id}`;
+    
+    // Check if record is in cache and still valid
+    if (cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
+      console.log("Using cached attendance record");
+      return JSON.parse(localStorage.getItem(cacheKey) || "null");
+    }
+    
+    // Check if record exists in date cache
+    for (const [dateKey, records] of attendanceCache.entries()) {
+      if (!shouldUpdateCache(dateKey)) {
+        const cachedRecord = records.find(record => record.id === id);
+        if (cachedRecord) {
+          console.log("Using cached attendance record from date cache");
+          return cachedRecord;
+        }
       }
     }
     
@@ -245,13 +353,19 @@ export async function getAttendanceById(id) {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return {
+      const record = {
         id: docSnap.id,
         ...data,
         // Convert Firestore Timestamp to JS Date
         timeIn: data.timeIn.toDate(),
         timeOut: data.timeOut ? data.timeOut.toDate() : null,
       };
+      
+      // Store in localStorage
+      localStorage.setItem(cacheKey, JSON.stringify(record));
+      updateCacheTimestamp(cacheKey);
+      
+      return record;
     } else {
       throw new Error("Attendance record not found");
     }
