@@ -783,13 +783,6 @@ export async function updateLeaveRequestStatus(id, status, decisionBy) {
   }
 }
 
-// Clear leave cache
-export function clearLeaveCache() {
-  leaveCache.clear();
-  leaveMonthCache.clear();
-  console.log("Leave cache cleared");
-}
-
 // Helper function to get array of dates in range
 function getDatesInRange(startDate, endDate) {
   const dates = [];
@@ -930,15 +923,29 @@ export async function deleteLeaveRequest(id) {
   }
 }
 
+// Add a cache for pending leave requests
+let pendingRequestsCache = null;
+let pendingRequestsTimestamp = 0;
+
 // Get pending leave requests
 export async function getPendingLeaveRequests() {
   try {
+    const now = Date.now();
+    const cacheExpired = now - pendingRequestsTimestamp > 60000; // 1 minute cache for pending requests
+    
+    // Use cache if available and not expired
+    if (pendingRequestsCache && !cacheExpired) {
+      console.log("Using cached pending leave requests");
+      return pendingRequestsCache;
+    }
+    
+    console.log("Fetching pending leave requests from Firestore");
     const leaveCollection = collection(db, "leaveRequests");
     
     // First try with exact "pending" status
     let q = query(
       leaveCollection,
-      where("status", "in", ["pending", "Pending"]),
+      where("status", "in", ["pending", "Pending", "Menunggu Persetujuan", "menunggu persetujuan"]),
       orderBy("submitDate", "desc")
     );
     
@@ -959,11 +966,12 @@ export async function getPendingLeaveRequests() {
         const data = doc.data();
         return !data.status || data.status === "" || 
                data.status.toLowerCase() === "pending" ||
-               data.status.toLowerCase() === "menunggu";
+               data.status.toLowerCase() === "menunggu" ||
+               data.status.toLowerCase() === "menunggu persetujuan";
       });
       
       // Convert to the same format as getDocs result
-      return pendingDocs.map(doc => {
+      const pendingRequests = pendingDocs.map(doc => {
         const data = doc.data();
         
         // Check if it's a multi-day leave request
@@ -989,9 +997,15 @@ export async function getPendingLeaveRequests() {
           leaveEndDate: data.leaveEndDate instanceof Timestamp ? data.leaveEndDate.toDate() : data.leaveEndDate
         };
       });
+      
+      // Update cache
+      pendingRequestsCache = pendingRequests;
+      pendingRequestsTimestamp = now;
+      
+      return pendingRequests;
     }
     
-    return snapshot.docs.map(doc => {
+    const pendingRequests = snapshot.docs.map(doc => {
       const data = doc.data();
       
       // Check if it's a multi-day leave request
@@ -1017,12 +1031,26 @@ export async function getPendingLeaveRequests() {
         leaveEndDate: data.leaveEndDate instanceof Timestamp ? data.leaveEndDate.toDate() : data.leaveEndDate
       };
     });
+    
+    // Update cache
+    pendingRequestsCache = pendingRequests;
+    pendingRequestsTimestamp = now;
+    
+    return pendingRequests;
   } catch (error) {
     console.error("Error getting pending leave requests:", error);
     throw error;
   }
 }
 
+// Update the clearLeaveCache function to also clear pending requests cache
+export function clearLeaveCache() {
+  leaveCache.clear();
+  leaveMonthCache.clear();
+  pendingRequestsCache = null;
+  pendingRequestsTimestamp = 0;
+  console.log("All leave caches cleared");
+}
 
 
 // Get leave requests by employee

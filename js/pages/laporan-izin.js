@@ -482,6 +482,16 @@ function populateLeaveTable() {
       const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && 
                         leave.leaveStartDate !== leave.leaveEndDate;
 
+      // Cek apakah izin sakit dengan surat dokter
+      const hasMedicalCert = leave.leaveType === "sakit" && 
+                            leave.replacementDetails && 
+                            leave.replacementDetails.hasMedicalCertificate;
+      
+      // Jika izin sakit dengan surat dokter, set status penggantian ke "Sudah Diganti"
+      if (hasMedicalCert && (!leave.replacementStatus || leave.replacementStatus === "Belum Diganti")) {
+        leave.replacementStatus = "Sudah Diganti";
+      }
+
       if (!isMultiDay) {
         // Untuk izin satu hari, tampilkan seperti biasa
         const row = document.createElement("tr");
@@ -500,9 +510,7 @@ function populateLeaveTable() {
         let replacementInfo = "-";
         
         // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && 
-            leave.replacementDetails && 
-            leave.replacementDetails.hasMedicalCertificate) {
+        if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           replacementInfo = "Tidak perlu diganti";
@@ -562,16 +570,20 @@ function populateLeaveTable() {
         const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
         // Pastikan replacementStatusArray ada
-        const replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+        let replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+        
+        // Jika izin sakit dengan surat dokter, set semua hari ke "Sudah Diganti"
+        if (hasMedicalCert) {
+          replacementStatusArray = Array(dayDiff).fill("Tidak Perlu Diganti");
+          leave.replacementStatusArray = replacementStatusArray;
+        }
 
         // Format replacement type
         let replacementType = "-";
         let baseReplacementInfo = "-";
         
         // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && 
-            leave.replacementDetails && 
-            leave.replacementDetails.hasMedicalCertificate) {
+        if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           baseReplacementInfo = "Tidak perlu diganti";
@@ -616,9 +628,7 @@ function populateLeaveTable() {
           let replacementInfo = baseReplacementInfo;
           
           // Jika bukan izin sakit dengan surat DC, cek detail pengganti
-          if (!(leave.leaveType === "sakit" && 
-                leave.replacementDetails && 
-                leave.replacementDetails.hasMedicalCertificate)) {
+          if (!hasMedicalCert) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
               // Jika ada tanggal pengganti spesifik untuk hari ini
               if (leave.replacementDetails.dates[i]) {
@@ -653,9 +663,7 @@ function populateLeaveTable() {
     showAlert("danger", "Terjadi kesalahan saat menampilkan data: " + error.message);
   }
 }
-
-
-   
+  
    // Get CSS class for status badge
    function getStatusClass(status) {
      if (!status) return "bg-secondary";
@@ -1345,11 +1353,11 @@ function exportToPDF() {
         1: { cellWidth: 17 }, // ID Karyawan
         2: { cellWidth: 20 }, // Nama
         3: { cellWidth: 25 }, // Tanggal Izin
-        4: { cellWidth: 90 }, // Alasan
+        4: { cellWidth: 70 }, // Alasan
         5: { cellWidth: 25 }, // Jenis Pengganti
         6: { cellWidth: 35 }, // Detail Pengganti
         7: { cellWidth: 20 }, // Status
-        8: { cellWidth: 25 }, // Status Pengganti
+        8: { cellWidth: 35 }, // Status Pengganti
       },
       didDrawPage: function(data) {
         // Footer with page number

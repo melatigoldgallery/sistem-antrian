@@ -33,7 +33,7 @@
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color: var(--gray-700);
@@ -58,7 +58,7 @@ body {
   padding-left: 18px;
 }
 
-.status-ditolak, 
+.status-ditolak,
 .status-rejected {
   color: var(--danger-color);
   font-weight: 600;
@@ -99,39 +99,65 @@ body {
   .shift-info-container {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .app-container.sidebar-collapsed .shift-info-container {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* Perbaikan untuk memastikan menu sidebar bisa diklik pada mobile */
 @media (max-width: 768px) {
-  /* Hide menu-toggle on mobile */
-  .menu-toggle {
-    display: none !important;
+  /* Pastikan sidebar dan elemen-elemennya bisa menerima event klik */
+  .sidebar,
+  .sidebar * {
+    pointer-events: auto;
   }
-  
-  /* Show hamburger on mobile */
-  .hamburger {
-    display: flex !important;
+
+  /* Pastikan overlay juga bisa menerima event klik */
+  .sidebar-overlay {
+    pointer-events: auto;
   }
-  
-  /* Sidebar behavior for mobile */
+
+  /* Tingkatkan z-index untuk nav-link agar berada di atas overlay */
+  .sidebar .nav-link,
+  .sidebar .collapse .nav-link {
+    position: relative;
+    z-index: 1051; /* Pastikan z-index lebih tinggi dari sidebar */
+  }
+
+  /* Pastikan sidebar memiliki z-index yang tepat */
+  .sidebar {
+    z-index: 1050; /* Tingkatkan z-index agar di atas overlay */
+  }
+
+  /* Pastikan submenu tetap terlihat dan bisa diklik */
+  .sidebar .collapse.show {
+    display: block !important;
+  }
+
+  /* Pastikan submenu tidak tertutup oleh elemen lain */
+  .sidebar .collapse {
+    position: relative;
+    z-index: 1052;
+  }
+}
+/* Perbaikan untuk memastikan menu sidebar bisa diklik pada mobile */
+@media (max-width: 768px) {
+  /* Perbaikan sidebar untuk mobile */
   .sidebar {
     transform: translateX(-100%);
-    position: fixed;
+    width: 280px;
     z-index: 1050;
     transition: transform 0.3s ease;
-    box-shadow: none;
   }
   
-  /* When sidebar is active */
+  /* Ketika sidebar aktif */
   .app-container.sidebar-active .sidebar {
     transform: translateX(0);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   }
   
-  /* Overlay for when sidebar is open */
+  /* Overlay untuk sidebar */
   .sidebar-overlay {
     display: none;
     position: fixed;
@@ -147,27 +173,34 @@ body {
     display: block;
   }
   
-  /* Adjust main content when sidebar is hidden */
+  /* Pastikan main content selalu penuh di mobile */
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
     width: 100%;
   }
   
-  /* Adjust top nav when sidebar is hidden */
+  /* Pastikan top nav sesuai */
   .top-nav {
-    left: 0;
+    left: 0 !important;
     width: 100%;
   }
   
+  /* Perbaikan untuk menu dan submenu */
+  .sidebar .nav-link {
+    padding: 12px 15px;
+  }
+  
+  .sidebar .collapse {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Pastikan tombol close sidebar terlihat */
   .sidebar-close {
     display: block;
   }
-  
-  .shift-info-container,
-  .app-container.sidebar-collapsed .shift-info-container {
-    grid-template-columns: 1fr;
-  }
 }
+
+
 
 @media (max-width: 576px) {
   .scan-type-selector,
@@ -176,7 +209,7 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .form-check-inline {
     margin-right: 0;
     margin-bottom: 10px;
@@ -188,20 +221,20 @@ body {
     page-break-inside: avoid;
     margin: 10px;
   }
-  
-  .download-barcode, 
-  .btn, 
-  .card-header, 
-  .sidebar, 
+
+  .download-barcode,
+  .btn,
+  .card-header,
+  .sidebar,
   .top-nav {
     display: none !important;
   }
-  
+
   .main-content {
     margin-left: 0 !important;
     width: 100% !important;
   }
-  
+
   .barcode-name {
     display: block !important;
     margin-top: 5px;
@@ -228,7 +261,8 @@ body {
   border-color: var(--primary-color);
 }
 
-.btn-primary:hover, .btn-primary:focus {
+.btn-primary:hover,
+.btn-primary:focus {
   background-color: var(--primary-dark);
   border-color: var(--primary-dark);
   box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
@@ -239,7 +273,8 @@ body {
   border-color: var(--primary-color);
 }
 
-.btn-outline-primary:hover, .btn-outline-primary:focus {
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
   background-color: var(--primary-color);
   color: white;
 }
@@ -250,7 +285,8 @@ body {
   border-color: var(--gray-600);
 }
 
-.btn-secondary:hover, .btn-secondary:focus {
+.btn-secondary:hover,
+.btn-secondary:focus {
   background-color: var(--gray-700);
   border-color: var(--gray-700);
 }
@@ -260,7 +296,8 @@ body {
   border-color: var(--gray-600);
 }
 
-.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
   background-color: var(--gray-600);
   color: white;
 }
@@ -323,14 +360,16 @@ body {
 }
 
 /* Approval buttons */
-.approve-btn, .reject-btn {
+.approve-btn,
+.reject-btn {
   font-size: 0.7rem !important;
   padding: 0.15rem 0.4rem !important;
   line-height: 1 !important;
   border-radius: 4px !important;
 }
 
-.btn-sm.approve-btn, .btn-sm.reject-btn {
+.btn-sm.approve-btn,
+.btn-sm.reject-btn {
   padding: 0.3rem 0.4rem !important;
   font-size: 0.7rem !important;
 }
@@ -347,25 +386,50 @@ body {
 
 /* All animations grouped together */
 @keyframes scanning {
-  0% { left: -30%; }
-  100% { left: 100%; }
+  0% {
+    left: -30%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 @keyframes progress-bar-stripes {
-  from { background-position: 1rem 0; }
-  to { background-position: 0 0; }
+  from {
+    background-position: 1rem 0;
+  }
+  to {
+    background-position: 0 0;
+  }
 }
 
 @keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-2px, 0, 0); }
-  40%, 60% { transform: translate3d(2px, 0, 0); }
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(2px, 0, 0);
+  }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideDown {
@@ -457,7 +521,8 @@ body {
   margin-bottom: 8px;
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
   padding: 10px 15px;
   border: 1px solid var(--gray-300);
   border-radius: var(--border-radius);
@@ -465,7 +530,8 @@ body {
   transition: all 0.2s ease;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.1);
 }
@@ -872,7 +938,8 @@ tr:has(.badge.bg-info) {
   transition: left var(--transition-speed) ease;
 }
 
-.menu-toggle, .hamburger {
+.menu-toggle,
+.hamburger {
   font-size: 1.2rem;
   cursor: pointer;
   color: var(--gray-600);
@@ -886,7 +953,8 @@ tr:has(.badge.bg-info) {
   transition: all 0.2s ease;
 }
 
-.menu-toggle:hover, .hamburger:hover {
+.menu-toggle:hover,
+.hamburger:hover {
   background-color: var(--gray-100);
   color: var(--primary-color);
 }
@@ -989,13 +1057,13 @@ tr:has(.badge.bg-info) {
   transition: transform 0.3s ease;
 }
 
-.stat-card:hover, 
+.stat-card:hover,
 .summary-card:hover,
 .attendance-summary-card:hover {
   transform: translateY(-5px);
 }
 
-.stat-card-icon, 
+.stat-card-icon,
 .summary-icon {
   width: 50px;
   height: 50px;
@@ -1164,19 +1232,28 @@ tr:has(.badge.bg-info) {
 }
 
 .audio-active::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent);
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
   background-size: 1rem 1rem;
   animation: progress-bar-stripes 1s linear infinite;
 }
 
 .audio-busy {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 /* Background color utility classes */
@@ -1346,5 +1423,3 @@ tr:has(.badge.bg-info) {
 .app-container.sidebar-active .sidebar-overlay {
   display: block;
 }
-
-

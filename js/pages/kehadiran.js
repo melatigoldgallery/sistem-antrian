@@ -29,6 +29,45 @@ function updateReportCacheTimestamp(cacheKey) {
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("generateReportBtn").addEventListener("click", async function() {
+    try {
+      // Tampilkan loading state
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
+      this.disabled = true;
+  
+      // Ambil nilai filter
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      const employeeType = document.getElementById("employeeTypeFilter").value;
+      const shift = document.getElementById("shiftFilter").value;
+  
+      // Validasi tanggal
+      if (!startDate || !endDate) {
+        showAlert("warning", "Silakan pilih rentang tanggal terlebih dahulu");
+        this.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Generate Laporan';
+        this.disabled = false;
+        return;
+      }
+  
+      // Panggil fungsi generateReport yang sudah ada
+      await generateReport();
+  
+      // Tampilkan tombol export dan hapus data
+      document.getElementById("actionButtons").classList.remove("d-none");
+  
+      // Kembalikan tombol ke state awal
+      this.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Generate Laporan';
+      this.disabled = false;
+    } catch (error) {
+      console.error("Error generating report:", error);
+      showAlert("danger", "Terjadi kesalahan saat menghasilkan laporan: " + error.message);
+      
+      // Kembalikan tombol ke state awal
+      this.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Generate Laporan';
+      this.disabled = false;
+    }
+  });
+  
   // Toggle sidebar collapse
   const menuToggle = document.querySelector(".menu-toggle");
   const appContainer = document.querySelector(".app-container");

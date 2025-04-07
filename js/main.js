@@ -7,8 +7,11 @@ try {
   sidebarToggle();
   initializeDateTime();
   
-  // Tambahkan kode untuk menangani dropdown Supervisor
+  // Tambahkan kode untuk menangani dropdown Supervisor dan mobile sidebar
   document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi handler untuk sidebar mobile
+    initMobileSidebarHandlers();
+    
     // Cek apakah halaman saat ini adalah supervisor.html
     if (window.location.href.includes('supervisor.html')) {
       // Menangani dropdown Supervisor
@@ -23,7 +26,6 @@ try {
         // Tambahkan event listener untuk dropdown Supervisor
         supervisorToggle.addEventListener('click', function(event) {
           event.preventDefault();
-          event.stopPropagation();
           
           // Toggle dropdown Supervisor tanpa menutup dropdown Absensi
           new bootstrap.Collapse(supervisorDropdown, { toggle: true });
@@ -34,6 +36,69 @@ try {
       setupSupervisorAuthentication();
     }
   });
+  
+  // Fungsi untuk menginisialisasi handler sidebar pada mobile
+  function initMobileSidebarHandlers() {
+    console.log("Initializing mobile sidebar handlers");
+    
+    // Ambil semua elemen yang diperlukan
+    const hamburgerBtn = document.querySelector('.hamburger');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    const appContainer = document.querySelector('.app-container');
+    const sidebar = document.querySelector('.sidebar');
+    
+    // Handler untuk membuka sidebar
+    if (hamburgerBtn) {
+      hamburgerBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        appContainer.classList.add('sidebar-active');
+        console.log("Sidebar opened");
+      });
+    }
+    
+    // Handler untuk menutup sidebar saat overlay diklik
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', function(e) {
+        e.preventDefault();
+        appContainer.classList.remove('sidebar-active');
+        console.log("Sidebar closed via overlay");
+      });
+    }
+    
+    // Perbaikan untuk menu sidebar pada mobile
+    const navLinks = document.querySelectorAll('.sidebar .nav-link');
+    
+    navLinks.forEach(link => {
+      // Hapus event listener yang mungkin sudah ada
+      const newLink = link.cloneNode(true);
+      link.parentNode.replaceChild(newLink, link);
+      
+      // Tambahkan event listener baru
+      newLink.addEventListener('click', function(e) {
+        // Jika link memiliki submenu, jangan hentikan propagasi
+        if (this.getAttribute('data-bs-toggle') === 'collapse') {
+          // Biarkan Bootstrap collapse handler bekerja
+          return;
+        }
+        
+        // Jika link adalah Supervisor, gunakan handler khusus
+        if (this.getAttribute('data-bs-target') === '#supervisorSubmenu') {
+          // Handler akan ditangani oleh setupSupervisorAuthentication
+          return;
+        }
+        
+        // Untuk link lain, tutup sidebar setelah diklik (hanya pada mobile)
+        if (window.innerWidth <= 768) {
+          setTimeout(() => {
+            appContainer.classList.remove('sidebar-active');
+            console.log("Sidebar closed after link click");
+          }, 150); // Delay sedikit untuk memastikan event click selesai
+        }
+      });
+    });
+    
+    console.log("Mobile sidebar handlers initialized");
+  }
   
   // Fungsi untuk setup autentikasi Supervisor
   function setupSupervisorAuthentication() {
@@ -67,20 +132,23 @@ try {
         createSupervisorAuthModal();
       }
       
-      // Override event click default dengan event listener baru
-      supervisorToggle.removeEventListener('click', supervisorClickHandler); // Remove any existing handler
-      supervisorToggle.addEventListener('click', supervisorClickHandler);
+      // Hapus event listener yang mungkin sudah ada
+      const newToggle = supervisorToggle.cloneNode(true);
+      supervisorToggle.parentNode.replaceChild(newToggle, supervisorToggle);
+      
+      // Tambahkan event listener baru
+      newToggle.addEventListener('click', supervisorClickHandler);
       
       console.log("Supervisor click handler attached");
     } else {
       console.error("Supervisor toggle element not found");
     }
   }
+  
   // Handler function untuk click event
   function supervisorClickHandler(event) {
     console.log("Supervisor toggle clicked");
     event.preventDefault();
-    event.stopPropagation();
     
     // Tampilkan modal autentikasi
     const authModal = document.getElementById('supervisorAuthModal');
@@ -258,6 +326,14 @@ try {
       }
     }
   }
+  
+  // Tambahkan event listener untuk resize window
+  window.addEventListener('resize', function() {
+    // Reinisialisasi handler untuk sidebar mobile saat ukuran window berubah
+    if (window.innerWidth <= 768) {
+      initMobileSidebarHandlers();
+    }
+  });
   
   // Panggil fungsi untuk cek autentikasi
   checkSupervisorAuth();
