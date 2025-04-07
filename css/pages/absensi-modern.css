@@ -264,7 +264,13 @@ body {
   background-color: var(--gray-600);
   color: white;
 }
-
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 10px;
+  margin-top: 15px;
+}
 /* Special button types */
 .action-buttons .btn {
   padding: 0.5rem 0.75rem;
