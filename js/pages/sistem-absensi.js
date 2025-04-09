@@ -30,8 +30,7 @@ let isBarcodeScanner = false;
 const SCANNER_CHARACTER_DELAY_THRESHOLD = 50; // Maksimum delay antar karakter (ms) untuk scanner
 const SCANNER_COMPLETE_DELAY = 500; // Waktu tunggu setelah input selesai (ms)
 let scannerTimeoutId = null;
-// Fungsi untuk mendeteksi dan memproses input dari scanner barcode
-// Fungsi untuk mendeteksi dan memproses input dari scanner barcode
+// Perbaiki fungsi setupBarcodeScanner
 function setupBarcodeScanner() {
   const barcodeInput = document.getElementById("barcodeInput");
   
@@ -39,6 +38,10 @@ function setupBarcodeScanner() {
     console.error("Barcode input element not found");
     return;
   }
+  
+  // Reset status scanner
+  barcodeInput.dataset.isScanner = "false";
+  barcodeBuffer = '';
   
   // Nonaktifkan paste untuk mencegah input manual dengan copy-paste
   barcodeInput.addEventListener("paste", function(e) {
@@ -85,17 +88,7 @@ function setupBarcodeScanner() {
     }, SCANNER_COMPLETE_DELAY);
   });
   
-  console.log("Barcode scanner detection setup complete");
-}
-// Modifikasi event listener untuk keypress pada barcodeInput
-function setupBarcodeInputKeypress() {
-  const barcodeInput = document.getElementById("barcodeInput");
-  if (!barcodeInput) return;
-  
-  // Hapus event listener yang mungkin sudah ada
-  barcodeInput.removeEventListener("keypress", handleKeyPress);
-  
-  // Tambahkan event listener baru
+  // Tambahkan event listener untuk keypress
   barcodeInput.addEventListener("keypress", async function(e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -122,6 +115,8 @@ function setupBarcodeInputKeypress() {
       this.dataset.isScanner = "false";
     }
   });
+  
+  console.log("Barcode scanner detection setup complete");
 }
 
 
@@ -823,35 +818,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       preloadAudio.load();
     }
     
-    // Setup barcode scanner detection
+    // Setup barcode scanner detection - ini adalah satu-satunya setup yang diperlukan
     setupBarcodeScanner();
     
-    // Setup barcode scanning (tetap pertahankan kode asli)
-    const barcodeInput = document.getElementById("barcodeInput");
-    if (barcodeInput) {
-      // Event listener untuk keypress sudah ditangani di setupBarcodeScanner
-    }
-
-    const manualSubmit = document.getElementById("manualSubmit");
-    if (manualSubmit) {
-      manualSubmit.addEventListener("click", async function() {
-        const barcodeInput = document.getElementById("barcodeInput");
-        // Cek apakah input berasal dari scanner
-        if (barcodeInput && barcodeInput.dataset.isScanner === "true") {
-          await processBarcode();
-        } else {
-          // Tampilkan pesan error untuk input manual
-          showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
-          playNotificationSound('error');
-          if (barcodeInput) barcodeInput.value = "";
-        }
-      });
-    }
-
     // Setup refresh scanner button
     const refreshScanner = document.getElementById("refreshScanner");
     if (refreshScanner) {
       refreshScanner.addEventListener("click", function() {
+        const barcodeInput = document.getElementById("barcodeInput");
         if (barcodeInput) {
           barcodeInput.value = "";
           barcodeInput.focus();
@@ -864,14 +838,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
+    // Setup manual submit button
+    const manualSubmit = document.getElementById("manualSubmit");
+    if (manualSubmit) {
+      manualSubmit.addEventListener("click", function() {
+        const barcodeInput = document.getElementById("barcodeInput");
+        if (barcodeInput && barcodeInput.dataset.isScanner === "true") {
+          processScannedBarcode(barcodeInput.value.trim());
+          barcodeInput.value = "";
+        } else {
+          showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
+          playNotificationSound('error');
+          if (barcodeInput) barcodeInput.value = "";
+        }
+      });
+    }
+
     // Load data
     await Promise.all([loadEmployees(), loadTodayAttendance()]);
+
+    // Fokus pada input barcode setelah semua inisialisasi
+    const barcodeInput = document.getElementById("barcodeInput");
+    if (barcodeInput) {
+      barcodeInput.focus();
+    }
 
     console.log("Attendance system initialized successfully");
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
 });
+
 
 // Helper function to format employee type
 function formatEmployeeType(type) {

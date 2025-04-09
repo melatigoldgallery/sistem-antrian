@@ -11,13 +11,120 @@ import {
   addDoc,
   updateDoc,
   doc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
+// Tambahkan variabel untuk menyimpan unsubscribe function
+let leaveListenerUnsubscribe = null;
 // Cache untuk data izin
 export const leaveCache = new Map();
 export const leaveMonthCache = new Map();
 export const cacheMeta = new Map(); // Untuk menyimpan metadata cache (timestamp)
+
+// Tambahkan fungsi untuk mendengarkan perubahan data izin
+export function listenToLeaveRequests(month, year, callback) {
+  try {
+    // Hentikan listener sebelumnya jika ada
+    if (leaveListenerUnsubscribe) {
+      leaveListenerUnsubscribe();
+    }
+    
+    // Buat query untuk bulan dan tahun yang dipilih
+    const leaveCollection = collection(db, "leaveRequests");
+    
+    // Buat tanggal awal dan akhir bulan
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Hari terakhir bulan
+    
+    // Konversi ke timestamp Firestore
+    const startTimestamp = Timestamp.fromDate(startDate);
+    const endTimestamp = Timestamp.fromDate(endDate);
+    
+    // Buat query dengan filter bulan dan tahun
+    let q = query(
+      leaveCollection,
+      where("month", "==", month),
+      where("year", "==", year),
+      orderBy("submitDate", "desc")
+    );
+    
+    // Jika tidak ada field month/year, coba dengan tanggal
+    // Ini adalah fallback jika struktur data berbeda
+    const fallbackQuery = query(
+      leaveCollection,
+      where("leaveDate", ">=", startTimestamp),
+      where("leaveDate", "<=", endTimestamp),
+      orderBy("leaveDate", "desc")
+    );
+    
+    // Buat listener dengan onSnapshot
+    leaveListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+      // Jika tidak ada hasil, coba dengan query fallback
+      if (snapshot.empty) {
+        // Hentikan listener saat ini
+        leaveListenerUnsubscribe();
+        
+        // Buat listener baru dengan query fallback
+        leaveListenerUnsubscribe = onSnapshot(fallbackQuery, (fallbackSnapshot) => {
+          const leaveRequests = fallbackSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            // Konversi Timestamp ke Date
+            submitDate: doc.data().submitDate instanceof Timestamp ? doc.data().submitDate.toDate() : doc.data().submitDate,
+            leaveDate: doc.data().leaveDate instanceof Timestamp ? doc.data().leaveDate.toDate() : doc.data().leaveDate
+          }));
+          
+          // Panggil callback dengan data
+          callback(leaveRequests);
+          
+          // Update cache
+          const cacheKey = `${month}_${year}`;
+          leaveMonthCache.set(cacheKey, leaveRequests);
+          updateCacheTimestamp(cacheKey);
+          saveLeaveCacheToStorage();
+        }, (error) => {
+          console.error("Error listening to leave requests (fallback):", error);
+        });
+      } else {
+        // Proses data dari snapshot
+        const leaveRequests = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          // Konversi Timestamp ke Date
+          submitDate: doc.data().submitDate instanceof Timestamp ? doc.data().submitDate.toDate() : doc.data().submitDate,
+          leaveDate: doc.data().leaveDate instanceof Timestamp ? doc.data().leaveDate.toDate() : doc.data().leaveDate
+        }));
+        
+        // Panggil callback dengan data
+        callback(leaveRequests);
+        
+        // Update cache
+        const cacheKey = `${month}_${year}`;
+        leaveMonthCache.set(cacheKey, leaveRequests);
+        updateCacheTimestamp(cacheKey);
+        saveLeaveCacheToStorage();
+      }
+    }, (error) => {
+      console.error("Error listening to leave requests:", error);
+    });
+    
+    // Kembalikan fungsi unsubscribe
+    return leaveListenerUnsubscribe;
+  } catch (error) {
+    console.error("Error setting up leave listener:", error);
+    return null;
+  }
+}
+
+
+// Fungsi untuk menghentikan listener
+export function stopListeningToLeaveRequests() {
+  if (leaveListenerUnsubscribe) {
+    leaveListenerUnsubscribe();
+    leaveListenerUnsubscribe = null;
+  }
+}
 
 // Fungsi untuk mengompresi data sebelum disimpan ke localStorage
 function compressData(data) {
