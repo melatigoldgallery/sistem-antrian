@@ -32,13 +32,13 @@
         <div class="sidebar-menu">
           <ul class="nav flex-column" id="sidebarAccordion">
             <li class="nav-item">
-              <a class="nav-link active" href="dashboard.html">
+              <a class="nav-link" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="buyback.html">
+              <a class="nav-link buyback" href="buyback.html">
                 <i class="fas fa-exchange-alt"></i>
                 <span class="menu-text">Buyback</span>
               </a>
@@ -199,80 +199,153 @@
 
         <!-- Page Content -->
         <div class="page-content">
-          <div class="page-header">
-            <h1>Dashboard</h1>
-            <nav aria-label="breadcrumb">
-              <ol class="breadcrumb">
-                <li class="breadcrumb-item active" aria-current="page">Home</li>
-              </ol>
-            </nav>
-          </div>
-          
-          <div class="content-wrapper ">
-            <!-- Dashboard Cards -->
-            <div class="stats-cards d-flex justify-content-evenly">
-              <div class="stat-card">
-                <div class="stat-card-icon bg-primary">
-                  <i class="fas fa-ticket-alt"></i>
+          <div class="dashboard-desktop-content">
+            <div class="page-header">
+              <h1>Dashboard</h1>
+              <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="breadcrumb-item active" aria-current="page">Home</li>
+                </ol>
+              </nav>
+            </div>
+
+            <div class="content-wrapper">
+              <!-- Dashboard Cards -->
+              <div class="stats-cards d-flex justify-content-evenly">
+                <div class="stat-card">
+                  <div class="stat-card-icon bg-primary">
+                    <i class="fas fa-ticket-alt"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h4>Sistem Antrian</h4>
+                    <p>Kelola antrian pelanggan</p>
+                  </div>
                 </div>
-                <div class="stat-card-info">
-                  <h4>Sistem Antrian</h4>
-                  <p>Kelola antrian pelanggan</p>
+
+                <div class="stat-card">
+                  <div class="stat-card-icon bg-success">
+                    <i class="fas fa-exchange-alt"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h4>Sistem Buyback</h4>
+                    <p>Hitung harga penerimaan buyback</p>
+                  </div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-card-icon bg-warning">
+                    <i class="fas fa-clipboard-check"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h4>Sistem Absensi</h4>
+                    <p>Kelola kehadiran staff</p>
+                  </div>
                 </div>
               </div>
 
-              <div class="stat-card">
-                <div class="stat-card-icon bg-success">
-                  <i class="fas fa-exchange-alt"></i>
+              <!-- Quick Access -->
+              <div class="card mt-3">
+                <div class="card-header">
+                  <h2>
+                    <i class="fas fa-bolt"></i>
+                    Akses Cepat
+                  </h2>
                 </div>
-                <div class="stat-card-info">
-                  <h4>Sistem Buyback</h4>
-                  <p>Hitung harga penerimaan buyback</p>
-                </div>
-              </div>
-
-              <div class="stat-card">
-                <div class="stat-card-icon bg-warning">
-                  <i class="fas fa-clipboard-check"></i>
-                </div>
-                <div class="stat-card-info">
-                  <h4>Sistem Absensi</h4>
-                  <p>Kelola kehadiran staff</p>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-4 mb-3">
+                      <a href="admin.html" class="btn btn-primary w-100 py-3">
+                        <i class="fas fa-user-cog me-2"></i>
+                        Admin Antrian
+                      </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <a href="buyback.html" class="btn btn-success w-100 py-3">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Buyback
+                      </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <a href="sistemAbsensi.html" class="btn btn-warning w-100 py-3">
+                        <i class="fas fa-user-check me-2"></i>
+                        Absensi
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <!-- Quick Access -->
-            <div class="card mt-3">
-              <div class="card-header">
-                <h2>
-                  <i class="fas fa-bolt"></i>
-                  Akses Cepat
-                </h2>
+          </div>
+          <div class="dashboard-mobile-content">
+            <div class="app-intro-container">
+              <div class="app-intro-header text-center mb-4">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="app-logo mb-3">
+                <h1 class="app-title">Sistem Absensi</h1>
+                <p class="app-subtitle">Melati Gold Shop</p>
               </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-4 mb-3">
-                    <a href="admin.html" class="btn btn-primary w-100 py-3">
-                      <i class="fas fa-user-cog me-2"></i>
-                      Admin Antrian
-                    </a>
-                  </div>
-                  <div class="col-md-4 mb-3">
-                    <a href="buyback.html" class="btn btn-success w-100 py-3">
-                      <i class="fas fa-exchange-alt me-2"></i>
-                      Buyback
-                    </a>
-                  </div>
-                  <div class="col-md-4 mb-3">
-                    <a href="sistemAbsensi.html" class="btn btn-warning w-100 py-3">
-                      <i class="fas fa-user-check me-2"></i>
-                      Absensi
-                    </a>
+              
+              <div class="app-intro-card">
+                <div class="card shadow-sm">
+                  <div class="card-body">
+                    <h2 class="card-title text-primary mb-3">
+                      <i class="fas fa-info-circle me-2"></i>Tentang Aplikasi
+                    </h2>
+                    <p class="card-text">
+                      Sistem Absensi Melati Gold Shop dirancang untuk memudahkan pencatatan kehadiran karyawan dengan teknologi barcode.
+                      Aplikasi ini membantu manajemen dalam memantau kehadiran, keterlambatan, dan pengajuan izin karyawan.
+                    </p>
                   </div>
                 </div>
               </div>
-            </div> 
+              
+              <div class="app-features mt-4">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <div class="card shadow-sm feature-card">
+                      <div class="card-body">
+                        <div class="feature-icon bg-primary text-white">
+                          <i class="fas fa-user-check"></i>
+                        </div>
+                        <h3 class="feature-title">Absensi Barcode</h3>
+                        <p class="feature-text">Scan barcode untuk absensi masuk dan pulang dengan cepat dan akurat.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card shadow-sm feature-card">
+                      <div class="card-body">
+                        <div class="feature-icon bg-info text-white">
+                          <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3 class="feature-title">Laporan Kehadiran</h3>
+                        <p class="feature-text">Lihat dan unduh laporan kehadiran karyawan dalam berbagai format.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="card shadow-sm feature-card">
+                      <div class="card-body">
+                        <div class="feature-icon bg-success text-white">
+                          <i class="fas fa-calendar-plus"></i>
+                        </div>
+                        <h3 class="feature-title">Pengajuan Izin</h3>
+                        <p class="feature-text">Ajukan izin tidak masuk kerja dengan mudah melalui aplikasi.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="app-action mt-4 mb-3 text-center">
+                <a href="pengajuan-izin.html" class="btn btn-primary btn-lg">
+                  <i class="fas fa-sign-in-alt me-2"></i>Ajukan Izin
+                </a>
+              </div>
+              
+              <div class="app-version text-center text-muted mt-4">
+                <p>Versi 1.0.0 | &copy; 2025 Melati Gold Shop</p>
+              </div>
+            </div>
           </div>
         </div>
       </main>

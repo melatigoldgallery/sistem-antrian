@@ -16,8 +16,216 @@ import {
 
 // Cache untuk data izin
 export const leaveCache = new Map();
-let leaveMonthCache = new Map(); // Cache untuk data izin per bulan
+export const leaveMonthCache = new Map();
+export const cacheMeta = new Map(); // Untuk menyimpan metadata cache (timestamp)
 
+// Fungsi untuk mengompresi data sebelum disimpan ke localStorage
+function compressData(data) {
+  try {
+    // Konversi data ke string JSON
+    const jsonString = JSON.stringify(data);
+    
+    // Kompresi sederhana dengan menghapus spasi berlebih
+    return jsonString.replace(/\s+/g, '');
+  } catch (error) {
+    console.error("Error compressing data:", error);
+    return JSON.stringify(data);
+  }
+}
+
+// Fungsi untuk mendekompresi data dari localStorage
+function decompressData(compressedData) {
+  try {
+    // Parse string JSON yang telah dikompresi
+    return JSON.parse(compressedData);
+  } catch (error) {
+    console.error("Error decompressing data:", error);
+    return null;
+  }
+}
+// Alternative fix - remove the reference to cacheStats
+function saveLeaveCacheToStorage() {
+  try {
+    // Convert Map to object for localStorage
+    const cacheSerialized = {};
+    for (const [key, value] of leaveCache.entries()) {
+      cacheSerialized[key] = value;
+    }
+    
+    const monthCacheSerialized = {};
+    for (const [key, value] of leaveMonthCache.entries()) {
+      monthCacheSerialized[key] = value;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('leaveCache', JSON.stringify(cacheSerialized));
+    localStorage.setItem('leaveMonthCache', JSON.stringify(monthCacheSerialized));
+    localStorage.setItem('pendingLeaveCache', JSON.stringify(pendingLeaveCache));
+    
+    console.log("Leave cache saved to localStorage");
+  } catch (error) {
+    console.error("Error saving leave cache to localStorage:", error);
+  }
+}
+
+
+export function loadLeaveCacheFromStorage() {
+  try {
+    const compressedCache = localStorage.getItem('leaveCache');
+    const compressedMonthCache = localStorage.getItem('leaveMonthCache');
+    const compressedMeta = localStorage.getItem('leaveCacheMeta');
+    
+    if (compressedCache) {
+      // Dekompresi data
+      const cacheObj = decompressData(compressedCache);
+      
+      if (cacheObj) {
+        // Konversi objek kembali ke Map
+        leaveCache.clear();
+        
+        for (const [key, value] of Object.entries(cacheObj)) {
+          leaveCache.set(key, value);
+        }
+      }
+    }
+    
+    if (compressedMonthCache) {
+      // Dekompresi data
+      const monthCacheObj = decompressData(compressedMonthCache);
+      
+      if (monthCacheObj) {
+        // Konversi objek kembali ke Map
+        leaveMonthCache.clear();
+        
+        for (const [key, value] of Object.entries(monthCacheObj)) {
+          leaveMonthCache.set(key, value);
+        }
+      }
+    }
+    
+    if (compressedMeta) {
+      // Dekompresi data
+      const metaObj = decompressData(compressedMeta);
+      
+      if (metaObj) {
+        // Konversi objek kembali ke Map
+        cacheMeta.clear();
+        
+        for (const [key, value] of Object.entries(metaObj)) {
+          cacheMeta.set(key, value);
+        }
+      }
+    }
+    
+    console.log("Leave cache loaded from localStorage (decompressed)");
+  } catch (error) {
+    console.error("Error loading leave cache from localStorage:", error);
+  }
+}
+// Panggil loadLeaveCacheFromStorage() saat modul dimuat
+loadLeaveCacheFromStorage();
+
+// Fungsi untuk memeriksa apakah cache perlu diperbarui (lebih dari 1 jam)
+export function shouldUpdateCache(cacheKey) {
+  if (!cacheMeta.has(cacheKey)) return true;
+  
+  const lastUpdate = cacheMeta.get(cacheKey);
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000; // 1 jam dalam milidetik
+  
+  return (now - lastUpdate) > oneHour;
+}
+
+// Fungsi untuk memperbarui timestamp cache
+export function updateCacheTimestamp(cacheKey) {
+  cacheMeta.set(cacheKey, Date.now());
+  saveLeaveCacheToStorage();
+}
+
+// Fungsi untuk membatasi ukuran cache
+export function limitCacheSize(maxEntries = 50) {
+  // Jika ukuran cache melebihi batas, hapus entri tertua
+  if (leaveCache.size > maxEntries) {
+    // Dapatkan entri tertua berdasarkan timestamp
+    let oldestKey = null;
+    let oldestTimestamp = Date.now();
+    
+    for (const [key, timestamp] of cacheMeta.entries()) {
+      if (timestamp < oldestTimestamp) {
+        oldestTimestamp = timestamp;
+        oldestKey = key;
+      }
+    }
+    
+    // Hapus entri tertua
+    if (oldestKey) {
+      leaveCache.delete(oldestKey);
+      cacheMeta.delete(oldestKey);
+      console.log(`Removed oldest cache entry: ${oldestKey}`);
+    }
+    
+    // Simpan perubahan ke localStorage
+    saveLeaveCacheToStorage();
+  }
+  
+  // Juga batasi ukuran leaveMonthCache
+  if (leaveMonthCache.size > maxEntries) {
+    // Dapatkan entri tertua berdasarkan bulan dan tahun
+    const keys = Array.from(leaveMonthCache.keys());
+    keys.sort(); // Sort berdasarkan string (format: month_year)
+    
+    // Hapus entri tertua
+    if (keys.length > 0) {
+      const oldestKey = keys[0];
+      leaveMonthCache.delete(oldestKey);
+      console.log(`Removed oldest month cache entry: ${oldestKey}`);
+    }
+    
+    // Simpan perubahan ke localStorage
+    saveLeaveCacheToStorage();
+  }
+}
+
+
+// Tambahkan fungsi untuk membersihkan cache lama
+export function cleanupOldLeaveCache() {
+  const now = Date.now();
+  const oneMonth = 30 * 24 * 60 * 60 * 1000; // 30 hari dalam milidetik
+  
+  // Hapus cache yang lebih dari 3 bulan
+  const keysToDelete = [];
+  
+  for (const key of leaveMonthCache.keys()) {
+    const [month, year] = key.split('_');
+    const cacheDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    
+    if (now - cacheDate.getTime() > 3 * oneMonth) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => {
+    leaveMonthCache.delete(key);
+    console.log(`Removed old month cache for ${key}`);
+  });
+  // Juga bersihkan cache izin yang lebih dari 3 bulan
+  const leaveCacheKeysToDelete = [];
+  
+  for (const [key, timestamp] of cacheMeta.entries()) {
+    if (now - timestamp > 3 * oneMonth) {
+      leaveCacheKeysToDelete.push(key);
+    }
+  }
+  
+  leaveCacheKeysToDelete.forEach(key => {
+    leaveCache.delete(key);
+    cacheMeta.delete(key);
+    console.log(`Removed old leave cache for ${key}`);
+  });
+  
+  // Simpan perubahan ke localStorage
+  saveLeaveCacheToStorage();
+}
 // Modify the getLeaveRequestsByDate function to ensure it works correctly
 export async function getLeaveRequestsByDate(date) {
   try {
@@ -317,9 +525,7 @@ export async function getLeaveRequestsByDateRange(startDate, endDate) {
 
 // Get leave requests by month with pagination
 export async function getLeaveRequestsByMonth(month, year, lastDoc = null, itemsPerPage = 20) {
-  try {
-    console.log(`Fetching leave requests for ${month}/${year}`);
-    
+  try {   
     // Create cache key
     const cacheKey = `${month}_${year}`;
     
@@ -599,7 +805,16 @@ export async function getLeaveRequestsByMonth(month, year, lastDoc = null, items
       });
     }
     
-    console.log(`Found ${leaveRequests.length} leave requests for ${month}/${year}`);
+    // Store in cache if this is the first page
+    if (!lastDoc) {
+      leaveMonthCache.set(cacheKey, [...leaveRequests]);
+      saveLeaveCacheToStorage(); // Simpan ke localStorage
+    } else if (leaveMonthCache.has(cacheKey)) {
+      // Append to existing cache
+      const existingData = leaveMonthCache.get(cacheKey);
+      leaveMonthCache.set(cacheKey, [...existingData, ...leaveRequests]);
+      saveLeaveCacheToStorage(); // Simpan ke localStorage
+    }
     
     // Determine if there are more records
     const hasMore = leaveRequests.length === itemsPerPage;
@@ -1049,6 +1264,8 @@ export function clearLeaveCache() {
   leaveMonthCache.clear();
   pendingRequestsCache = null;
   pendingRequestsTimestamp = 0;
+  cacheMeta.clear();
+  saveLeaveCacheToStorage();
   console.log("All leave caches cleared");
 }
 
@@ -1366,9 +1583,5 @@ export async function updateReplacementStatus(id, status, dayIndex = null) {
 }
 
 
-// Export all necessary functions and objects
-export {
-  leaveMonthCache
-};
 
 

@@ -288,12 +288,18 @@
 
             <!-- Staff List Card -->
             <div class="card">
+              <!-- Tambahkan setelah baris 217, di dalam card-header -->
               <div class="card-header d-flex justify-content-between align-items-center">
                 <h2>
                   <i class="fas fa-users"></i>
                   Daftar Karyawan
+                  <span id="cacheStatus" class="cache-status"></span>
                 </h2>
                 <div class="card-actions">
+                  <button class="btn btn-sm btn-outline-info me-2" id="refreshCache" title="Segarkan data dari server">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh Data
+                  </button>
                   <button class="btn btn-sm btn-outline-success me-2" id="downloadAllBarcodes">
                     <i class="fas fa-barcode"></i>
                     Download Barcode
@@ -308,7 +314,6 @@
                   </button>
                 </div>
               </div>
-
               <div class="card-body">
                 <div class="table-responsive">
                   <table class="table table-hover">

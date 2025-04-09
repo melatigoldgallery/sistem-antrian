@@ -11,6 +11,106 @@ import {
   Timestamp,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+// Tambahkan fungsi untuk koordinasi cache dengan report-service
+export function syncCacheWithReport(dateKey, data) {
+  try {
+    // Jika data sudah ada di cache, gabungkan dengan data baru
+    if (attendanceCache.has(dateKey)) {
+      const existingData = attendanceCache.get(dateKey);
+      
+      // Gabungkan data, hindari duplikasi berdasarkan ID
+      const mergedData = [...existingData];
+      
+      data.forEach(newItem => {
+        const existingIndex = mergedData.findIndex(item => item.id === newItem.id);
+        if (existingIndex === -1) {
+          // Item baru, tambahkan ke array
+          mergedData.push(newItem);
+        } else {
+          // Item sudah ada, update jika lebih baru
+          const existingItem = mergedData[existingIndex];
+          
+          // Jika item baru memiliki timeOut yang tidak null, update
+          if (newItem.timeOut && (!existingItem.timeOut || newItem.timeOut > existingItem.timeOut)) {
+            mergedData[existingIndex] = { ...existingItem, ...newItem };
+          }
+        }
+      });
+      
+      // Update cache dengan data gabungan
+      attendanceCache.set(dateKey, mergedData);
+    } else {
+      // Jika belum ada di cache, tambahkan langsung
+      attendanceCache.set(dateKey, data);
+    }
+    
+    // Update timestamp cache
+    updateCacheTimestamp(dateKey);
+    
+    // Simpan ke localStorage
+    saveAttendanceCacheToStorage();
+    
+    return true;
+  } catch (error) {
+    console.error("Error syncing cache with report:", error);
+    return false;
+  }
+}
+
+// Tambahkan fungsi untuk validasi integritas data cache
+export function validateCacheIntegrity() {
+  try {
+    let invalidEntries = 0;
+    
+    // Periksa setiap entri di cache
+    for (const [key, data] of attendanceCache.entries()) {
+      // Validasi bahwa data adalah array
+      if (!Array.isArray(data)) {
+        console.warn(`Invalid cache entry for ${key}: not an array`);
+        attendanceCache.delete(key);
+        cacheMeta.delete(key);
+        invalidEntries++;
+        continue;
+      }
+      
+      // Validasi bahwa setiap item memiliki properti yang diperlukan
+      const invalidItems = data.filter(item => 
+        !item.id || !item.date || !item.timeIn
+      );
+      
+      if (invalidItems.length > 0) {
+        console.warn(`Found ${invalidItems.length} invalid items in cache for ${key}`);
+        // Filter out invalid items
+        attendanceCache.set(key, data.filter(item => 
+          item.id && item.date && item.timeIn
+        ));
+        invalidEntries++;
+      }
+    }
+    
+    if (invalidEntries > 0) {
+      console.log(`Cleaned up ${invalidEntries} invalid cache entries`);
+      saveAttendanceCacheToStorage();
+    }
+    
+    return invalidEntries === 0;
+  } catch (error) {
+    console.error("Error validating cache integrity:", error);
+    return false;
+  }
+}
+
+// Tambahkan event listener untuk validasi cache saat halaman dimuat
+document.addEventListener('DOMContentLoaded', function() {
+  // Validasi integritas cache
+  validateCacheIntegrity();
+  
+  // Bersihkan cache lama
+  cleanupOldCache();
+  
+  // Batasi ukuran cache
+  limitCacheSize();
+});
 
 // Tambahkan cache untuk kehadiran dengan timestamp
 export const attendanceCache = new Map();
@@ -21,8 +121,7 @@ export function getLocalDateString() {
   const now = new Date();
   
   // Tambahkan logging untuk debugging
-  console.log("Raw Date:", now);
-  console.log("Timezone Offset:", now.getTimezoneOffset());
+  console.log("Raw Date for getLocalDateString:", now);
   
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -33,25 +132,135 @@ export function getLocalDateString() {
   
   return formattedDate;
 }
-
-
-
-// Fungsi untuk memeriksa apakah cache perlu diperbarui (lebih dari 1 jam)
-export function shouldUpdateCache(cacheKey) {
-  if (!cacheMeta.has(cacheKey)) return true;
-  
-  const lastUpdate = cacheMeta.get(cacheKey);
-  const now = Date.now();
-  const oneHour = 60 * 60 * 1000; // 1 jam dalam milidetik
-  
-  return (now - lastUpdate) > oneHour;
+// Modifikasi saveAttendanceCacheToStorage
+export function saveAttendanceCacheToStorage() {
+  try {
+    // Konversi Map ke objek untuk localStorage
+    const cacheObj = {};
+    for (const [key, value] of attendanceCache.entries()) {
+      cacheObj[key] = value;
+    }
+    
+    const metaObj = {};
+    for (const [key, value] of cacheMeta.entries()) {
+      metaObj[key] = value;
+    }
+    
+    // Kompresi data sebelum disimpan
+    localStorage.setItem('attendanceCache', compressData(cacheObj));
+    localStorage.setItem('attendanceCacheMeta', compressData(metaObj));
+    console.log("Attendance cache saved to localStorage (compressed)");
+  } catch (error) {
+    console.error("Error saving cache to localStorage:", error);
+  }
 }
 
-// Fungsi untuk memperbarui timestamp cache
+// Modifikasi loadAttendanceCacheFromStorage
+export function loadAttendanceCacheFromStorage() {
+  try {
+    const compressedCache = localStorage.getItem('attendanceCache');
+    const compressedMeta = localStorage.getItem('attendanceCacheMeta');
+    
+    if (compressedCache && compressedMeta) {
+      // Dekompresi data
+      const cacheObj = decompressData(compressedCache);
+      const metaObj = decompressData(compressedMeta);
+      
+      if (!cacheObj || !metaObj) {
+        console.error("Failed to decompress cache data");
+        return;
+      }
+      
+      // Konversi objek kembali ke Map
+      attendanceCache.clear();
+      cacheMeta.clear();
+      
+      for (const [key, value] of Object.entries(cacheObj)) {
+        attendanceCache.set(key, value);
+      }
+      
+      for (const [key, value] of Object.entries(metaObj)) {
+        cacheMeta.set(key, value);
+      }
+      
+      console.log("Attendance cache loaded from localStorage (decompressed)");
+    }
+  } catch (error) {
+    console.error("Error loading cache from localStorage:", error);
+  }
+}
+
+// Fungsi untuk mengompresi data sebelum disimpan ke localStorage
+function compressData(data) {
+  try {
+    // Konversi data ke string JSON
+    const jsonString = JSON.stringify(data);
+    
+    // Kompresi sederhana dengan menghapus spasi berlebih
+    return jsonString.replace(/\s+/g, '');
+  } catch (error) {
+    console.error("Error compressing data:", error);
+    return JSON.stringify(data);
+  }
+}
+
+// Fungsi untuk mendekompresi data dari localStorage
+function decompressData(compressedData) {
+  try {
+    // Parse string JSON yang telah dikompresi
+    return JSON.parse(compressedData);
+  } catch (error) {
+    console.error("Error decompressing data:", error);
+    return null;
+  }
+}
+// Tambahkan fungsi untuk membersihkan cache lama
+export function cleanupOldCache() {
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000; // 24 jam dalam milidetik
+
+  // Hapus cache yang lebih dari 7 hari
+  for (const [key, timestamp] of cacheMeta.entries()) {
+    if (now - timestamp > 7 * oneDay) {
+      attendanceCache.delete(key);
+      cacheMeta.delete(key);
+      console.log(`Removed old cache for ${key}`);
+    }
+  }
+ // Simpan perubahan ke localStorage
+ saveAttendanceCacheToStorage();
+} 
+// Fungsi untuk membatasi ukuran cache
+export function limitCacheSize(maxEntries = 50) {
+  // Jika ukuran cache melebihi batas, hapus entri tertua
+  if (attendanceCache.size > maxEntries) {
+    // Dapatkan entri tertua berdasarkan timestamp
+    let oldestKey = null;
+    let oldestTimestamp = Date.now();
+    
+    for (const [key, timestamp] of cacheMeta.entries()) {
+      if (timestamp < oldestTimestamp) {
+        oldestTimestamp = timestamp;
+        oldestKey = key;
+      }
+    }
+    
+    // Hapus entri tertua
+    if (oldestKey) {
+      attendanceCache.delete(oldestKey);
+      cacheMeta.delete(oldestKey);
+      console.log(`Removed oldest cache entry: ${oldestKey}`);
+    }
+    
+    // Simpan perubahan ke localStorage
+    saveAttendanceCacheToStorage();
+  }
+}
+// Modifikasi updateCacheTimestamp untuk menyimpan ke localStorage
 export function updateCacheTimestamp(cacheKey) {
   cacheMeta.set(cacheKey, Date.now());
+  saveAttendanceCacheToStorage();
 }
-
 export async function recordAttendance(attendance) {
   try {
     // Add timestamps
@@ -102,6 +311,17 @@ export async function recordAttendance(attendance) {
 }
 
 
+// Fungsi untuk memeriksa apakah cache perlu diperbarui (lebih dari 1 jam)
+export function shouldUpdateCache(cacheKey) {
+  if (!cacheMeta.has(cacheKey)) return true;
+  
+  const lastUpdate = cacheMeta.get(cacheKey);
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000; // 1 jam dalam milidetik
+  
+  return (now - lastUpdate) > oneHour;
+}
+
 // Update attendance with check-out time
 export async function updateAttendanceOut(id, timeOut) {
   try {
@@ -136,6 +356,7 @@ export async function getTodayAttendance() {
   try {
     // Gunakan tanggal lokal untuk konsistensi
     const today = getLocalDateString();
+    console.log("Getting attendance for date:", today);
     
     // Check if data is in cache and still valid
     if (attendanceCache.has(today) && !shouldUpdateCache(today)) {
@@ -147,13 +368,21 @@ export async function getTodayAttendance() {
     const q = query(attendanceCollection, where("date", "==", today), orderBy("timeIn", "desc"));
 
     const snapshot = await getDocs(q);
-    const attendanceData = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      timeIn: doc.data().timeIn.toDate(),
-      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
-    }));
+    console.log(`Found ${snapshot.docs.length} attendance records for today`);
+    
+    const attendanceData = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to JS Date
+        timeIn: data.timeIn ? data.timeIn.toDate() : null,
+        timeOut: data.timeOut ? data.timeOut.toDate() : null,
+      };
+    });
+    
+    // Log data untuk debugging
+    console.log("Attendance data from Firestore:", attendanceData);
     
     // Store in cache with timestamp
     attendanceCache.set(today, attendanceData);

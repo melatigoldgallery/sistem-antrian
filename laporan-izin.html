@@ -230,7 +230,7 @@
               <div class="card-body">
                 <div class="report-controls">
                   <div class="row align-items-end mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                       <label for="monthSelector" class="form-label">Bulan</label>
                       <select id="monthSelector" class="form-select">
                         <option value="1">Januari</option>
@@ -247,13 +247,13 @@
                         <option value="12">Desember</option>
                       </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                       <label for="yearSelector" class="form-label">Tahun</label>
                       <select id="yearSelector" class="form-select">
                         <!-- Will be populated with JavaScript -->
                       </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                       <label for="replacementTypeFilter" class="form-label">Jenis Pengganti</label>
                       <select id="replacementTypeFilter" class="form-select">
                         <option value="all">Semua Jenis</option>
@@ -262,12 +262,14 @@
                       </select>
                     </div>
                   </div>
+                  <!-- Add this button next to the Generate Laporan button -->
                   <div class="row">
-                    <div class="d-flex justify-content-end align-items-end">
+                    <div class="d-flex justify-content-start align-items-end">
                       <button id="generateReportBtn" class="btn btn-primary">
                         <i class="fas fa-sync-alt me-2"></i>
                         Generate Laporan
                       </button>
+                      
                     </div>
                   </div>
                 </div>
@@ -323,7 +325,11 @@
             </div>
 
             <!-- Export & Delete Buttons -->
-            <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important">
+            <div
+              class="deleteIzin d-flex justify-content-between mb-3"
+              id="actionButtons"
+              style="display: none !important"
+            >
               <div>
                 <button id="exportExcelBtn" class="btn btn-success me-2">
                   <i class="fas fa-file-excel me-2"></i>
@@ -365,6 +371,10 @@
                       <li><a class="dropdown-item" href="#" data-replacement-filter="belum">Belum Diganti</a></li>
                     </ul>
                   </div>
+                  <button id="refreshData" class="btn btn-outline-info ms-2">
+                        <i class="fas fa-redo-alt me-2"></i>
+                        Refresh Data
+                      </button>
                 </div>
               </div>
               <div class="card-body">
@@ -383,7 +393,7 @@
                         <th>Status Ganti</th>
                       </tr>
                     </thead>
-                                      
+
                     <tbody id="leaveReportList"></tbody>
                   </table>
                   <!-- Add this to laporan-izin.html after the table -->

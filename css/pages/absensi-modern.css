@@ -93,7 +93,10 @@ body {
   color: #6c757d;
   font-weight: bold;
 }
-
+ /* PERBAIKAN: Pastikan konten mobile ditampilkan */
+ .dashboard-mobile-content {
+  display: none !important;
+}
 /* All media queries grouped together at the end of the file */
 @media (max-width: 992px) {
   .shift-info-container {
@@ -105,78 +108,72 @@ body {
   }
 }
 
-/* Perbaikan untuk memastikan menu sidebar bisa diklik pada mobile */
+/* Reset dan perbaikan untuk sidebar mobile */
 @media (max-width: 768px) {
-  /* Pastikan sidebar dan elemen-elemennya bisa menerima event klik */
-  .sidebar,
-  .sidebar * {
-    pointer-events: auto;
-  }
-
-  /* Pastikan overlay juga bisa menerima event klik */
-  .sidebar-overlay {
-    pointer-events: auto;
-  }
-
-  /* Tingkatkan z-index untuk nav-link agar berada di atas overlay */
-  .sidebar .nav-link,
-  .sidebar .collapse .nav-link {
+  /* Base layout untuk mobile */
+  .app-container {
     position: relative;
-    z-index: 1051; /* Pastikan z-index lebih tinggi dari sidebar */
+    overflow-x: hidden;
   }
-
-  /* Pastikan sidebar memiliki z-index yang tepat */
+  
+  /* Sidebar styling untuk mobile */
   .sidebar {
-    z-index: 1050; /* Tingkatkan z-index agar di atas overlay */
-  }
-
-  /* Pastikan submenu tetap terlihat dan bisa diklik */
-  .sidebar .collapse.show {
-    display: block !important;
-  }
-
-  /* Pastikan submenu tidak tertutup oleh elemen lain */
-  .sidebar .collapse {
-    position: relative;
-    z-index: 1052;
-  }
-}
-/* Perbaikan untuk memastikan menu sidebar bisa diklik pada mobile */
-@media (max-width: 768px) {
-  /* Perbaikan sidebar untuk mobile */
-  .sidebar {
-    transform: translateX(-100%);
-    width: 280px;
-    z-index: 1050;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100%;
+    transform: translateX(-100%); /* Sembunyikan sidebar secara default */
     transition: transform 0.3s ease;
+    z-index: 1050;
+    overflow-y: auto;
   }
   
   /* Ketika sidebar aktif */
   .app-container.sidebar-active .sidebar {
-    transform: translateX(0);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    transform: translateX(0); /* Tampilkan sidebar */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Main content selalu penuh di mobile */
+  .main-content {
+    margin-left: 0 !important;
+    width: 100%;
+    transition: transform 0.3s ease;
   }
   
   /* Overlay untuk sidebar */
   .sidebar-overlay {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1040;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
   
+  /* Tampilkan overlay ketika sidebar aktif */
   .app-container.sidebar-active .sidebar-overlay {
     display: block;
+    opacity: 1;
   }
   
-  /* Pastikan main content selalu penuh di mobile */
-  .main-content {
-    margin-left: 0 !important;
-    width: 100%;
+  /* Pastikan semua elemen di sidebar bisa diklik */
+  .sidebar, 
+  .sidebar *, 
+  .sidebar .nav-link, 
+  .sidebar .collapse, 
+  .sidebar .collapse .nav-link {
+    pointer-events: auto !important;
+  }
+  
+  /* Pastikan submenu memiliki z-index yang tepat */
+  .sidebar .collapse {
+    z-index: 1051;
   }
   
   /* Pastikan top nav sesuai */
@@ -185,22 +182,178 @@ body {
     width: 100%;
   }
   
-  /* Perbaikan untuk menu dan submenu */
-  .sidebar .nav-link {
-    padding: 12px 15px;
+  /* Pastikan hamburger button terlihat */
+  .hamburger {
+    display: flex !important;
+    cursor: pointer;
   }
   
-  .sidebar .collapse {
-    background-color: rgba(0, 0, 0, 0.1);
+  /* Sembunyikan toggle desktop */
+  .menu-toggle {
+    display: none !important;
   }
   
-  /* Pastikan tombol close sidebar terlihat */
-  .sidebar-close {
-    display: block;
+  /* Pastikan sidebar-collapsed tidak berpengaruh di mobile */
+  .app-container.sidebar-collapsed .sidebar {
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+  }
+  
+  .app-container.sidebar-collapsed.sidebar-active .sidebar {
+    transform: translateX(0);
+  }
+  
+  .app-container.sidebar-collapsed .main-content {
+    margin-left: 0;
+  }
+   /* PERBAIKAN: Pastikan konten mobile ditampilkan */
+   .dashboard-mobile-content {
+    display: block !important;
+  }
+  
+  /* PERBAIKAN: Pastikan konten desktop disembunyikan */
+  .dashboard-desktop-content {
+    display: none !important;
+  }
+  
+ /* Perbaikan: Menggunakan selector atribut untuk menu Buyback dan Antrian */
+.sidebar-menu .nav-item a[href="buyback.html"], /* Buyback */
+.sidebar-menu .nav-item a[data-bs-target="#antrianSubmenu"] /* Antrian */ {
+  display: none;
+}
+  
+  /* Sembunyikan link absensi bagian kehadiran, laporan kehadiran dan supervisor */
+  #absensiSubmenu .nav-item:nth-child(1),
+  #absensiSubmenu .nav-item:nth-child(3),
+  #absensiSubmenu .nav-item:nth-child(5) {
+    display: none;
+  }
+    /* Styling untuk tampilan penjelasan aplikasi di mobile */
+.app-intro-container {
+  padding: 1.5rem;
+}
+
+    #exportExcelBtn, 
+    #exportPdfBtn, 
+    #deleteDataBtn {
+      display: none !important;
+    }
+
+.app-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #f8f9fa;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.app-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.2rem;
+}
+
+.app-subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.app-intro-card {
+  margin-bottom: 1.5rem;
+}
+
+.app-intro-card .card {
+  border-radius: 12px;
+  border: none;
+}
+
+.app-intro-card .card-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.app-intro-card .card-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #555;
+}
+
+.feature-card {
+  border-radius: 12px;
+  border: none;
+  transition: transform 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.feature-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.feature-text {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.app-action .btn {
+  border-radius: 30px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(13, 110, 253, 0.25);
+}
+
+.app-version {
+  font-size: 0.8rem;
+}
+
+/* Animasi untuk feature cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
+.feature-card {
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
+}
 
+.feature-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.feature-card:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.feature-card:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+}
 
 @media (max-width: 576px) {
   .scan-type-selector,

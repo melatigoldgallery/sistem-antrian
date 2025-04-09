@@ -10,73 +10,88 @@ import {
   limit,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
-import { attendanceCache } from "./attendance-service.js";
+import { 
+  attendanceCache, 
+  shouldUpdateCache as shouldUpdateAttendanceCache, 
+  updateCacheTimestamp as updateAttendanceCacheTimestamp,
+  syncCacheWithReport
+} from "./attendance-service.js";
+import { leaveCache, leaveMonthCache, updateCacheTimestamp } from "./leave-service.js";
 
-// Get attendance by date range with pagination
-export async function getAttendanceByDateRange(startDate, endDate, lastDoc = null, itemsPerPage = 20) {
+// Perbarui fungsi untuk menyertakan filter shift
+export async function getAttendanceByDateRange(startDate, endDate, lastDoc = null, itemLimit = 1000, shift = null) {
   try {
-    console.log("Fetching attendance for date range:", startDate, "to", endDate);
+    // Konversi string tanggal ke objek Date
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     
-    const attendanceCollection = collection(db, "attendance");
-    let q;
+    // Set waktu ke 00:00:00 untuk tanggal mulai
+    start.setHours(0, 0, 0, 0);
     
-    if (lastDoc) {
-      q = query(
-        attendanceCollection,
-        where("date", ">=", startDate),
-        where("date", "<=", endDate),
-        orderBy("date", "desc"),
-        orderBy("timeIn", "desc"),
-        startAfter(lastDoc),
-        limit(itemsPerPage)
-      );
-    } else {
-      q = query(
-        attendanceCollection,
-        where("date", ">=", startDate),
-        where("date", "<=", endDate),
-        orderBy("date", "desc"),
-        orderBy("timeIn", "desc"),
-        limit(itemsPerPage)
-      );
+    // Set waktu ke 23:59:59 untuk tanggal akhir
+    end.setHours(23, 59, 59, 999);
+    
+    // Buat referensi ke koleksi attendance
+    const attendanceRef = collection(db, "attendance");
+    
+    // Buat query dengan filter tanggal
+    let queryConstraints = [
+      where("date", ">=", startDate),
+      where("date", "<=", endDate),
+      orderBy("date", "desc"),
+      orderBy("timeIn", "desc"),
+      limit(itemLimit)
+    ];
+    
+    // Jika shift dipilih (bukan "all" atau null), tambahkan filter shift
+    if (shift && shift !== "all") {
+      // Karena keterbatasan Firestore, kita tidak bisa menggabungkan where dengan orderBy pada field yang sama
+      // Jadi kita akan filter hasil query secara manual
+      console.log(`Filtering by shift: ${shift}`);
     }
-
+    
+    // Buat query
+    let q = query(attendanceRef, ...queryConstraints);
+    
+    // Ambil data
     const snapshot = await getDocs(q);
     
     console.log(`Found ${snapshot.docs.length} attendance records`);
     
-    const attendanceRecords = snapshot.docs.map((doc) => {
+    // Konversi dokumen ke array objek
+    let attendanceRecords = snapshot.docs.map((doc) => {
       const data = doc.data();
       
-      // Log data untuk debugging
-      console.log("Raw record data:", {
-        id: doc.id,
-        date: data.date,
-        timeIn: data.timeIn ? data.timeIn.toDate() : null
-      });
+      // Konversi timestamp ke objek Date
+      const timeIn = data.timeIn ? new Date(data.timeIn.seconds * 1000) : null;
+      const timeOut = data.timeOut ? new Date(data.timeOut.seconds * 1000) : null;
       
-      // Pastikan tanggal yang digunakan adalah tanggal dari Firestore
-      // JANGAN mengubah format tanggal di sini
       return {
         id: doc.id,
-        ...data,
-        // Convert Firestore Timestamp to JS Date
-        timeIn: data.timeIn ? data.timeIn.toDate() : null,
-        timeOut: data.timeOut ? data.timeOut.toDate() : null,
+        employeeId: data.employeeId,
+        name: data.name,
+        date: data.date,
+        timeIn: timeIn,
+        timeOut: timeOut,
+        type: data.type || "staff",
+        shift: data.shift || "morning",
+        status: data.status || "Tepat Waktu",
+        lateMinutes: data.lateMinutes || 0
       };
     });
     
-    // Determine if there are more records
-    const hasMore = attendanceRecords.length === itemsPerPage;
-    
-    // Get the last document for pagination
-    const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    // Filter berdasarkan shift jika diperlukan
+    if (shift && shift !== "all") {
+      attendanceRecords = attendanceRecords.filter(record => record.shift === shift);
+      console.log(`After shift filtering: ${attendanceRecords.length} records`);
+    }
     
     return {
-      attendanceRecords,
-      lastDoc: lastVisible,
-      hasMore
+      attendanceRecords: attendanceRecords,
+      lastDoc: null, // Tidak perlu lastDoc karena kita mengambil semua data
+      hasMore: false // Tidak perlu hasMore karena kita mengambil semua data
     };
+    
   } catch (error) {
     console.error("Error getting attendance by date range:", error);
     throw error;
@@ -84,11 +99,13 @@ export async function getAttendanceByDateRange(startDate, endDate, lastDoc = nul
 }
 
 
-// Delete attendance by date range
+
+// Modifikasi deleteAttendanceByDateRange untuk membersihkan cache
 export async function deleteAttendanceByDateRange(startDate, endDate) {
   try {
     console.log(`Deleting attendance records from ${startDate} to ${endDate}`);
     
+    // Kode yang sudah ada untuk menghapus dari Firestore
     const attendanceCollection = collection(db, "attendance");
     const q = query(
       attendanceCollection,
@@ -112,94 +129,181 @@ export async function deleteAttendanceByDateRange(startDate, endDate) {
     await Promise.all(deletePromises);
     console.log(`Successfully deleted ${snapshot.docs.length} records`);
     
+    // Bersihkan cache untuk rentang tanggal ini
+    const rangeCacheKey = `range_${startDate}_${endDate}`;
+    attendanceCache.delete(rangeCacheKey);
+    
+    // Bersihkan juga cache per tanggal
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const dateRange = getDatesInRange(start, end);
+    
+    for (const date of dateRange) {
+      const dateKey = formatDateToString(date);
+      attendanceCache.delete(dateKey);
+    }
+    
     return snapshot.docs.length; // Return number of deleted records
   } catch (error) {
     console.error("Error deleting attendance by date range:", error);
     throw error;
   }
 }
+// Fungsi helper untuk mendapatkan array tanggal dalam rentang
+function getDatesInRange(startDate, endDate) {
+  const dates = [];
+  let currentDate = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  
+  // Set waktu ke 00:00:00 untuk menghindari masalah perbandingan
+  currentDate.setHours(0, 0, 0, 0);
+  endDateObj.setHours(0, 0, 0, 0);
+  
+  while (currentDate <= endDateObj) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return dates;
+}
 
-   
-   // Get leave requests by month with pagination
-   export async function getLeaveRequestsByMonth(month, year, lastDoc = null, itemsPerPage = 20) {
-     try {
-       // Calculate start and end dates for the month
-       const startDate = new Date(year, month - 1, 1);
-       const endDate = new Date(year, month, 0); // Last day of month
-       
-       const leaveCollection = collection(db, "leaveRequests");
-       let q;
-       
-       if (lastDoc) {
-         // Query for multi-day leaves that overlap with the month
-         q = query(
-           leaveCollection,
-           where("month", "==", month),
-           where("year", "==", year),
-           orderBy("submitDate", "desc"),
-           startAfter(lastDoc),
-           limit(itemsPerPage)
-         );
-       } else {
-         q = query(
-           leaveCollection,
-           where("month", "==", month),
-           where("year", "==", year),
-           orderBy("submitDate", "desc"),
-           limit(itemsPerPage)
-         );
-       }
-       
-       const snapshot = await getDocs(q);
-       
-       const leaveRequests = snapshot.docs.map((doc) => {
-         const data = doc.data();
-         return {
-           id: doc.id,
-           ...data,
-           // Convert Firestore Timestamp to JS Date if needed
-           submitDate: data.submitDate instanceof Timestamp ? data.submitDate.toDate() : data.submitDate,
-           decisionDate: data.decisionDate instanceof Timestamp ? data.decisionDate.toDate() : data.decisionDate
-         };
-       });
-       
-       // Determine if there are more records
-       const hasMore = leaveRequests.length === itemsPerPage;
-       
-       // Get the last document for pagination
-       const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
-       
-       return {
-         leaveRequests,
-         lastDoc: lastVisible,
-         hasMore
-       };
-     } catch (error) {
-       console.error("Error getting leave requests by month:", error);
-       throw error;
-     }
-   }
-   
-   // Delete leave requests by month
-   export async function deleteLeaveRequestsByMonth(month, year) {
-     try {
-       const leaveCollection = collection(db, "leaveRequests");
-       const q = query(
-         leaveCollection,
-         where("month", "==", month),
-         where("year", "==", year)
-       );
-   
-       const snapshot = await getDocs(q);
-       
-       // Delete each document
-       const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
-       await Promise.all(deletePromises);
-       
-       return snapshot.docs.length; // Return number of deleted records
-     } catch (error) {
-       console.error("Error deleting leave requests by month:", error);
-       throw error;
-     }
-   }
-   
+// Fungsi helper untuk memformat tanggal ke string
+function formatDateToString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+// Get leave requests by month with pagination - UPDATED WITH CACHE INTEGRATION
+export async function getLeaveRequestsByMonth(month, year, lastDoc = null, itemsPerPage = 1000) {
+  try {
+    console.log("Fetching leave requests for month:", month, "year:", year);
+    
+    // Buat kunci cache
+    const cacheKey = `${month}_${year}`;
+    
+    // Cek apakah data ada di cache dan kita tidak sedang melakukan pagination
+    if (leaveMonthCache.has(cacheKey) && !lastDoc) {
+      console.log("Using cached leave data for month:", cacheKey);
+      const cachedData = leaveMonthCache.get(cacheKey);
+      return {
+        leaveRequests: cachedData.slice(0, itemsPerPage),
+        lastDoc: cachedData.length > itemsPerPage ? {} : null, // Dummy lastDoc if there's more data
+        hasMore: cachedData.length > itemsPerPage
+      };
+    }
+    
+    // Calculate start and end dates for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Last day of month
+    
+    const leaveCollection = collection(db, "leaveRequests");
+    let q;
+    
+    if (lastDoc) {
+      // Query for multi-day leaves that overlap with the month
+      q = query(
+        leaveCollection,
+        where("month", "==", month),
+        where("year", "==", year),
+        orderBy("submitDate", "desc"),
+        startAfter(lastDoc),
+        limit(itemsPerPage)
+      );
+    } else {
+      q = query(
+        leaveCollection,
+        where("month", "==", month),
+        where("year", "==", year),
+        orderBy("submitDate", "desc"),
+        limit(itemsPerPage)
+      );
+    }
+    
+    const snapshot = await getDocs(q);
+    
+    const leaveRequests = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to JS Date if needed
+        submitDate: data.submitDate instanceof Timestamp ? data.submitDate.toDate() : data.submitDate,
+        decisionDate: data.decisionDate instanceof Timestamp ? data.decisionDate.toDate() : data.decisionDate
+      };
+    });
+    
+    // Store in cache if this is the first page
+    if (!lastDoc) {
+      leaveMonthCache.set(cacheKey, [...leaveRequests]);
+      updateCacheTimestamp(cacheKey);
+      saveLeaveCacheToStorage(); // Simpan ke localStorage
+    } else if (leaveMonthCache.has(cacheKey)) {
+      // Append to existing cache
+      const existingData = leaveMonthCache.get(cacheKey);
+      leaveMonthCache.set(cacheKey, [...existingData, ...leaveRequests]);
+      updateCacheTimestamp(cacheKey);
+      saveLeaveCacheToStorage(); // Simpan ke localStorage
+    }
+    
+    // Determine if there are more records
+    const hasMore = leaveRequests.length === itemsPerPage;
+    
+    // Get the last document for pagination
+    const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    
+    return {
+      leaveRequests,
+      lastDoc: lastVisible,
+      hasMore
+    };
+  } catch (error) {
+    console.error("Error getting leave requests by month:", error);
+    
+    // Fallback to cache if available
+    const cacheKey = `${month}_${year}`;
+    if (leaveMonthCache.has(cacheKey)) {
+      console.log("Fallback to cached leave data due to error");
+      const cachedData = leaveMonthCache.get(cacheKey);
+      return {
+        leaveRequests: cachedData.slice(0, itemsPerPage),
+        lastDoc: null, // No pagination for fallback
+        hasMore: false
+      };
+    }
+    
+    throw error;
+  }
+}
+
+// Delete leave requests by month - UPDATED WITH CACHE INTEGRATION
+export async function deleteLeaveRequestsByMonth(month, year) {
+  try {
+    const leaveCollection = collection(db, "leaveRequests");
+    const q = query(
+      leaveCollection,
+      where("month", "==", month),
+      where("year", "==", year)
+    );
+
+    const snapshot = await getDocs(q);
+    
+    // Delete each document
+    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+    
+    // Hapus dari cache
+    const cacheKey = `${month}_${year}`;
+    leaveMonthCache.delete(cacheKey);
+    
+    // Simpan perubahan ke localStorage
+    saveLeaveCacheToStorage();
+    
+    return snapshot.docs.length; // Return number of deleted records
+  } catch (error) {
+    console.error("Error deleting leave requests by month:", error);
+    throw error;
+  }
+}

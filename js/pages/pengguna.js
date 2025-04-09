@@ -4,12 +4,14 @@ import {
   deleteEmployee, 
   updateEmployee, 
   getNextEmployeeId, 
-  getNextBarcode 
+  getNextBarcode,
+  refreshEmployeeCache
 } from '../services/employee-service.js';
 
 // Initialize data
 let employees = [];
 let currentUserId = null;
+let lastCacheRefresh = 0;
 
 // Fungsi untuk menghasilkan barcode
 function generateBarcode(barcodeValue, elementId) {
@@ -19,7 +21,7 @@ function generateBarcode(barcodeValue, elementId) {
       lineColor: "#000",
       width: 2,
       height: 50,
-      displayValue: false, // Ubah menjadi false untuk menghilangkan teks barcode
+      displayValue: false,
       fontSize: 12,
       margin: 5
     });
@@ -138,10 +140,17 @@ async function populateAutoFields() {
   }
 }
 
-// Load employees
-async function loadEmployees() {
+// Load employees with cache consideration
+async function loadEmployees(forceRefresh = false) {
   try {
-    employees = await getEmployees();
+    // Check if we need to force refresh based on time
+    const now = new Date().getTime();
+    if (now - lastCacheRefresh > 3600000) { // Refresh UI cache every hour
+      forceRefresh = true;
+      lastCacheRefresh = now;
+    }
+    
+    employees = await getEmployees(forceRefresh);
     updateStaffTable();
   } catch (error) {
     console.error("Error loading employees:", error);
@@ -543,6 +552,19 @@ function addNotificationStyles() {
   }
 }
 
+// Check cache status and display indicator
+function updateCacheStatusIndicator() {
+  const cacheTimestamp = localStorage.getItem('employees_cache_timestamp');
+  const cacheStatusElement = document.getElementById('cacheStatus');
+  
+  if (cacheStatusElement && cacheTimestamp) {
+    const now = new Date().getTime();
+    const cacheTime = parseInt(cacheTimestamp);
+    const cacheAge = now - cacheTime;
+    const hoursSinceUpdate = Math.floor(cacheAge / (1000 * 60 * 60));
+    
+  }
+}
 // Expose logout function to window object for HTML access
 window.handleLogout = function() {
   console.log("Logout clicked");
@@ -563,4 +585,9 @@ document.addEventListener("DOMContentLoaded", async function () {
   
   // Set up event listeners
   setupEventListeners();
+  // Update cache status indicator if it exists
+  updateCacheStatusIndicator();
+  
+  // Set interval to update cache status indicator every minute
+  setInterval(updateCacheStatusIndicator, 60000);
 });

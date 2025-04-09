@@ -23,7 +23,249 @@ let indonesianVoice = null;
 let soundEnabled = true;
 // Variabel global untuk menyimpan status ketersediaan audio
 let isOpeningAudioAvailable = true;
+// Tambahkan variabel global untuk mendeteksi scanner barcode
+let barcodeBuffer = '';
+let lastKeyTime = 0;
+let isBarcodeScanner = false;
+const SCANNER_CHARACTER_DELAY_THRESHOLD = 50; // Maksimum delay antar karakter (ms) untuk scanner
+const SCANNER_COMPLETE_DELAY = 500; // Waktu tunggu setelah input selesai (ms)
+let scannerTimeoutId = null;
+// Fungsi untuk mendeteksi dan memproses input dari scanner barcode
+// Fungsi untuk mendeteksi dan memproses input dari scanner barcode
+function setupBarcodeScanner() {
+  const barcodeInput = document.getElementById("barcodeInput");
+  
+  if (!barcodeInput) {
+    console.error("Barcode input element not found");
+    return;
+  }
+  
+  // Nonaktifkan paste untuk mencegah input manual dengan copy-paste
+  barcodeInput.addEventListener("paste", function(e) {
+    e.preventDefault();
+    showScanResult("error", "Gunakan scanner barcode! Paste tidak diizinkan.");
+    playNotificationSound('error');
+  });
+  
+  // Tambahkan event listener untuk keydown untuk mendeteksi scanner
+  barcodeInput.addEventListener("keydown", function(e) {
+    const currentTime = new Date().getTime();
+    
+    // Jika ini adalah karakter pertama atau jeda antar karakter sangat cepat (tipikal scanner)
+    if (barcodeBuffer === '' || (currentTime - lastKeyTime) < SCANNER_CHARACTER_DELAY_THRESHOLD) {
+      // Kemungkinan ini adalah scanner barcode
+      isBarcodeScanner = true;
+    } else if ((currentTime - lastKeyTime) > SCANNER_CHARACTER_DELAY_THRESHOLD) {
+      // Jeda terlalu lama untuk scanner, kemungkinan input manual
+      isBarcodeScanner = false;
+    }
+    
+    // Update waktu terakhir
+    lastKeyTime = currentTime;
+    
+    // Simpan status scanner sebagai atribut data
+    this.dataset.isScanner = isBarcodeScanner ? "true" : "false";
+    
+    // Clear timeout sebelumnya jika ada
+    if (scannerTimeoutId) {
+      clearTimeout(scannerTimeoutId);
+    }
+    
+    // Set timeout baru untuk reset status scanner setelah beberapa waktu
+    scannerTimeoutId = setTimeout(function() {
+      isBarcodeScanner = false;
+      barcodeInput.dataset.isScanner = "false";
+      
+      // Jika ada input tapi tidak ada Enter, kemungkinan input manual
+      if (barcodeInput.value.length > 0) {
+        showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
+        playNotificationSound('error');
+        barcodeInput.value = "";
+      }
+    }, SCANNER_COMPLETE_DELAY);
+  });
+  
+  console.log("Barcode scanner detection setup complete");
+}
+// Modifikasi event listener untuk keypress pada barcodeInput
+function setupBarcodeInputKeypress() {
+  const barcodeInput = document.getElementById("barcodeInput");
+  if (!barcodeInput) return;
+  
+  // Hapus event listener yang mungkin sudah ada
+  barcodeInput.removeEventListener("keypress", handleKeyPress);
+  
+  // Tambahkan event listener baru
+  barcodeInput.addEventListener("keypress", async function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      // Cek apakah input berasal dari scanner
+      if (this.dataset.isScanner === "true") {
+        // Simpan nilai barcode sebelum diproses
+        const barcode = this.value.trim();
+        
+        // Reset input
+        this.value = "";
+        
+        // Proses barcode dari scanner
+        await processScannedBarcode(barcode);
+      } else {
+        // Tampilkan pesan error untuk input manual
+        showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
+        playNotificationSound('error');
+        this.value = "";
+      }
+      
+      // Reset status scanner
+      isBarcodeScanner = false;
+      this.dataset.isScanner = "false";
+    }
+  });
+}
 
+
+// Fungsi untuk memproses barcode yang di-scan
+async function processScannedBarcode(barcode) {
+  if (!barcode) {
+    showScanResult("error", "Barcode tidak boleh kosong!");
+    playNotificationSound('error');
+    return;
+  }
+  
+  console.log("Processing scanned barcode:", barcode);
+  
+  try {
+    // Check if employee exists in cache first to reduce Firestore reads
+    let employee = employeeCache.get(barcode);
+    
+    // If not in cache, fetch from Firestore
+    if (!employee) {
+      employee = await findEmployeeByBarcode(barcode);
+      
+      // Add to cache if found
+      if (employee && employee.barcode) {
+        employeeCache.set(employee.barcode, employee);
+      }
+    }
+
+    if (!employee) {
+      showScanResult("error", "Barcode tidak valid!");
+      playNotificationSound('not-found');
+      return;
+    }
+
+    // Get scan type (in/out)
+    const scanType = document.querySelector('input[name="scanType"]:checked').value;
+    
+    // Get selected shift
+    const selectedShift = document.querySelector('input[name="shiftOption"]:checked').value;
+
+    // Current time
+    const now = new Date();
+    const timeString = now.toTimeString().split(" ")[0];
+    
+    // PERBAIKAN: Gunakan tanggal dari timestamp untuk konsistensi
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    console.log("Today's date for attendance (from timestamp):", today);
+    console.log("Current time:", now);
+
+    if (scanType === "in") {
+      // Check if already checked in
+      const existingRecord = attendanceRecords.find(
+        (record) => record.employeeId === employee.employeeId && record.date === today
+      );
+
+      if (existingRecord && existingRecord.timeIn) {
+        showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
+        playNotificationSound('already-in');
+        return;
+      }
+
+      // Use employee's default type and shift from their profile
+      const employeeType = employee.type || "staff";
+      const shift = selectedShift;
+
+      // Check if late based on employee type and shift
+      const isLate = checkIfLate(timeString, employeeType, shift);
+
+      // Calculate late minutes if employee is late
+      let lateMinutes = 0;
+      if (isLate) {
+        const currentTime = new Date(`1970-01-01T${timeString}`);
+        const thresholdTime = getThresholdTime(employeeType, shift);
+        lateMinutes = Math.floor((currentTime - thresholdTime) / (1000 * 60));
+      }
+
+      // Record attendance
+      const attendance = {
+        employeeId: employee.employeeId,
+        name: employee.name,
+        type: employeeType,
+        shift: shift,
+        timeIn: now,
+        status: isLate ? "Terlambat" : "Tepat Waktu",
+        lateMinutes: isLate ? lateMinutes : 0,
+        date: today,
+      };
+
+      console.log("Saving attendance record:", attendance);
+      await recordAttendance(attendance);
+
+      showScanResult(
+        "success",
+        `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
+          isLate ? `Terlambat ${lateMinutes} menit` : "Tepat Waktu"
+        }`
+      );
+      
+      // Play notification sound based on status
+      if (isLate) {
+        playNotificationSound('late');
+      } else {
+        playNotificationSound('success-in');
+      }
+
+      // Reload attendance data
+      await loadTodayAttendance();
+    } else {
+      // Scan out logic
+      const existingRecord = attendanceRecords.find(
+        (record) => record.employeeId === employee.employeeId && record.date === today
+      );
+
+      if (!existingRecord) {
+        showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
+        playNotificationSound('error');
+        return;
+      }
+
+      if (existingRecord.timeOut) {
+        showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
+        playNotificationSound('already-out');
+        return;
+      }
+
+      // Update attendance with checkout time
+      console.log("Updating attendance record with checkout time:", existingRecord.id, now);
+      await updateAttendanceOut(existingRecord.id, now);
+
+      showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
+      playNotificationSound('success-out');
+
+      // Reload attendance data
+      await loadTodayAttendance();
+    }
+  } catch (error) {
+    console.error("Error scanning barcode:", error);
+    showScanResult("error", "Terjadi kesalahan saat memproses barcode");
+    playNotificationSound('error');
+  }
+}
 // Fungsi untuk memeriksa ketersediaan file audio
 function checkAudioAvailability(audioPath) {
   return new Promise((resolve, reject) => {
@@ -80,7 +322,7 @@ function playNotificationSound(type) {
 
     // Set volume dan kecepatan untuk kejelasan yang lebih baik
     utterance.volume = 1; // 0 to 1
-    utterance.rate = 0.8; // Sedikit lebih lambat untuk kejelasan
+    utterance.rate = 1.1; // Sedikit lebih lambat untuk kejelasan
     utterance.pitch = 1.1; // Sedikit lebih tinggi untuk kejelasan
 
     // Gunakan suara Indonesia yang telah dimuat
@@ -94,13 +336,13 @@ function playNotificationSound(type) {
         utterance.text = "Absensi berhasil";
         break;
       case "success-out":
-        utterance.text = "Berhasil scen pulang";
+        utterance.text = "Berhasil absen pulang";
         break;
       case "already-in":
-        utterance.text = "Kamu sudah scen";
+        utterance.text = "Kamu sudah absen";
         break;
       case "already-out":
-        utterance.text = "Kamu sudah scen pulang";
+        utterance.text = "Kamu sudah absen pulang";
         break;
       case "late":
         utterance.text = "Kamu terlambat";
@@ -258,7 +500,13 @@ function toggleSound() {
 
 async function processBarcode() {
   const barcode = document.getElementById("barcodeInput").value.trim();
-
+ // Tampilkan pesan error untuk input manual
+ showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
+ playNotificationSound('error');
+ 
+ // Clear input
+ document.getElementById("barcodeInput").value = "";
+ document.getElementById("barcodeInput").focus();
   if (!barcode) {
     showScanResult("error", "Barcode tidak boleh kosong!");
     playNotificationSound('error');
@@ -460,9 +708,43 @@ function updateDateInfo() {
 }
 
 // Modifikasi fungsi updateStats untuk memastikan jumlah izin ditampilkan dengan benar
+// Modifikasi fungsi updateStats untuk memastikan jumlah izin ditampilkan dengan benar
 function updateStats() {
-  const today = new Date().toISOString().split("T")[0];
-  const todayRecords = attendanceRecords.filter((record) => record.date === today);
+  // Gunakan fungsi getLocalDateString untuk konsistensi
+  const today = getLocalDateString();
+  console.log("Today's date for updateStats:", today);
+  console.log("All attendance records:", attendanceRecords);
+  
+  // Log format tanggal untuk debugging
+  attendanceRecords.forEach(record => {
+    console.log(`Record date: ${record.date}, type: ${typeof record.date}`);
+  });
+  
+  // Filter dengan pendekatan yang lebih fleksibel
+  const todayRecords = attendanceRecords.filter(record => {
+    // Jika record.date adalah string, bandingkan langsung
+    if (typeof record.date === 'string') {
+      const result = record.date === today;
+      console.log(`Comparing string dates: ${record.date} === ${today} => ${result}`);
+      return result;
+    }
+    
+    // Jika record.date adalah Date, konversi ke string format YYYY-MM-DD
+    if (record.date instanceof Date) {
+      const recordDateStr = `${record.date.getFullYear()}-${String(record.date.getMonth() + 1).padStart(2, '0')}-${String(record.date.getDate()).padStart(2, '0')}`;
+      const result = recordDateStr === today;
+      console.log(`Comparing date objects: ${recordDateStr} === ${today} => ${result}`);
+      return result;
+    }
+    
+    // Fallback: coba konversi ke string dan bandingkan
+    const recordDateStr = String(record.date);
+    const result = recordDateStr === today;
+    console.log(`Fallback comparison: ${recordDateStr} === ${today} => ${result}`);
+    return result;
+  });
+  
+  console.log("Filtered records for today:", todayRecords);
 
   const presentCount = todayRecords.length;
   const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
@@ -483,6 +765,7 @@ function updateStats() {
     leaveCount,
     totalLeaveRequests: leaveRequests.length,
     approvedLeaves: approvedLeaves.length,
+    todayRecordsLength: todayRecords.length
   });
 
   // Update UI elements if they exist
@@ -539,31 +822,40 @@ document.addEventListener("DOMContentLoaded", async () => {
       preloadAudio.preload = "auto";
       preloadAudio.load();
     }
-    // Setup barcode scanning
+    
+    // Setup barcode scanner detection
+    setupBarcodeScanner();
+    
+    // Setup barcode scanning (tetap pertahankan kode asli)
     const barcodeInput = document.getElementById("barcodeInput");
     if (barcodeInput) {
-      barcodeInput.addEventListener("keypress", async function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          await processBarcode();
-        }
-      });
+      // Event listener untuk keypress sudah ditangani di setupBarcodeScanner
     }
 
     const manualSubmit = document.getElementById("manualSubmit");
     if (manualSubmit) {
-      manualSubmit.addEventListener("click", async function () {
-        await processBarcode();
+      manualSubmit.addEventListener("click", async function() {
+        const barcodeInput = document.getElementById("barcodeInput");
+        // Cek apakah input berasal dari scanner
+        if (barcodeInput && barcodeInput.dataset.isScanner === "true") {
+          await processBarcode();
+        } else {
+          // Tampilkan pesan error untuk input manual
+          showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
+          playNotificationSound('error');
+          if (barcodeInput) barcodeInput.value = "";
+        }
       });
     }
 
     // Setup refresh scanner button
     const refreshScanner = document.getElementById("refreshScanner");
     if (refreshScanner) {
-      refreshScanner.addEventListener("click", function () {
+      refreshScanner.addEventListener("click", function() {
         if (barcodeInput) {
           barcodeInput.value = "";
           barcodeInput.focus();
+          barcodeInput.dataset.isScanner = "false";
         }
         const scanResult = document.getElementById("scanResult");
         if (scanResult) {

@@ -27,59 +27,132 @@ const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 const reportCache = new Map(); // Cache untuk laporan
 const cacheTimestamps = new Map(); // Untuk menyimpan waktu cache
 
+// Fungsi untuk mengompresi data sebelum disimpan ke localStorage
+function compressData(data) {
+  try {
+    // Konversi data ke string JSON
+    const jsonString = JSON.stringify(data);
+    
+    // Kompresi sederhana dengan menghapus spasi berlebih
+    return jsonString.replace(/\s+/g, '');
+  } catch (error) {
+    console.error("Error compressing data:", error);
+    return JSON.stringify(data);
+  }
+}
+
+// Fungsi untuk mendekompresi data dari localStorage
+function decompressData(compressedData) {
+  try {
+    // Parse string JSON yang telah dikompresi
+    return JSON.parse(compressedData);
+  } catch (error) {
+    console.error("Error decompressing data:", error);
+    return null;
+  }
+}
+// Fungsi untuk menyimpan cache laporan ke localStorage
+function saveReportCacheToStorage() {
+  try {
+    // Konversi Map ke objek untuk localStorage
+    const cacheObj = {};
+    for (const [key, value] of reportCache.entries()) {
+      cacheObj[key] = value;
+    }
+    
+    const timestampsObj = {};
+    for (const [key, value] of cacheTimestamps.entries()) {
+      timestampsObj[key] = value;
+    }
+    
+    // Kompresi data sebelum disimpan
+    localStorage.setItem('leaveReportCache', compressData(cacheObj));
+    localStorage.setItem('leaveReportTimestamps', compressData(timestampsObj));
+    
+    console.log("Leave report cache saved to localStorage (compressed)");
+  } catch (error) {
+    console.error("Error saving report cache to localStorage:", error);
+  }
+}
+
+// Fungsi untuk memuat cache laporan dari localStorage
+function loadReportCacheFromStorage() {
+  try {
+    const compressedCache = localStorage.getItem('leaveReportCache');
+    const compressedTimestamps = localStorage.getItem('leaveReportTimestamps');
+    
+    if (compressedCache && compressedTimestamps) {
+      // Dekompresi data
+      const cacheObj = decompressData(compressedCache);
+      const timestampsObj = decompressData(compressedTimestamps);
+      
+      if (cacheObj && timestampsObj) {
+        // Konversi objek kembali ke Map
+        reportCache.clear();
+        cacheTimestamps.clear();
+        
+        for (const [key, value] of Object.entries(cacheObj)) {
+          reportCache.set(key, value);
+        }
+        
+        for (const [key, value] of Object.entries(timestampsObj)) {
+          cacheTimestamps.set(key, value);
+        }
+        
+        console.log("Leave report cache loaded from localStorage (decompressed)");
+      }
+    }
+  } catch (error) {
+    console.error("Error loading report cache from localStorage:", error);
+  }
+}
+
+// Fungsi untuk membersihkan cache laporan yang sudah lama
+function cleanupOldReportCache() {
+  const now = Date.now();
+  const oneMonth = 30 * 24 * 60 * 60 * 1000; // 30 hari dalam milidetik
+  
+  // Hapus cache yang lebih dari 1 bulan
+  const keysToDelete = [];
+  
+  for (const [key, timestamp] of cacheTimestamps.entries()) {
+    if (now - timestamp > oneMonth) {
+      keysToDelete.push(key);
+    }
+  }
+  
+  keysToDelete.forEach(key => {
+    reportCache.delete(key);
+    cacheTimestamps.delete(key);
+    console.log(`Removed old report cache for ${key}`);
+  });
+  
+  // Simpan perubahan ke localStorage
+  saveReportCacheToStorage();
+}
+
+// Fungsi untuk memaksa refresh data
+function forceRefreshData() {
+  // Tampilkan konfirmasi
+  if (confirm("Apakah Anda yakin ingin menyegarkan data dari server?")) {
+    // Panggil generateReport dengan forceRefresh=true
+    generateReport(true);
+    
+    // Tampilkan pesan
+    showAlert("info", "Data sedang disegarkan dari server...");
+  }
+}
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
-  // Toggle sidebar collapse
-  const menuToggle = document.querySelector(".menu-toggle");
-  const appContainer = document.querySelector(".app-container");
-
-  if (menuToggle) {
-    menuToggle.addEventListener("click", function () {
-      appContainer.classList.toggle("sidebar-collapsed");
-    });
+   // Load cache dari localStorage
+  loadReportCacheFromStorage();
+    // Bersihkan cache lama
+    cleanupOldReportCache();
+      // Tambahkan event listener untuk tombol refresh jika ada
+  const refreshButton = document.getElementById('refreshData');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', forceRefreshData);
   }
-
-  // Vanilla JS dropdown toggle
-  const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
-
-  dropdownToggles.forEach((toggle) => {
-    toggle.addEventListener("click", function (e) {
-      e.preventDefault();
-
-      const targetId = this.getAttribute("data-bs-target") || this.getAttribute("href");
-      const target = document.querySelector(targetId);
-
-      // If sidebar is not collapsed, implement accordion behavior
-      if (!appContainer.classList.contains("sidebar-collapsed")) {
-        // Close all other dropdowns
-        dropdownToggles.forEach((otherToggle) => {
-          if (otherToggle !== toggle) {
-            const otherId = otherToggle.getAttribute("data-bs-target") || otherToggle.getAttribute("href");
-            const other = document.querySelector(otherId);
-
-            if (other && other.classList.contains("show")) {
-              other.classList.remove("show");
-              otherToggle.classList.add("collapsed");
-              otherToggle.setAttribute("aria-expanded", "false");
-            }
-          }
-        });
-      }
-
-      // Toggle this dropdown
-      if (target) {
-        if (target.classList.contains("show")) {
-          target.classList.remove("show");
-          toggle.classList.add("collapsed");
-          toggle.setAttribute("aria-expanded", "false");
-        } else {
-          target.classList.add("show");
-          toggle.classList.remove("collapsed");
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    });
-  });
 
   // Set current date and time
   function updateDateTime() {
@@ -144,7 +217,7 @@ function setDefaultMonthAndYear() {
 }
 
 
-// Modifikasi fungsi generateReport untuk memperbaiki filter jenis pengganti
+// Modifikasi fungsi generateReport untuk menggunakan cache dengan kompresi
 async function generateReport(forceRefresh = false) {
   try {
     const monthSelector = document.getElementById("monthSelector");
@@ -172,6 +245,13 @@ async function generateReport(forceRefresh = false) {
     if (!forceRefresh && reportCache.has(cacheKey) && cacheIsValid) {
       console.log(`Using cached data for ${month}/${year}, age: ${(now - cacheTime) / 1000} seconds`);
       
+      // Tampilkan indikator cache di UI
+      const cacheIndicator = document.getElementById('cacheIndicator');
+      if (cacheIndicator) {
+        cacheIndicator.textContent = 'Menggunakan data cache';
+        cacheIndicator.style.display = 'inline-block';
+      }
+      
       // Ambil data dari cache
       const cachedData = reportCache.get(cacheKey);
       currentLeaveData = cachedData.data;
@@ -188,7 +268,7 @@ async function generateReport(forceRefresh = false) {
       }
       
       showReportElements();
-
+      
       // Show/hide load more button
       const loadMoreBtn = document.getElementById("loadMoreBtn");
       const loadMoreContainer = document.getElementById("loadMoreContainer");
@@ -215,9 +295,6 @@ async function generateReport(forceRefresh = false) {
     lastVisibleDoc = result.lastDoc;
     hasMoreData = result.hasMore;
 
-    // Integrate with attendance data
-    await integrateAttendanceData(currentLeaveData, month, year);
-
     // Hide alert
     hideAlert();
 
@@ -230,6 +307,15 @@ async function generateReport(forceRefresh = false) {
     
     // Simpan timestamp cache
     cacheTimestamps.set(cacheKey, now);
+    
+    // Simpan cache ke localStorage
+    saveReportCacheToStorage();
+    
+    // Sembunyikan indikator cache di UI
+    const cacheIndicator = document.getElementById('cacheIndicator');
+    if (cacheIndicator) {
+      cacheIndicator.style.display = 'none';
+    }
 
     // Terapkan filter jenis pengganti jika dipilih
     if (selectedReplacementType !== "all") {
@@ -258,12 +344,47 @@ async function generateReport(forceRefresh = false) {
     document.getElementById("deleteYear").textContent = year;
   } catch (error) {
     console.error("Error generating report:", error);
-    showAlert(
-      "danger",
-      '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memuat data: ' + error.message
-    );
+    
+    // Coba gunakan cache sebagai fallback jika terjadi error
+    const cacheKey = `${month}_${year}`;
+    if (reportCache.has(cacheKey)) {
+      console.log(`Fallback to cached data for ${month}/${year} due to error`);
+      
+      // Tampilkan pesan error tapi tetap tampilkan data
+      showAlert("warning", "Terjadi kesalahan saat mengambil data terbaru. Menampilkan data dari cache.");
+      
+      // Tampilkan indikator cache di UI
+      const cacheIndicator = document.getElementById('cacheIndicator');
+      if (cacheIndicator) {
+        cacheIndicator.textContent = 'Menggunakan data cache (fallback)';
+        cacheIndicator.style.display = 'inline-block';
+      }
+      
+      // Ambil data dari cache
+      const cachedData = reportCache.get(cacheKey);
+      currentLeaveData = cachedData.data;
+      lastVisibleDoc = cachedData.lastDoc;
+      hasMoreData = cachedData.hasMore;
+      
+      // Terapkan filter jenis pengganti jika dipilih
+      if (selectedReplacementType !== "all") {
+        filterByReplacementType(selectedReplacementType);
+      } else {
+        // Update UI
+        updateSummaryCards();
+        populateLeaveTable();
+      }
+      
+      showReportElements();
+    } else {
+      // Tidak ada cache, tampilkan pesan error
+      showAlert("danger", '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memuat data: ' + error.message);
+      hideReportElements();
+      document.getElementById("noDataMessage").style.display = "block";
+    }
   }
 }
+
 // Tambahkan event listener untuk filter jenis pengganti
 function setupEventListeners() {
   // Generate report button
@@ -312,43 +433,6 @@ function setupEventListeners() {
         filterByReplacementType(this.value);
       }
     });
-  }
-}
-
-// Integrate attendance data with leave data
-async function integrateAttendanceData(leaveData, month, year) {
-  try {
-    // Format date range for the month
-    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-    const lastDay = new Date(year, month, 0).getDate();
-    const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
-    
-    // Get attendance data for the month
-    const attendanceResult = await getAttendanceByDateRange(startDate, endDate);
-    const attendanceData = attendanceResult.attendanceRecords || [];
-    
-    // Map attendance data by employee ID and date for quick lookup
-    const attendanceMap = new Map();
-    
-    attendanceData.forEach(record => {
-      const employeeId = record.employeeId;
-      const date = record.date;
-      
-      if (!attendanceMap.has(employeeId)) {
-        attendanceMap.set(employeeId, new Map());
-      }
-      
-      attendanceMap.get(employeeId).set(date, record);
-    });
-    
-    // Enhance leave data with attendance information if needed
-    // This is a placeholder for future integration
-    // For now, we're just returning the original data
-    
-    return leaveData;
-  } catch (error) {
-    console.error("Error integrating attendance data:", error);
-    return leaveData; // Return original data on error
   }
 }
 
