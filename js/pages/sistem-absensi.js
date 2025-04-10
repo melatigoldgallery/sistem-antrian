@@ -6,7 +6,7 @@ import {
   getTodayAttendance,
   getLocalDateString,
 } from "../services/attendance-service.js";
-import { getLeaveRequestsByDate } from "../services/leave-service.js";
+import { getLeaveRequestsByDate, getAllLeaveRequestsForDate, clearLeaveCacheForDate } from "../services/leave-service.js";
 
 // Initialize data
 let attendanceRecords = [];
@@ -649,38 +649,70 @@ async function processBarcode() {
 }
 
 
-// Modifikasi fungsi loadTodayAttendance untuk memastikan data izin diambil dengan benar
-async function loadTodayAttendance() {
+// Fungsi untuk memuat data kehadiran dan izin hari ini
+async function loadTodayAttendance(forceRefresh = false) {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    // Gunakan format tanggal yang konsisten
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`; // Format YYYY-MM-DD
+    
+    console.log("Today's date for attendance and leave:", today, "Force refresh:", forceRefresh);
+
+    // Tampilkan loading indicator
+    const leaveCountEl = document.getElementById("leaveCount");
+    if (leaveCountEl) {
+      leaveCountEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
 
     // Load attendance data
     attendanceRecords = await getTodayAttendance();
 
-    // Load leave requests for today - dengan penanganan error yang lebih baik
+    // PENTING: Gunakan fungsi baru yang mengambil SEMUA izin untuk hari ini
     try {
-      console.log("Fetching leave requests for today:", today);
-      leaveRequests = await getLeaveRequestsByDate(today);
-      console.log(`Loaded ${leaveRequests.length} leave requests for today:`, leaveRequests);
+      console.log("Fetching ALL leave requests for today using new function");
+      leaveRequests = await getAllLeaveRequestsForDate(today, forceRefresh);
+      
+      // Log untuk debugging
+      console.log("Total leave requests found:", leaveRequests.length);
+      console.log("Leave requests data:", leaveRequests);
+      
+      // Log detail setiap izin
+      leaveRequests.forEach((leave, index) => {
+        console.log(`Leave #${index + 1}:`, {
+          id: leave.id,
+          name: leave.name || leave.employeeId,
+          status: leave.status,
+          date: leave.leaveDate || leave.date,
+          isMultiDay: leave.leaveStartDate && leave.leaveEndDate && 
+                     leave.leaveStartDate !== leave.leaveEndDate
+        });
+      });
     } catch (leaveError) {
       console.error("Error loading leave requests:", leaveError);
-      leaveRequests = []; // Set to empty array on error
+      leaveRequests = [];
     }
 
     // Update UI
     updateStats();
 
-    // Pastikan data hari ini ada di cache
-    if (!attendanceCache.has(today)) {
-      attendanceCache.set(today, [...attendanceRecords]);
+    // Cache attendance data
+    attendanceCache.set(today, [...attendanceRecords]);
+    
+    // Tampilkan pesan jika refresh dipaksa
+    if (forceRefresh) {
+      showAlert("success", "Data berhasil diperbarui dari server", 3000);
     }
-
-    console.log(`Loaded ${attendanceRecords.length} attendance records for today`);
   } catch (error) {
-    console.error("Error loading attendance:", error);
-    showScanResult("error", "Gagal memuat data kehadiran");
+    console.error("Error loading today's attendance:", error);
+    showAlert("danger", "Gagal memuat data kehadiran: " + error.message, 5000);
   }
 }
+
+
+
 
 // Tambahkan fungsi untuk menampilkan informasi tanggal
 function updateDateInfo() {
@@ -702,17 +734,22 @@ function updateDateInfo() {
   }
 }
 
-// Modifikasi fungsi updateStats untuk memastikan jumlah izin ditampilkan dengan benar
-// Modifikasi fungsi updateStats untuk memastikan jumlah izin ditampilkan dengan benar
 function updateStats() {
-  // Gunakan fungsi getLocalDateString untuk konsistensi
-  const today = getLocalDateString();
+  // Gunakan format tanggal yang konsisten
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const today = `${year}-${month}-${day}`; // Format YYYY-MM-DD
+  
   console.log("Today's date for updateStats:", today);
   console.log("All attendance records:", attendanceRecords);
   
   // Log format tanggal untuk debugging
   attendanceRecords.forEach(record => {
-    console.log(`Record date: ${record.date}, type: ${typeof record.date}`);
+    if (record.date) {
+      console.log(`Record date: ${record.date}, type: ${typeof record.date}`);
+    }
   });
   
   // Filter dengan pendekatan yang lebih fleksibel
@@ -744,24 +781,37 @@ function updateStats() {
   const presentCount = todayRecords.length;
   const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
 
-  // Pastikan leaveRequests sudah diinisialisasi dan hanya hitung yang disetujui
-  const approvedLeaves = Array.isArray(leaveRequests)
-    ? leaveRequests.filter((leave) => {
-        const status = leave.status || "";
-        return ["approved", "disetujui", "Approved", "Disetujui"].includes(status.toLowerCase());
-      })
-    : [];
-
-  const leaveCount = approvedLeaves.length;
-
-  console.log("Updating stats:", {
-    presentCount,
-    lateCount,
-    leaveCount,
-    totalLeaveRequests: leaveRequests.length,
-    approvedLeaves: approvedLeaves.length,
-    todayRecordsLength: todayRecords.length
-  });
+  // Log untuk debugging
+  console.log("All leave requests:", leaveRequests);
+  
+   // PENTING: Hitung semua izin, termasuk yang pending
+   const leaveCount = Array.isArray(leaveRequests) ? leaveRequests.length : 0;
+  
+   console.log("Total leave count (including pending):", leaveCount);
+   
+   // Hitung berdasarkan status (untuk informasi tambahan)
+   const approvedLeaves = Array.isArray(leaveRequests) 
+     ? leaveRequests.filter(leave => 
+         leave.status === "Approved" || 
+         leave.status === "Disetujui"
+       ).length 
+     : 0;
+   
+   const pendingLeaves = Array.isArray(leaveRequests)
+     ? leaveRequests.filter(leave => 
+         !leave.status || 
+         leave.status === "Pending"
+       ).length
+     : 0;
+   
+   console.log("Approved leaves:", approvedLeaves);
+   console.log("Pending leaves:", pendingLeaves);
+   
+   // Update UI
+   const leaveCountEl = document.getElementById("leaveCount");
+   if (leaveCountEl) {
+     leaveCountEl.textContent = leaveCount;
+   }
 
   // Update UI elements if they exist
   const presentCountEl = document.getElementById("presentCount");
@@ -780,23 +830,12 @@ function updateStats() {
     console.warn("lateCount element not found");
   }
 
-  // Update izin count
-  const leaveCountEl = document.getElementById("leaveCount");
-  if (leaveCountEl) {
-    leaveCountEl.textContent = leaveCount;
-    console.log("Updated leaveCount:", leaveCount);
-  } else {
-    console.warn("leaveCount element not found in DOM");
-    // Try to find the element by other means
-    console.log(
-      "Available elements with 'count' in ID:",
-      Array.from(document.querySelectorAll('[id*="count"]')).map((el) => el.id)
-    );
-  }
-
   // Update tanggal absensi
   updateDateInfo();
 }
+
+
+
 
 // Inisialisasi event listeners saat DOM sudah siap
 document.addEventListener("DOMContentLoaded", async () => {
@@ -867,6 +906,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
+  // Tambahkan event listener untuk tombol refresh
+  const refreshBtn = document.getElementById("refreshLeaveData");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", function() {
+      // Tampilkan loading state
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      this.disabled = true;
+      
+      // Refresh data
+      loadTodayAttendance(true).finally(() => {
+        // Kembalikan tombol ke keadaan semula
+        this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
+        this.disabled = false;
+      });
+    });
+  }
 });
 
 
@@ -903,7 +958,7 @@ function getThresholdTime(employeeType, shift) {
       afternoon: new Date("1970-01-01T14:20:00"),
     },
     ob: {
-      morning: new Date("1970-01-01T07:15:00"),
+      morning: new Date("1970-01-01T07:20:00"),
       afternoon: new Date("1970-01-01T13:45:00"),
     },
   };

@@ -353,6 +353,98 @@ body {
   animation-delay: 0.5s;
 }
 
+/* css laporan izin mobile*/
+/* Perbaikan untuk card filter */
+.report-controls .row {
+  margin-bottom: 0.5rem !important;
+}
+
+.report-controls .col-md-2 {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+/* Perbaikan untuk tombol generate laporan */
+.report-controls .d-flex {
+  justify-content: center !important;
+  margin-top: 10px;
+}
+
+#generateReportBtn {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Perbaikan untuk card header dengan tombol filter dan refresh */
+.card-header {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.card-header h2 {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.card-actions {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+/* Perbaikan untuk tombol filter dan refresh */
+.card-actions .btn-group {
+  margin-right: 5px;
+}
+
+#refreshData {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Perbaikan untuk tabel */
+.table-container {
+  max-height: 400px;
+}
+
+#leaveReportTable th,
+#leaveReportTable td {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  padding: 0.5rem;
+}
+
+/* Perbaikan untuk tombol load more */
+#loadMoreBtn {
+  width: 100%;
+}
+
+/* Perbaikan untuk summary cards */
+#summaryCards .col-md-3 {
+  width: 50%;
+  padding: 5px;
+}
+
+#summaryCards .stat-card {
+  padding: 10px;
+}
+
+#summaryCards .stat-card-icon {
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  margin-right: 10px;
+}
+
+#summaryCards .stat-card-info h3 {
+  font-size: 1.4rem;
+}
+
+#summaryCards .stat-card-info p {
+  font-size: 0.8rem;
+}
+
 }
 
 @media (max-width: 576px) {

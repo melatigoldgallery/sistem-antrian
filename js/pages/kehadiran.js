@@ -735,13 +735,7 @@ async function generateReport() {
     // Update global data
     currentAttendanceData = attendanceData;
     filteredData = [...attendanceData];
-    
-    // Get leave count for the date range
-    const leaveCount = await getLeaveCountByDateRange(startDate, endDate);
-    
-    // Store leave count in a global variable for use in updateSummaryCards
-    window.currentLeaveCount = leaveCount;
-    
+   
     // Update UI
     if (attendanceData.length > 0) {
       updateSummaryCards();
@@ -769,61 +763,6 @@ async function generateReport() {
     showAlert("danger", `<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan: ${error.message}`);
     // Pastikan tombol aksi tersembunyi jika terjadi error
     hideActionButtons();
-  }
-}
-
-
-
-// Fungsi untuk mengambil data izin berdasarkan rentang tanggal
-async function getLeaveCountByDateRange(startDate, endDate) {
-  try {
-    // Cek apakah data izin ada di cache dan masih valid
-    const cacheKey = `leave_${startDate}_${endDate}`;
-    if (attendanceDataCacheMeta.has(cacheKey) && !shouldUpdateReportCache(cacheKey)) {
-      console.log("Using cached leave count data");
-      return JSON.parse(localStorage.getItem(cacheKey) || "0");
-    }
-
-    // Import fungsi dari report-service.js
-    const { getLeaveRequestsByMonth } = await import("../services/report-service.js");
-
-    // Konversi string tanggal ke objek Date
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    // Hitung bulan dan tahun untuk rentang tanggal
-    const startMonth = start.getMonth() + 1; // getMonth() returns 0-11
-    const startYear = start.getFullYear();
-    const endMonth = end.getMonth() + 1;
-    const endYear = end.getFullYear();
-
-    let totalLeaveCount = 0;
-
-    // Jika rentang tanggal dalam bulan yang sama
-    if (startMonth === endMonth && startYear === endYear) {
-      const result = await getLeaveRequestsByMonth(startMonth, startYear);
-      totalLeaveCount = result.leaveRequests.length;
-    } else {
-      // Jika rentang tanggal mencakup beberapa bulan
-      for (let year = startYear; year <= endYear; year++) {
-        const monthStart = year === startYear ? startMonth : 1;
-        const monthEnd = year === endYear ? endMonth : 12;
-
-        for (let month = monthStart; month <= monthEnd; month++) {
-          const result = await getLeaveRequestsByMonth(month, year);
-          totalLeaveCount += result.leaveRequests.length;
-        }
-      }
-    }
-
-    // Simpan di localStorage dengan timestamp
-    localStorage.setItem(cacheKey, totalLeaveCount.toString());
-    updateReportCacheTimestamp(cacheKey);
-
-    return totalLeaveCount;
-  } catch (error) {
-    console.error("Error getting leave count:", error);
-    return 0;
   }
 }
 
@@ -997,9 +936,6 @@ function updateSummaryCards() {
   const onTimeCount = filteredData.filter((record) => record.status === "Tepat Waktu").length;
   const lateCount = filteredData.filter((record) => record.status === "Terlambat").length;
 
-  // Gunakan data izin yang telah diambil sebelumnya
-  const leaveCount = window.currentLeaveCount || 0;
-
   // Update UI with null checks
   const totalAttendanceEl = document.getElementById("totalAttendance");
   if (totalAttendanceEl) totalAttendanceEl.textContent = totalAttendance;
@@ -1009,9 +945,6 @@ function updateSummaryCards() {
 
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) lateCountEl.textContent = lateCount;
-
-  const leaveCountEl = document.getElementById("leaveCount");
-  if (leaveCountEl) leaveCountEl.textContent = leaveCount;
 }
 
 // Filter attendance data - diperbarui untuk dropdown

@@ -21,7 +21,8 @@ let leaveListenerUnsubscribe = null;
 export const leaveCache = new Map();
 export const leaveMonthCache = new Map();
 export const cacheMeta = new Map(); // Untuk menyimpan metadata cache (timestamp)
-
+// Tambahkan pendingLeaveCache yang hilang
+export const pendingLeaveCache = new Map(); // Cache untuk permintaan izin yang tertunda
 // Tambahkan fungsi untuk mendengarkan perubahan data izin
 export function listenToLeaveRequests(month, year, callback) {
   try {
@@ -116,6 +117,125 @@ export function listenToLeaveRequests(month, year, callback) {
     return null;
   }
 }
+/**
+ * Mendapatkan semua izin untuk tanggal tertentu, termasuk yang pending
+ * @param {Date|string} date - Tanggal yang ingin dicari
+ * @param {boolean} forceRefresh - Paksa refresh dari server
+ * @returns {Promise<Array>} - Array berisi data izin
+ */
+export async function getAllLeaveRequestsForDate(date, forceRefresh = false) {
+  try {
+    // Pastikan format tanggal konsisten (YYYY-MM-DD)
+    let formattedDate = date;
+    if (date instanceof Date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    }
+    
+    console.log("Getting ALL leave requests for date:", formattedDate, "Force refresh:", forceRefresh);
+    
+    // Kunci cache khusus untuk fungsi ini
+    const cacheKey = `all_${formattedDate}`;
+    
+    // Check if data is in cache and we're not forcing a refresh
+    if (!forceRefresh && leaveCache.has(cacheKey)) {
+      console.log("Using cached ALL leave data for date:", formattedDate);
+      return leaveCache.get(cacheKey);
+    }
+    
+    // Ambil semua data izin
+    const allLeaveRequests = await getAllLeaveRequests(forceRefresh);
+    console.log(`Retrieved ${allLeaveRequests.length} total leave requests`);
+    
+    // Konversi tanggal yang diminta ke objek Date untuk perbandingan
+    const requestedDate = new Date(formattedDate);
+    requestedDate.setHours(0, 0, 0, 0); // Normalisasi waktu
+    
+    // Filter izin untuk tanggal yang diminta
+    const filteredLeaves = allLeaveRequests.filter(leave => {
+      // Cek izin satu hari
+      if (leave.leaveDate || leave.date) {
+        let leaveDate = null;
+        
+        // Ekstrak tanggal dari berbagai format
+        if (leave.leaveDate) {
+          if (leave.leaveDate instanceof Timestamp) {
+            leaveDate = leave.leaveDate.toDate();
+          } else if (typeof leave.leaveDate === 'string') {
+            leaveDate = new Date(leave.leaveDate);
+          } else if (leave.leaveDate instanceof Date) {
+            leaveDate = leave.leaveDate;
+          }
+        } else if (leave.date) {
+          if (leave.date instanceof Timestamp) {
+            leaveDate = leave.date.toDate();
+          } else if (typeof leave.date === 'string') {
+            leaveDate = new Date(leave.date);
+          } else if (leave.date instanceof Date) {
+            leaveDate = leave.date;
+          }
+        }
+        
+        // Jika tanggal valid, bandingkan dengan tanggal yang diminta
+        if (leaveDate && !isNaN(leaveDate.getTime())) {
+          leaveDate.setHours(0, 0, 0, 0); // Normalisasi waktu
+          if (leaveDate.getTime() === requestedDate.getTime()) {
+            return true;
+          }
+        }
+      }
+      
+      // Cek izin multi-hari
+      if (leave.leaveStartDate && leave.leaveEndDate) {
+        let startDate = null;
+        let endDate = null;
+        
+        // Ekstrak tanggal mulai
+        if (leave.leaveStartDate instanceof Timestamp) {
+          startDate = leave.leaveStartDate.toDate();
+        } else if (typeof leave.leaveStartDate === 'string') {
+          startDate = new Date(leave.leaveStartDate);
+        } else if (leave.leaveStartDate instanceof Date) {
+          startDate = leave.leaveStartDate;
+        }
+        
+        // Ekstrak tanggal selesai
+        if (leave.leaveEndDate instanceof Timestamp) {
+          endDate = leave.leaveEndDate.toDate();
+        } else if (typeof leave.leaveEndDate === 'string') {
+          endDate = new Date(leave.leaveEndDate);
+        } else if (leave.leaveEndDate instanceof Date) {
+          endDate = leave.leaveEndDate;
+        }
+        
+        // Jika kedua tanggal valid, cek apakah tanggal yang diminta berada dalam rentang
+        if (startDate && endDate) {
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          
+          if (requestedDate >= startDate && requestedDate <= endDate) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    });
+    
+    console.log(`Found ${filteredLeaves.length} leave requests for date ${formattedDate}`);
+    
+    // Simpan ke cache
+    leaveCache.set(cacheKey, filteredLeaves);
+    updateCacheTimestamp(cacheKey);
+    
+    return filteredLeaves;
+  } catch (error) {
+    console.error("Error getting ALL leave requests for date:", error);
+    return [];
+  }
+}
 
 
 // Fungsi untuk menghentikan listener
@@ -164,10 +284,15 @@ function saveLeaveCacheToStorage() {
       monthCacheSerialized[key] = value;
     }
     
+    const pendingCacheSerialized = {};
+    for (const [key, value] of pendingLeaveCache.entries()) {
+      pendingCacheSerialized[key] = value;
+    }
+    
     // Save to localStorage
     localStorage.setItem('leaveCache', JSON.stringify(cacheSerialized));
     localStorage.setItem('leaveMonthCache', JSON.stringify(monthCacheSerialized));
-    localStorage.setItem('pendingLeaveCache', JSON.stringify(pendingLeaveCache));
+    localStorage.setItem('pendingLeaveCache', JSON.stringify(pendingCacheSerialized));
     
     console.log("Leave cache saved to localStorage");
   } catch (error) {
@@ -333,150 +458,318 @@ export function cleanupOldLeaveCache() {
   // Simpan perubahan ke localStorage
   saveLeaveCacheToStorage();
 }
-// Modify the getLeaveRequestsByDate function to ensure it works correctly
-export async function getLeaveRequestsByDate(date) {
+
+// Tambahkan fungsi untuk membersihkan cache untuk tanggal tertentu
+export function clearLeaveCacheForDate(date) {
+  if (leaveCache.has(date)) {
+    console.log(`Clearing leave cache for date: ${date}`);
+    leaveCache.delete(date);
+    return true;
+  }
+  return false;
+}
+
+// Modifikasi fungsi getLeaveRequestsByDate untuk menampilkan semua izin
+export async function getLeaveRequestsByDate(date, forceRefresh = false) {
   try {
-    // Check if data is in cache
-    if (leaveCache.has(date)) {
-      console.log("Using cached leave data for date:", date);
-      return leaveCache.get(date);
+    // Pastikan format tanggal konsisten (YYYY-MM-DD)
+    let formattedDate = date;
+    if (date instanceof Date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
     }
     
-    console.log("Fetching leave data for date:", date);
+    console.log("Getting leave requests for date:", formattedDate, "Force refresh:", forceRefresh);
     
-    const leaveCollection = collection(db, "leaveRequests");
+    // Check if data is in cache and we're not forcing a refresh
+    if (!forceRefresh && leaveCache.has(formattedDate)) {
+      console.log("Using cached leave data for date:", formattedDate);
+      return leaveCache.get(formattedDate);
+    }
     
-    // Coba beberapa kemungkinan field untuk tanggal izin
-    const possibleDateFields = ["leaveDate", "date", "tanggal"];
-    let leaveData = [];
+    console.log("Fetching fresh leave data from Firestore for date:", formattedDate);
     
-    // Coba dengan format string YYYY-MM-DD
-    for (const fieldName of possibleDateFields) {
-      const q = query(
+    // Pendekatan 1: Coba dapatkan semua izin untuk bulan ini dan filter di client
+    // Ini lebih efisien karena hanya perlu 1 query Firestore
+    const currentDate = new Date(formattedDate);
+    const month = currentDate.getMonth() + 1;
+    const year = currentDate.getFullYear();
+    
+    // Dapatkan semua izin untuk bulan ini
+    const monthKey = `${month}_${year}`;
+    let monthData = [];
+    
+    // Cek apakah data bulan sudah ada di cache
+    if (leaveMonthCache.has(monthKey) && !forceRefresh) {
+      console.log(`Using cached month data for ${monthKey}`);
+      monthData = leaveMonthCache.get(monthKey);
+    } else {
+      // Ambil data bulan dari Firestore
+      console.log(`Fetching month data for ${monthKey} from Firestore`);
+      const leaveCollection = collection(db, "leaveRequests");
+      
+      // Query berdasarkan bulan dan tahun
+      let q = query(
         leaveCollection,
-        where(fieldName, "==", date),
-        where("status", "in", ["Approved", "Disetujui", "approved", "disetujui"])
+        where("month", "==", month),
+        where("year", "==", year)
       );
       
-      const snapshot = await getDocs(q);
+      let snapshot = await getDocs(q);
       
-      if (!snapshot.empty) {
-        console.log(`Found leave data using field: ${fieldName}`);
-        leaveData = snapshot.docs.map(doc => ({
+      // Jika tidak ada hasil, coba dengan rentang tanggal
+      if (snapshot.empty) {
+        console.log("No results with month/year fields, trying date range");
+        
+        // Buat tanggal awal dan akhir bulan
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0); // Hari terakhir bulan
+        
+        // Konversi ke timestamp Firestore
+        const startTimestamp = Timestamp.fromDate(startDate);
+        const endTimestamp = Timestamp.fromDate(endDate);
+        
+        // Coba dengan leaveDate
+        q = query(
+          leaveCollection,
+          where("leaveDate", ">=", startTimestamp),
+          where("leaveDate", "<=", endTimestamp)
+        );
+        
+        snapshot = await getDocs(q);
+        
+        // Jika masih tidak ada hasil, coba dengan date field
+        if (snapshot.empty) {
+          q = query(
+            leaveCollection,
+            where("date", ">=", startTimestamp),
+            where("date", "<=", endTimestamp)
+          );
+          
+          snapshot = await getDocs(q);
+        }
+      }
+      
+      // Jika masih tidak ada hasil, ambil semua data dan filter di client
+      if (snapshot.empty) {
+        console.log("No results with any query, fetching all leave requests");
+        q = query(leaveCollection);
+        snapshot = await getDocs(q);
+        
+        // Filter berdasarkan bulan dan tahun
+        monthData = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(leave => {
+            // Coba ekstrak tanggal dari berbagai field
+            let leaveDate = null;
+            
+            // Cek leaveDate
+            if (leave.leaveDate) {
+              if (leave.leaveDate instanceof Timestamp) {
+                leaveDate = leave.leaveDate.toDate();
+              } else if (typeof leave.leaveDate === 'string') {
+                leaveDate = new Date(leave.leaveDate);
+              } else if (leave.leaveDate instanceof Date) {
+                leaveDate = leave.leaveDate;
+              }
+            }
+            // Cek date
+            else if (leave.date) {
+              if (leave.date instanceof Timestamp) {
+                leaveDate = leave.date.toDate();
+              } else if (typeof leave.date === 'string') {
+                leaveDate = new Date(leave.date);
+              } else if (leave.date instanceof Date) {
+                leaveDate = leave.date;
+              }
+            }
+            
+            // Jika tanggal valid, cek apakah di bulan dan tahun yang sama
+            if (leaveDate && !isNaN(leaveDate.getTime())) {
+              return leaveDate.getMonth() + 1 === month && leaveDate.getFullYear() === year;
+            }
+            
+            // Jika ada field month dan year, gunakan itu
+            if (leave.month && leave.year) {
+              return leave.month === month && leave.year === year;
+            }
+            
+            return false;
+          });
+      } else {
+        // Proses hasil query
+        monthData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        break;
       }
+      
+      // Simpan ke cache bulan
+      leaveMonthCache.set(monthKey, monthData);
+      updateCacheTimestamp(monthKey);
     }
     
-    // Jika tidak ditemukan, coba dengan format timestamp
-    if (leaveData.length === 0) {
-      // Konversi string date ke timestamp range (awal dan akhir hari)
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+    console.log(`Found ${monthData.length} leave requests for month ${month}/${year}`);
+    
+    // Filter untuk tanggal yang diminta
+    const dayOfMonth = currentDate.getDate();
+    
+    // Filter berdasarkan tanggal
+    const leaveData = monthData.filter(leave => {
+      // PENTING: Tampilkan semua izin untuk hari ini, terlepas dari status
       
-      for (const fieldName of possibleDateFields) {
-        const q = query(
-          leaveCollection,
-          where(fieldName, ">=", Timestamp.fromDate(startOfDay)),
-          where(fieldName, "<=", Timestamp.fromDate(endOfDay)),
-          where("status", "in", ["Approved", "Disetujui", "approved", "disetujui"])
-        );
-        
-        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-          console.log(`Found leave data using timestamp range for field: ${fieldName}`);
-          leaveData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          break;
+      // Cek tanggal izin
+      let leaveDate = null;
+      
+      // Cek leaveDate
+      if (leave.leaveDate) {
+        if (leave.leaveDate instanceof Timestamp) {
+          leaveDate = leave.leaveDate.toDate();
+        } else if (typeof leave.leaveDate === 'string') {
+          leaveDate = new Date(leave.leaveDate);
+        } else if (leave.leaveDate instanceof Date) {
+          leaveDate = leave.leaveDate;
         }
       }
-    }
-    
-    // Jika masih tidak ditemukan, coba query semua data dan filter di client
-    if (leaveData.length === 0) {
-      console.log("Trying to fetch all leave requests and filter client-side");
-      const q = query(leaveCollection);
-      const snapshot = await getDocs(q);
-      
-      const allLeaveData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      // Log struktur data untuk debugging
-      if (allLeaveData.length > 0) {
-        console.log("Sample leave data structure:", allLeaveData[0]);
+      // Cek date
+      else if (leave.date) {
+        if (leave.date instanceof Timestamp) {
+          leaveDate = leave.date.toDate();
+        } else if (typeof leave.date === 'string') {
+          leaveDate = new Date(leave.date);
+        } else if (leave.date instanceof Date) {
+          leaveDate = leave.date;
+        }
       }
       
-      // Filter berdasarkan tanggal (coba beberapa format) dan status
-      leaveData = allLeaveData.filter(leave => {
-        // Check if status is approved
-        const status = leave.status || '';
-        const isApproved = ['approved', 'disetujui', 'Approved', 'Disetujui'].includes(status);
+      // Jika tanggal valid, cek apakah sama dengan tanggal yang diminta
+      if (leaveDate && !isNaN(leaveDate.getTime())) {
+        return leaveDate.getDate() === dayOfMonth;
+      }
+      
+      // Cek juga untuk izin multi-hari
+      if (leave.leaveStartDate && leave.leaveEndDate) {
+        let startDate, endDate;
         
-        if (!isApproved) return false;
+        // Parse startDate
+        if (leave.leaveStartDate instanceof Timestamp) {
+          startDate = leave.leaveStartDate.toDate();
+        } else if (typeof leave.leaveStartDate === 'string') {
+          startDate = new Date(leave.leaveStartDate);
+        } else if (leave.leaveStartDate instanceof Date) {
+          startDate = leave.leaveStartDate;
+        }
         
-        for (const fieldName of possibleDateFields) {
-          const leaveDate = leave[fieldName];
+        // Parse endDate
+        if (leave.leaveEndDate instanceof Timestamp) {
+          endDate = leave.leaveEndDate.toDate();
+        } else if (typeof leave.leaveEndDate === 'string') {
+          endDate = new Date(leave.leaveEndDate);
+        } else if (leave.leaveEndDate instanceof Date) {
+          endDate = leave.leaveEndDate;
+        }
+        
+        // Jika kedua tanggal valid
+        if (startDate && endDate) {
+          // Normalisasi waktu untuk perbandingan yang akurat
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          currentDate.setHours(12, 0, 0, 0);
           
-          // Jika field ada
-          if (leaveDate) {
-            // Jika timestamp
-            if (leaveDate instanceof Timestamp) {
-              const leaveDateTime = leaveDate.toDate();
-              const leaveDateStr = leaveDateTime.toISOString().split('T')[0];
-              if (leaveDateStr === date) return true;
-            } 
-            // Jika string
-            else if (typeof leaveDate === 'string') {
-              // Coba beberapa format
-              if (leaveDate === date) return true;
-              
-              // Coba format lain (DD-MM-YYYY)
-              const parts = leaveDate.split(/[-\/]/);
-              if (parts.length === 3) {
-                // Asumsi format DD-MM-YYYY atau DD/MM/YYYY
-                if (parts[2].length === 4) {
-                  const formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                  if (formattedDate === date) return true;
-                }
-                // Asumsi format MM-DD-YYYY atau MM/DD/YYYY
-                else if (parts[0].length === 4) {
-                  const formattedDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-                  if (formattedDate === date) return true;
-                }
-              }
-            }
-            // Jika Date object
-            else if (leaveDate instanceof Date) {
-              const leaveDateStr = leaveDate.toISOString().split('T')[0];
-              if (leaveDateStr === date) return true;
-            }
-          }
+          // Cek apakah tanggal saat ini berada dalam rentang
+          return currentDate >= startDate && currentDate <= endDate;
         }
-        return false;
-      });
-    }
+      }
+      
+      return false;
+    });
     
-    console.log(`Found ${leaveData.length} leave requests for date ${date}`);
+    console.log(`Found ${leaveData.length} leave requests for date ${formattedDate}`);
+    
+    // Pastikan semua data memiliki properti yang diperlukan
+    const processedLeaveData = leaveData.map(leave => {
+      // Konversi Timestamp ke Date jika perlu
+      if (leave.submitDate instanceof Timestamp) {
+        leave.submitDate = leave.submitDate.toDate();
+      }
+      if (leave.leaveDate instanceof Timestamp) {
+        leave.leaveDate = leave.leaveDate.toDate();
+      }
+      if (leave.date instanceof Timestamp) {
+        leave.date = leave.date.toDate();
+      }
+      if (leave.leaveStartDate instanceof Timestamp) {
+        leave.leaveStartDate = leave.leaveStartDate.toDate();
+      }
+      if (leave.leaveEndDate instanceof Timestamp) {
+        leave.leaveEndDate = leave.leaveEndDate.toDate();
+      }
+      
+      // Pastikan replacementDetails tetap utuh
+      if (!leave.replacementDetails && leave.replacementType) {
+        // Coba rekonstruksi replacementDetails dari data yang ada
+        leave.replacementDetails = {};
+        
+        if (leave.replacementType === "libur") {
+          if (leave.replacementDate) {
+            leave.replacementDetails.formattedDate = typeof leave.replacementDate === 'string' 
+              ? leave.replacementDate 
+              : leave.replacementDate instanceof Date 
+                ? leave.replacementDate.toLocaleDateString('id-ID')
+                : '';
+          }
+          if (leave.replacementDates) {
+            leave.replacementDetails.dates = leave.replacementDates;
+          }
+        } else if (leave.replacementType === "jam") {
+          if (leave.replacementHours) {
+            leave.replacementDetails.hours = leave.replacementHours;
+          }
+          if (leave.replacementDate) {
+            leave.replacementDetails.formattedDate = typeof leave.replacementDate === 'string' 
+              ? leave.replacementDate 
+              : leave.replacementDate instanceof Date 
+                ? leave.replacementDate.toLocaleDateString('id-ID')
+                : '';
+          }
+        } else if (leave.replacementType === "tidak") {
+          leave.replacementDetails = { type: "tidak perlu diganti" };
+        }
+      }
+      
+      // Pastikan status pengganti ada
+      if (!leave.replacementStatus) {
+        leave.replacementStatus = "Belum Diganti";
+      }
+      
+      // Pastikan status izin ada
+      if (!leave.status) {
+        leave.status = "Pending";
+      }
+      
+      return leave;
+    });
     
     // Store in cache
-    leaveCache.set(date, leaveData);
+    leaveCache.set(formattedDate, processedLeaveData);
+    updateCacheTimestamp(formattedDate);
     
-    return leaveData;
+    return processedLeaveData;
   } catch (error) {
     console.error("Error getting leave requests by date:", error);
     console.log("Stack trace:", error.stack);
     return []; // Return empty array instead of throwing
   }
 }
+
+
+
+    
 
 
 // Get leave requests by date range
@@ -984,7 +1277,14 @@ export async function submitLeaveRequest(leaveData) {
     const leaveCollection = collection(db, "leaveRequests");
     const docRef = await addDoc(leaveCollection, leaveData);
     
-    // Update cache
+    // Create result object with ID
+    const newLeave = {
+      id: docRef.id,
+      ...leaveData,
+      submitDate: leaveData.submitDate instanceof Timestamp ? leaveData.submitDate.toDate() : leaveData.submitDate
+    };
+    
+    // Update date cache
     if (leaveData.leaveDate) {
       let dateKey;
       if (typeof leaveData.leaveDate === 'string') {
@@ -1000,39 +1300,44 @@ export async function submitLeaveRequest(leaveData) {
           leaveCache.set(dateKey, []);
         }
         
-        const newLeave = {
-          id: docRef.id,
-          ...leaveData,
-          submitDate: leaveData.submitDate instanceof Timestamp ? leaveData.submitDate.toDate() : leaveData.submitDate
-        };
-        
         leaveCache.get(dateKey).push(newLeave);
-      }
-      
-      // Update month cache if exists
-      if (leaveData.month && leaveData.year) {
-        const monthKey = `${leaveData.month}_${leaveData.year}`;
-        if (leaveMonthCache.has(monthKey)) {
-          const newLeave = {
-            id: docRef.id,
-            ...leaveData,
-            submitDate: leaveData.submitDate instanceof Timestamp ? leaveData.submitDate.toDate() : leaveData.submitDate
-          };
-          
-          leaveMonthCache.get(monthKey).unshift(newLeave); // Add to beginning (newest first)
-        }
       }
     }
     
-    return {
-      id: docRef.id,
-      ...leaveData
-    };
+    // Update month cache if exists
+    if (leaveData.month && leaveData.year) {
+      const monthKey = `${leaveData.month}_${leaveData.year}`;
+      if (leaveMonthCache.has(monthKey)) {
+        leaveMonthCache.get(monthKey).unshift(newLeave); // Add to beginning (newest first)
+      } else {
+        // Initialize month cache with the new leave
+        leaveMonthCache.set(monthKey, [newLeave]);
+      }
+      
+      // Update cache timestamp
+      updateCacheTimestamp(monthKey);
+    }
+    
+    // Save cache to localStorage
+    saveLeaveCacheToStorage();
+    
+    // Dispatch a custom event to notify other parts of the application
+    const event = new CustomEvent('leaveRequestSubmitted', { 
+      detail: { 
+        leaveRequest: newLeave,
+        month: leaveData.month,
+        year: leaveData.year
+      } 
+    });
+    document.dispatchEvent(event);
+    
+    return newLeave;
   } catch (error) {
     console.error("Error submitting leave request:", error);
     throw error;
   }
 }
+
 
 
 // Update leave request status

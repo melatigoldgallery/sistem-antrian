@@ -1,4 +1,5 @@
-import { getLeaveRequestsByMonth, clearLeaveCache } from "../services/leave-service.js";
+import { getLeaveRequestsByMonth, clearLeaveCache,listenToLeaveRequests, 
+  stopListeningToLeaveRequests  } from "../services/leave-service.js";
 import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 import { attendanceCache } from "../services/attendance-service.js"; // Impor dari attendance-service
 
@@ -144,44 +145,166 @@ function forceRefreshData() {
 }
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
-   // Load cache dari localStorage
-  loadReportCacheFromStorage();
+  try {
+    // Load cache dari localStorage
+    loadReportCacheFromStorage();
     // Bersihkan cache lama
     cleanupOldReportCache();
-      // Tambahkan event listener untuk tombol refresh jika ada
-  const refreshButton = document.getElementById('refreshData');
-  if (refreshButton) {
-    refreshButton.addEventListener('click', forceRefreshData);
-  }
-
-  // Set current date and time
-  function updateDateTime() {
-    const now = new Date();
-    const dateElement = document.getElementById("current-date");
-    const timeElement = document.getElementById("current-time");
-
-    if (dateElement) {
-      dateElement.textContent = now.toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+    // Tambahkan event listener untuk tombol refresh jika ada
+    const refreshButton = document.getElementById('refreshData');
+    if (refreshButton) {
+      refreshButton.addEventListener('click', forceRefreshData);
     }
 
-    if (timeElement) {
-      timeElement.textContent = now.toLocaleTimeString("id-ID");
+    // Set current date and time
+    function updateDateTime() {
+      const now = new Date();
+      const dateElement = document.getElementById("current-date");
+      const timeElement = document.getElementById("current-time");
+
+      if (dateElement) {
+        dateElement.textContent = now.toLocaleDateString("id-ID", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      if (timeElement) {
+        timeElement.textContent = now.toLocaleTimeString("id-ID");
+      }
     }
+
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    // Initialize report page
+    setupYearSelector();
+    setDefaultMonthAndYear();
+    setupEventListeners();
+    
+    // Listen for new leave request submissions
+    document.addEventListener('leaveRequestSubmitted', function(e) {
+      try {
+        // Get current selected month and year
+        const monthSelector = document.getElementById("monthSelector");
+        const yearSelector = document.getElementById("yearSelector");
+        
+        if (!monthSelector || !yearSelector) return;
+        
+        const selectedMonth = parseInt(monthSelector.value);
+        const selectedYear = parseInt(yearSelector.value);
+        
+        // Check if the new leave request is for the currently displayed month/year
+        const { leaveRequest, month, year } = e.detail;
+        
+        if (month === selectedMonth && year === selectedYear) {
+          console.log("New leave request submitted for current month/year view:", leaveRequest);
+          
+          // Update cache
+          const cacheKey = `${month}_${year}`;
+          if (reportCache.has(cacheKey)) {
+            const cachedData = reportCache.get(cacheKey);
+            // Add new request to the beginning of the data array
+            cachedData.data = [leaveRequest, ...cachedData.data];
+            reportCache.set(cacheKey, cachedData);
+            
+            // Update timestamp
+            cacheTimestamps.set(cacheKey, Date.now());
+            
+            // Save to localStorage
+            saveReportCacheToStorage();
+          }
+          
+          // If we're currently viewing this month/year, update the display
+          if (currentLeaveData.length > 0) {
+            // Add to current data
+            currentLeaveData = [leaveRequest, ...currentLeaveData];
+            
+            // Update UI
+            updateSummaryCards();
+            populateLeaveTable();
+            
+            // Show notification
+            showAlert("info", "Pengajuan izin baru telah ditambahkan ke laporan", true);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling new leave request:", error);
+      }
+    });
+  } catch (error) {
+    console.error("Error initializing page:", error);
+    showAlert("danger", "Terjadi kesalahan saat menginisialisasi halaman: " + error.message);
   }
-
-  updateDateTime();
-  setInterval(updateDateTime, 1000);
-
-  // Initialize report page
-  setupYearSelector();
-  setDefaultMonthAndYear();
-  setupEventListeners();
 });
+// Tambahkan event listener untuk membersihkan listener saat halaman ditutup
+window.addEventListener('beforeunload', function() {
+  // Hentikan listener untuk menghemat resources
+  try {
+    stopListeningToLeaveRequests();
+  } catch (error) {
+    console.error("Error stopping listener:", error);
+  }
+});
+// Fungsi untuk mengaktifkan listener real-time
+function setupRealtimeListener() {
+  try {
+    const monthSelector = document.getElementById("monthSelector");
+    const yearSelector = document.getElementById("yearSelector");
+    
+    if (!monthSelector || !yearSelector) {
+      console.error("Month or year selector not found");
+      return;
+    }
+    
+    const currentMonth = parseInt(monthSelector.value);
+    const currentYear = parseInt(yearSelector.value);
+    
+    // Gunakan listener yang sudah ada di leave-service.js
+    listenToLeaveRequests(currentMonth, currentYear, (leaveRequests) => {
+      // Update cache
+      const cacheKey = `${currentMonth}_${currentYear}`;
+      
+      // Update report cache
+      reportCache.set(cacheKey, {
+        data: leaveRequests,
+        lastDoc: null, // Tidak perlu lastDoc karena kita mendapatkan semua data
+        hasMore: false
+      });
+      
+      // Update timestamp
+      cacheTimestamps.set(cacheKey, Date.now());
+      
+      // Save to localStorage
+      saveReportCacheToStorage();
+      
+      // Update current data if we're viewing this month/year
+      if (currentLeaveData.length > 0) {
+        const selectedMonth = parseInt(monthSelector.value);
+        const selectedYear = parseInt(yearSelector.value);
+        
+        if (currentMonth === selectedMonth && currentYear === selectedYear) {
+          currentLeaveData = leaveRequests;
+          
+          // Update UI
+          updateSummaryCards();
+          populateLeaveTable();
+          
+          // Show cache indicator
+          const cacheIndicator = document.getElementById('cacheIndicator');
+          if (cacheIndicator) {
+            cacheIndicator.textContent = 'Data real-time';
+            cacheIndicator.style.display = 'inline-block';
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error setting up real-time listener:", error);
+  }
+}
 
 // Setup year selector with current year and 5 years back
 function setupYearSelector() {
@@ -216,8 +339,6 @@ function setDefaultMonthAndYear() {
   }
 }
 
-
-// Modifikasi fungsi generateReport untuk menggunakan cache dengan kompresi
 async function generateReport(forceRefresh = false) {
   try {
     const monthSelector = document.getElementById("monthSelector");
@@ -276,6 +397,9 @@ async function generateReport(forceRefresh = false) {
         loadMoreContainer.style.display = hasMoreData ? "block" : "none";
       }
       
+      // Setup real-time listener untuk pembaruan
+      setupRealtimeListener();
+      
       return;
     }
 
@@ -287,7 +411,10 @@ async function generateReport(forceRefresh = false) {
     // Show loading state
     showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Memuat data izin...', false);
 
-    // Fetch data with pagination
+    // Gunakan listener untuk mendapatkan data secara real-time
+    setupRealtimeListener();
+    
+    // Sebagai fallback, jika listener gagal, gunakan metode query biasa
     const result = await getLeaveRequestsByMonth(month, year, null, itemsPerPage);
 
     // Update pagination variables
@@ -346,7 +473,10 @@ async function generateReport(forceRefresh = false) {
     console.error("Error generating report:", error);
     
     // Coba gunakan cache sebagai fallback jika terjadi error
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
     const cacheKey = `${month}_${year}`;
+    
     if (reportCache.has(cacheKey)) {
       console.log(`Fallback to cached data for ${month}/${year} due to error`);
       
@@ -367,6 +497,9 @@ async function generateReport(forceRefresh = false) {
       hasMoreData = cachedData.hasMore;
       
       // Terapkan filter jenis pengganti jika dipilih
+      const replacementTypeFilter = document.getElementById("replacementTypeFilter");
+      const selectedReplacementType = replacementTypeFilter ? replacementTypeFilter.value : "all";
+      
       if (selectedReplacementType !== "all") {
         filterByReplacementType(selectedReplacementType);
       } else {
@@ -385,7 +518,13 @@ async function generateReport(forceRefresh = false) {
   }
 }
 
-// Tambahkan event listener untuk filter jenis pengganti
+// Tambahkan event listener untuk membersihkan listener saat halaman ditutup
+window.addEventListener('beforeunload', function() {
+  // Hentikan listener untuk menghemat resources
+  stopListeningToLeaveRequests();
+});
+
+
 function setupEventListeners() {
   // Generate report button
   document.getElementById("generateReportBtn")?.addEventListener("click", generateReport);
@@ -434,7 +573,30 @@ function setupEventListeners() {
       }
     });
   }
+  
+  // Tambahkan event listener untuk perubahan bulan/tahun
+  const monthSelector = document.getElementById("monthSelector");
+  const yearSelector = document.getElementById("yearSelector");
+  
+  if (monthSelector) {
+    monthSelector.addEventListener("change", function() {
+      // Hentikan listener lama
+      stopListeningToLeaveRequests();
+      // Generate report baru
+      generateReport();
+    });
+  }
+  
+  if (yearSelector) {
+    yearSelector.addEventListener("change", function() {
+      // Hentikan listener lama
+      stopListeningToLeaveRequests();
+      // Generate report baru
+      generateReport();
+    });
+  }
 }
+
 
 // Load more data (pagination)
 async function loadMoreData() {
@@ -573,7 +735,7 @@ function populateLeaveTable() {
       
       // Jika izin sakit dengan surat dokter, set status penggantian ke "Sudah Diganti"
       if (hasMedicalCert && (!leave.replacementStatus || leave.replacementStatus === "Belum Diganti")) {
-        leave.replacementStatus = "Sudah Diganti";
+        leave.replacementStatus = "Tidak Perlu Diganti";
       }
 
       if (!isMultiDay) {
