@@ -199,6 +199,9 @@ function calculateBuybackPrice(items) {
     // Calculate buyback price based on current price and percentage
     buybackPrice = (item.hargaHariIni * buybackPercentage) / 100;
     
+    // Terapkan aturan pembulatan baru
+    buybackPrice = roundBuybackPrice(buybackPrice);
+    
     // Calculate price difference
     const priceDifference = buybackPrice - item.hargaBeli;
     const percentageDifference = ((priceDifference / item.hargaBeli) * 100).toFixed(2);
@@ -215,7 +218,19 @@ function calculateBuybackPrice(items) {
   
   return results;
 }
-
+// Fungsi untuk membulatkan harga buyback sesuai ketentuan baru
+function roundBuybackPrice(price) {
+  // Ekstrak ribuan terakhir dari harga
+  const lastThousand = Math.floor(price % 10000 / 1000);
+  
+  if (lastThousand < 5) {
+    // Jika ribuan terakhir < 5, bulatkan ke 5 ribu
+    return Math.floor(price / 10000) * 10000 + 5000;
+  } else {
+    // Jika ribuan terakhir >= 5, bulatkan ke puluhan ribu berikutnya
+    return Math.ceil(price / 10000) * 10000;
+  }
+}
 
 
 // New helper functions for calculating percentages
