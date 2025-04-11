@@ -1,5 +1,9 @@
-import { getLeaveRequestsByMonth, clearLeaveCache,listenToLeaveRequests, 
-  stopListeningToLeaveRequests  } from "../services/leave-service.js";
+import {
+  getLeaveRequestsByMonth,
+  clearLeaveCache,
+  listenToLeaveRequests,
+  stopListeningToLeaveRequests,
+} from "../services/leave-service.js";
 import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 import { attendanceCache } from "../services/attendance-service.js"; // Impor dari attendance-service
 
@@ -33,9 +37,9 @@ function compressData(data) {
   try {
     // Konversi data ke string JSON
     const jsonString = JSON.stringify(data);
-    
+
     // Kompresi sederhana dengan menghapus spasi berlebih
-    return jsonString.replace(/\s+/g, '');
+    return jsonString.replace(/\s+/g, "");
   } catch (error) {
     console.error("Error compressing data:", error);
     return JSON.stringify(data);
@@ -60,16 +64,16 @@ function saveReportCacheToStorage() {
     for (const [key, value] of reportCache.entries()) {
       cacheObj[key] = value;
     }
-    
+
     const timestampsObj = {};
     for (const [key, value] of cacheTimestamps.entries()) {
       timestampsObj[key] = value;
     }
-    
+
     // Kompresi data sebelum disimpan
-    localStorage.setItem('leaveReportCache', compressData(cacheObj));
-    localStorage.setItem('leaveReportTimestamps', compressData(timestampsObj));
-    
+    localStorage.setItem("leaveReportCache", compressData(cacheObj));
+    localStorage.setItem("leaveReportTimestamps", compressData(timestampsObj));
+
     console.log("Leave report cache saved to localStorage (compressed)");
   } catch (error) {
     console.error("Error saving report cache to localStorage:", error);
@@ -79,27 +83,27 @@ function saveReportCacheToStorage() {
 // Fungsi untuk memuat cache laporan dari localStorage
 function loadReportCacheFromStorage() {
   try {
-    const compressedCache = localStorage.getItem('leaveReportCache');
-    const compressedTimestamps = localStorage.getItem('leaveReportTimestamps');
-    
+    const compressedCache = localStorage.getItem("leaveReportCache");
+    const compressedTimestamps = localStorage.getItem("leaveReportTimestamps");
+
     if (compressedCache && compressedTimestamps) {
       // Dekompresi data
       const cacheObj = decompressData(compressedCache);
       const timestampsObj = decompressData(compressedTimestamps);
-      
+
       if (cacheObj && timestampsObj) {
         // Konversi objek kembali ke Map
         reportCache.clear();
         cacheTimestamps.clear();
-        
+
         for (const [key, value] of Object.entries(cacheObj)) {
           reportCache.set(key, value);
         }
-        
+
         for (const [key, value] of Object.entries(timestampsObj)) {
           cacheTimestamps.set(key, value);
         }
-        
+
         console.log("Leave report cache loaded from localStorage (decompressed)");
       }
     }
@@ -112,22 +116,22 @@ function loadReportCacheFromStorage() {
 function cleanupOldReportCache() {
   const now = Date.now();
   const oneMonth = 30 * 24 * 60 * 60 * 1000; // 30 hari dalam milidetik
-  
+
   // Hapus cache yang lebih dari 1 bulan
   const keysToDelete = [];
-  
+
   for (const [key, timestamp] of cacheTimestamps.entries()) {
     if (now - timestamp > oneMonth) {
       keysToDelete.push(key);
     }
   }
-  
-  keysToDelete.forEach(key => {
+
+  keysToDelete.forEach((key) => {
     reportCache.delete(key);
     cacheTimestamps.delete(key);
     console.log(`Removed old report cache for ${key}`);
   });
-  
+
   // Simpan perubahan ke localStorage
   saveReportCacheToStorage();
 }
@@ -138,7 +142,7 @@ function forceRefreshData() {
   if (confirm("Apakah Anda yakin ingin menyegarkan data dari server?")) {
     // Panggil generateReport dengan forceRefresh=true
     generateReport(true);
-    
+
     // Tampilkan pesan
     showAlert("info", "Data sedang disegarkan dari server...");
   }
@@ -151,9 +155,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Bersihkan cache lama
     cleanupOldReportCache();
     // Tambahkan event listener untuk tombol refresh jika ada
-    const refreshButton = document.getElementById('refreshData');
+    const refreshButton = document.getElementById("refreshData");
     if (refreshButton) {
-      refreshButton.addEventListener('click', forceRefreshData);
+      refreshButton.addEventListener("click", forceRefreshData);
     }
 
     // Set current date and time
@@ -183,25 +187,25 @@ document.addEventListener("DOMContentLoaded", () => {
     setupYearSelector();
     setDefaultMonthAndYear();
     setupEventListeners();
-    
+
     // Listen for new leave request submissions
-    document.addEventListener('leaveRequestSubmitted', function(e) {
+    document.addEventListener("leaveRequestSubmitted", function (e) {
       try {
         // Get current selected month and year
         const monthSelector = document.getElementById("monthSelector");
         const yearSelector = document.getElementById("yearSelector");
-        
+
         if (!monthSelector || !yearSelector) return;
-        
+
         const selectedMonth = parseInt(monthSelector.value);
         const selectedYear = parseInt(yearSelector.value);
-        
+
         // Check if the new leave request is for the currently displayed month/year
         const { leaveRequest, month, year } = e.detail;
-        
+
         if (month === selectedMonth && year === selectedYear) {
           console.log("New leave request submitted for current month/year view:", leaveRequest);
-          
+
           // Update cache
           const cacheKey = `${month}_${year}`;
           if (reportCache.has(cacheKey)) {
@@ -209,23 +213,23 @@ document.addEventListener("DOMContentLoaded", () => {
             // Add new request to the beginning of the data array
             cachedData.data = [leaveRequest, ...cachedData.data];
             reportCache.set(cacheKey, cachedData);
-            
+
             // Update timestamp
             cacheTimestamps.set(cacheKey, Date.now());
-            
+
             // Save to localStorage
             saveReportCacheToStorage();
           }
-          
+
           // If we're currently viewing this month/year, update the display
           if (currentLeaveData.length > 0) {
             // Add to current data
             currentLeaveData = [leaveRequest, ...currentLeaveData];
-            
+
             // Update UI
             updateSummaryCards();
             populateLeaveTable();
-            
+
             // Show notification
             showAlert("info", "Pengajuan izin baru telah ditambahkan ke laporan", true);
           }
@@ -240,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 // Tambahkan event listener untuk membersihkan listener saat halaman ditutup
-window.addEventListener('beforeunload', function() {
+window.addEventListener("beforeunload", function () {
   // Hentikan listener untuk menghemat resources
   try {
     stopListeningToLeaveRequests();
@@ -253,50 +257,50 @@ function setupRealtimeListener() {
   try {
     const monthSelector = document.getElementById("monthSelector");
     const yearSelector = document.getElementById("yearSelector");
-    
+
     if (!monthSelector || !yearSelector) {
       console.error("Month or year selector not found");
       return;
     }
-    
+
     const currentMonth = parseInt(monthSelector.value);
     const currentYear = parseInt(yearSelector.value);
-    
+
     // Gunakan listener yang sudah ada di leave-service.js
     listenToLeaveRequests(currentMonth, currentYear, (leaveRequests) => {
       // Update cache
       const cacheKey = `${currentMonth}_${currentYear}`;
-      
+
       // Update report cache
       reportCache.set(cacheKey, {
         data: leaveRequests,
         lastDoc: null, // Tidak perlu lastDoc karena kita mendapatkan semua data
-        hasMore: false
+        hasMore: false,
       });
-      
+
       // Update timestamp
       cacheTimestamps.set(cacheKey, Date.now());
-      
+
       // Save to localStorage
       saveReportCacheToStorage();
-      
+
       // Update current data if we're viewing this month/year
       if (currentLeaveData.length > 0) {
         const selectedMonth = parseInt(monthSelector.value);
         const selectedYear = parseInt(yearSelector.value);
-        
+
         if (currentMonth === selectedMonth && currentYear === selectedYear) {
           currentLeaveData = leaveRequests;
-          
+
           // Update UI
           updateSummaryCards();
           populateLeaveTable();
-          
+
           // Show cache indicator
-          const cacheIndicator = document.getElementById('cacheIndicator');
+          const cacheIndicator = document.getElementById("cacheIndicator");
           if (cacheIndicator) {
-            cacheIndicator.textContent = 'Data real-time';
-            cacheIndicator.style.display = 'inline-block';
+            cacheIndicator.textContent = "Data real-time";
+            cacheIndicator.style.display = "inline-block";
           }
         }
       }
@@ -356,29 +360,29 @@ async function generateReport(forceRefresh = false) {
 
     // Buat kunci cache
     const cacheKey = `${month}_${year}`;
-    
+
     // Cek apakah data ada di cache dan masih valid (kurang dari 1 jam)
     const now = Date.now();
     const cacheTime = cacheTimestamps.get(cacheKey) || 0;
     const cacheIsValid = now - cacheTime < CACHE_DURATION;
-    
+
     // Gunakan cache jika tersedia dan valid, kecuali jika forceRefresh=true
     if (!forceRefresh && reportCache.has(cacheKey) && cacheIsValid) {
       console.log(`Using cached data for ${month}/${year}, age: ${(now - cacheTime) / 1000} seconds`);
-      
+
       // Tampilkan indikator cache di UI
-      const cacheIndicator = document.getElementById('cacheIndicator');
+      const cacheIndicator = document.getElementById("cacheIndicator");
       if (cacheIndicator) {
-        cacheIndicator.textContent = 'Menggunakan data cache';
-        cacheIndicator.style.display = 'inline-block';
+        cacheIndicator.textContent = "Menggunakan data cache";
+        cacheIndicator.style.display = "inline-block";
       }
-      
+
       // Ambil data dari cache
       const cachedData = reportCache.get(cacheKey);
       currentLeaveData = cachedData.data;
       lastVisibleDoc = cachedData.lastDoc;
       hasMoreData = cachedData.hasMore;
-      
+
       // Terapkan filter jenis pengganti jika dipilih
       if (selectedReplacementType !== "all") {
         filterByReplacementType(selectedReplacementType);
@@ -387,19 +391,19 @@ async function generateReport(forceRefresh = false) {
         updateSummaryCards();
         populateLeaveTable();
       }
-      
+
       showReportElements();
-      
+
       // Show/hide load more button
       const loadMoreBtn = document.getElementById("loadMoreBtn");
       const loadMoreContainer = document.getElementById("loadMoreContainer");
       if (loadMoreBtn && loadMoreContainer) {
         loadMoreContainer.style.display = hasMoreData ? "block" : "none";
       }
-      
+
       // Setup real-time listener untuk pembaruan
       setupRealtimeListener();
-      
+
       return;
     }
 
@@ -413,7 +417,7 @@ async function generateReport(forceRefresh = false) {
 
     // Gunakan listener untuk mendapatkan data secara real-time
     setupRealtimeListener();
-    
+
     // Sebagai fallback, jika listener gagal, gunakan metode query biasa
     const result = await getLeaveRequestsByMonth(month, year, null, itemsPerPage);
 
@@ -429,19 +433,19 @@ async function generateReport(forceRefresh = false) {
     reportCache.set(cacheKey, {
       data: [...currentLeaveData],
       lastDoc: lastVisibleDoc,
-      hasMore: hasMoreData
+      hasMore: hasMoreData,
     });
-    
+
     // Simpan timestamp cache
     cacheTimestamps.set(cacheKey, now);
-    
+
     // Simpan cache ke localStorage
     saveReportCacheToStorage();
-    
+
     // Sembunyikan indikator cache di UI
-    const cacheIndicator = document.getElementById('cacheIndicator');
+    const cacheIndicator = document.getElementById("cacheIndicator");
     if (cacheIndicator) {
-      cacheIndicator.style.display = 'none';
+      cacheIndicator.style.display = "none";
     }
 
     // Terapkan filter jenis pengganti jika dipilih
@@ -471,35 +475,35 @@ async function generateReport(forceRefresh = false) {
     document.getElementById("deleteYear").textContent = year;
   } catch (error) {
     console.error("Error generating report:", error);
-    
+
     // Coba gunakan cache sebagai fallback jika terjadi error
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
     const cacheKey = `${month}_${year}`;
-    
+
     if (reportCache.has(cacheKey)) {
       console.log(`Fallback to cached data for ${month}/${year} due to error`);
-      
+
       // Tampilkan pesan error tapi tetap tampilkan data
       showAlert("warning", "Terjadi kesalahan saat mengambil data terbaru. Menampilkan data dari cache.");
-      
+
       // Tampilkan indikator cache di UI
-      const cacheIndicator = document.getElementById('cacheIndicator');
+      const cacheIndicator = document.getElementById("cacheIndicator");
       if (cacheIndicator) {
-        cacheIndicator.textContent = 'Menggunakan data cache (fallback)';
-        cacheIndicator.style.display = 'inline-block';
+        cacheIndicator.textContent = "Menggunakan data cache (fallback)";
+        cacheIndicator.style.display = "inline-block";
       }
-      
+
       // Ambil data dari cache
       const cachedData = reportCache.get(cacheKey);
       currentLeaveData = cachedData.data;
       lastVisibleDoc = cachedData.lastDoc;
       hasMoreData = cachedData.hasMore;
-      
+
       // Terapkan filter jenis pengganti jika dipilih
       const replacementTypeFilter = document.getElementById("replacementTypeFilter");
       const selectedReplacementType = replacementTypeFilter ? replacementTypeFilter.value : "all";
-      
+
       if (selectedReplacementType !== "all") {
         filterByReplacementType(selectedReplacementType);
       } else {
@@ -507,11 +511,14 @@ async function generateReport(forceRefresh = false) {
         updateSummaryCards();
         populateLeaveTable();
       }
-      
+
       showReportElements();
     } else {
       // Tidak ada cache, tampilkan pesan error
-      showAlert("danger", '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memuat data: ' + error.message);
+      showAlert(
+        "danger",
+        '<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan saat memuat data: ' + error.message
+      );
       hideReportElements();
       document.getElementById("noDataMessage").style.display = "block";
     }
@@ -519,11 +526,10 @@ async function generateReport(forceRefresh = false) {
 }
 
 // Tambahkan event listener untuk membersihkan listener saat halaman ditutup
-window.addEventListener('beforeunload', function() {
+window.addEventListener("beforeunload", function () {
   // Hentikan listener untuk menghemat resources
   stopListeningToLeaveRequests();
 });
-
 
 function setupEventListeners() {
   // Generate report button
@@ -573,22 +579,22 @@ function setupEventListeners() {
       }
     });
   }
-  
+
   // Tambahkan event listener untuk perubahan bulan/tahun
   const monthSelector = document.getElementById("monthSelector");
   const yearSelector = document.getElementById("yearSelector");
-  
+
   if (monthSelector) {
-    monthSelector.addEventListener("change", function() {
+    monthSelector.addEventListener("change", function () {
       // Hentikan listener lama
       stopListeningToLeaveRequests();
       // Generate report baru
       generateReport();
     });
   }
-  
+
   if (yearSelector) {
-    yearSelector.addEventListener("change", function() {
+    yearSelector.addEventListener("change", function () {
       // Hentikan listener lama
       stopListeningToLeaveRequests();
       // Generate report baru
@@ -596,7 +602,6 @@ function setupEventListeners() {
     });
   }
 }
-
 
 // Load more data (pagination)
 async function loadMoreData() {
@@ -606,101 +611,101 @@ async function loadMoreData() {
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
 
-       // Show loading state on the button
-       const loadMoreBtn = document.getElementById("loadMoreBtn");
-       if (loadMoreBtn) {
-         loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
-         loadMoreBtn.disabled = true;
-       }
-   
-       // Fetch next page of data
-       const result = await getLeaveRequestsByMonth(month, year, lastVisibleDoc, itemsPerPage);
-   
-       // Update pagination variables
-       const newData = result.leaveRequests || [];
-       lastVisibleDoc = result.lastDoc;
-       hasMoreData = result.hasMore;
-   
-       // Integrate with attendance data
-       await integrateAttendanceData(newData, month, year);
-   
-       // Add new data to current data
-       currentLeaveData = [...currentLeaveData, ...newData];
-   
-       // Update cache
-       const cacheKey = `${month}_${year}`;
-       if (reportCache.has(cacheKey)) {
-         reportCache.set(cacheKey, {
-           data: currentLeaveData,
-           lastDoc: lastVisibleDoc,
-           hasMore: hasMoreData
-         });
-         
-         // Update timestamp
-         cacheTimestamps.set(cacheKey, Date.now());
-       }
-   
-       // Update UI
-       populateLeaveTable();
-       updateSummaryCards();
-   
-       // Reset load more button
-       if (loadMoreBtn) {
-         loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
-         loadMoreBtn.disabled = false;
-       }
-   
-       // Show/hide load more button based on hasMoreData
-       const loadMoreContainer = document.getElementById("loadMoreContainer");
-       if (loadMoreContainer) {
-         loadMoreContainer.style.display = hasMoreData ? "block" : "none";
-       }
-     } catch (error) {
-       console.error("Error loading more data:", error);
-       showAlert("danger", "Terjadi kesalahan saat memuat data tambahan: " + error.message);
-   
-       // Reset load more button
-       const loadMoreBtn = document.getElementById("loadMoreBtn");
-       if (loadMoreBtn) {
-         loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
-         loadMoreBtn.disabled = false;
-       }
-     }
-   }
-   
-   // Update summary cards with statistics
-   function updateSummaryCards() {
-     try {
-       // Total leave requests
-       const totalLeaves = document.getElementById("totalLeaves");
-       if (totalLeaves) {
-         totalLeaves.textContent = currentLeaveData.length;
-       }
-   
-       // Count by status
-       const approvedCount = currentLeaveData.filter(
-         (leave) => leave.status === "Approved" || leave.status === "Disetujui"
-       ).length;
-       const rejectedCount = currentLeaveData.filter(
-         (leave) => leave.status === "Rejected" || leave.status === "Ditolak"
-       ).length;
-       const pendingCount = currentLeaveData.filter(
-         (leave) => leave.status === "Pending" || leave.status === "Menunggu Persetujuan"
-       ).length;
-   
-       const approvedLeaves = document.getElementById("approvedLeaves");
-       const rejectedLeaves = document.getElementById("rejectedLeaves");
-       const pendingLeaves = document.getElementById("pendingLeaves");
-   
-       if (approvedLeaves) approvedLeaves.textContent = approvedCount;
-       if (rejectedLeaves) rejectedLeaves.textContent = rejectedCount;
-       if (pendingLeaves) pendingLeaves.textContent = pendingCount;
-     } catch (error) {
-       console.error("Error updating summary cards:", error);
-     }
-   }
-   
-   // Populate leave table with data
+    // Show loading state on the button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
+      loadMoreBtn.disabled = true;
+    }
+
+    // Fetch next page of data
+    const result = await getLeaveRequestsByMonth(month, year, lastVisibleDoc, itemsPerPage);
+
+    // Update pagination variables
+    const newData = result.leaveRequests || [];
+    lastVisibleDoc = result.lastDoc;
+    hasMoreData = result.hasMore;
+
+    // Integrate with attendance data
+    await integrateAttendanceData(newData, month, year);
+
+    // Add new data to current data
+    currentLeaveData = [...currentLeaveData, ...newData];
+
+    // Update cache
+    const cacheKey = `${month}_${year}`;
+    if (reportCache.has(cacheKey)) {
+      reportCache.set(cacheKey, {
+        data: currentLeaveData,
+        lastDoc: lastVisibleDoc,
+        hasMore: hasMoreData,
+      });
+
+      // Update timestamp
+      cacheTimestamps.set(cacheKey, Date.now());
+    }
+
+    // Update UI
+    populateLeaveTable();
+    updateSummaryCards();
+
+    // Reset load more button
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+    }
+
+    // Show/hide load more button based on hasMoreData
+    const loadMoreContainer = document.getElementById("loadMoreContainer");
+    if (loadMoreContainer) {
+      loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+    }
+  } catch (error) {
+    console.error("Error loading more data:", error);
+    showAlert("danger", "Terjadi kesalahan saat memuat data tambahan: " + error.message);
+
+    // Reset load more button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+    }
+  }
+}
+
+// Update summary cards with statistics
+function updateSummaryCards() {
+  try {
+    // Total leave requests
+    const totalLeaves = document.getElementById("totalLeaves");
+    if (totalLeaves) {
+      totalLeaves.textContent = currentLeaveData.length;
+    }
+
+    // Count by status
+    const approvedCount = currentLeaveData.filter(
+      (leave) => leave.status === "Approved" || leave.status === "Disetujui"
+    ).length;
+    const rejectedCount = currentLeaveData.filter(
+      (leave) => leave.status === "Rejected" || leave.status === "Ditolak"
+    ).length;
+    const pendingCount = currentLeaveData.filter(
+      (leave) => leave.status === "Pending" || leave.status === "Menunggu Persetujuan"
+    ).length;
+
+    const approvedLeaves = document.getElementById("approvedLeaves");
+    const rejectedLeaves = document.getElementById("rejectedLeaves");
+    const pendingLeaves = document.getElementById("pendingLeaves");
+
+    if (approvedLeaves) approvedLeaves.textContent = approvedCount;
+    if (rejectedLeaves) rejectedLeaves.textContent = rejectedCount;
+    if (pendingLeaves) pendingLeaves.textContent = pendingCount;
+  } catch (error) {
+    console.error("Error updating summary cards:", error);
+  }
+}
+
+// Populate leave table with data
 function populateLeaveTable() {
   try {
     const tableBody = document.getElementById("leaveReportList");
@@ -725,14 +730,12 @@ function populateLeaveTable() {
     // Add rows for each leave request
     currentLeaveData.forEach((leave) => {
       // Periksa apakah izin multi-hari
-      const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && 
-                        leave.leaveStartDate !== leave.leaveEndDate;
+      const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
 
       // Cek apakah izin sakit dengan surat dokter
-      const hasMedicalCert = leave.leaveType === "sakit" && 
-                            leave.replacementDetails && 
-                            leave.replacementDetails.hasMedicalCertificate;
-      
+      const hasMedicalCert =
+        leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate;
+
       // Jika izin sakit dengan surat dokter, set status penggantian ke "Sudah Diganti"
       if (hasMedicalCert && (!leave.replacementStatus || leave.replacementStatus === "Belum Diganti")) {
         leave.replacementStatus = "Tidak Perlu Diganti";
@@ -754,7 +757,7 @@ function populateLeaveTable() {
         // Format replacement info
         let replacementType = "-";
         let replacementInfo = "-";
-        
+
         // Cek apakah izin sakit dengan surat keterangan
         if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
@@ -766,8 +769,12 @@ function populateLeaveTable() {
             replacementType = "Ganti Libur";
             if (leave.replacementDetails && leave.replacementDetails.formattedDate) {
               replacementInfo = `${leave.replacementDetails.formattedDate}`;
-            } else if (leave.replacementDetails && leave.replacementDetails.dates && leave.replacementDetails.dates.length > 0) {
-              replacementInfo = leave.replacementDetails.dates.map(d => d.formattedDate).join(", ");
+            } else if (
+              leave.replacementDetails &&
+              leave.replacementDetails.dates &&
+              leave.replacementDetails.dates.length > 0
+            ) {
+              replacementInfo = leave.replacementDetails.dates.map((d) => d.formattedDate).join(", ");
             }
           } else if (leave.replacementType === "jam") {
             replacementType = "Ganti Jam";
@@ -817,7 +824,7 @@ function populateLeaveTable() {
 
         // Pastikan replacementStatusArray ada
         let replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
-        
+
         // Jika izin sakit dengan surat dokter, set semua hari ke "Sudah Diganti"
         if (hasMedicalCert) {
           replacementStatusArray = Array(dayDiff).fill("Tidak Perlu Diganti");
@@ -827,7 +834,7 @@ function populateLeaveTable() {
         // Format replacement type
         let replacementType = "-";
         let baseReplacementInfo = "-";
-        
+
         // Cek apakah izin sakit dengan surat keterangan
         if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
@@ -846,7 +853,7 @@ function populateLeaveTable() {
 
         // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
         const currentRowNumber = rowNumber;
-        
+
         // Buat baris untuk setiap hari
         for (let i = 0; i < dayDiff; i++) {
           const currentDate = new Date(startDate);
@@ -872,7 +879,7 @@ function populateLeaveTable() {
 
           // Tampilkan informasi penggantian untuk hari ini
           let replacementInfo = baseReplacementInfo;
-          
+
           // Jika bukan izin sakit dengan surat DC, cek detail pengganti
           if (!hasMedicalCert) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
@@ -899,7 +906,7 @@ function populateLeaveTable() {
 
           tableBody.appendChild(row);
         }
-        
+
         // Increment row number only once after all days of multi-day leave
         rowNumber++;
       }
@@ -909,92 +916,92 @@ function populateLeaveTable() {
     showAlert("danger", "Terjadi kesalahan saat menampilkan data: " + error.message);
   }
 }
-  
-   // Get CSS class for status badge
-   function getStatusClass(status) {
-     if (!status) return "bg-secondary";
-   
-     status = status.toLowerCase();
-     if (status === "approved" || status === "disetujui") {
-       return "bg-success";
-     } else if (status === "rejected" || status === "ditolak") {
-       return "bg-danger";
-     } else {
-       return "bg-warning";
-     }
-   }
-   
-   // Get CSS class for replacement status badge
-   function getReplacementStatusClass(status) {
-     if (!status || status === "Belum Diganti") {
-       return "bg-danger";
-     } else if (status === "Sudah Diganti") {
-       return "bg-success";
-     } else {
-       return "bg-secondary";
-     }
-   }
-   
-   // Show report elements
-   function showReportElements() {
-     try {
-       // Show table container
-       const tableContainer = document.getElementById("tableContainer");
-       if (tableContainer) {
-         tableContainer.style.display = "block";
-       }
-       
-       // Show summary cards
-       const summaryCards = document.getElementById("summaryCards");
-       if (summaryCards) {
-         summaryCards.style.display = "flex";
-       }
-       
-       // Show action buttons
-       const actionButtons = document.getElementById("actionButtons");
-       if (actionButtons) {
-         actionButtons.style.display = "flex !important";
-         // Force display style with inline style
-         actionButtons.setAttribute("style", "display: flex !important");
-       }
-       
-       // Hide no data message
-       const noDataMessage = document.getElementById("noDataMessage");
-       if (noDataMessage) {
-         noDataMessage.style.display = "none";
-       }
-     } catch (error) {
-       console.error("Error showing report elements:", error);
-     }
-   }
-   
-   // Hide report elements
-   function hideReportElements() {
-     try {
-       // Hide table container
-       const tableContainer = document.getElementById("tableContainer");
-       if (tableContainer) {
-         tableContainer.style.display = "none";
-       }
-       
-       // Hide summary cards
-       const summaryCards = document.getElementById("summaryCards");
-       if (summaryCards) {
-         summaryCards.style.display = "none";
-       }
-       
-       // Hide action buttons
-       const actionButtons = document.getElementById("actionButtons");
-       if (actionButtons) {
-         actionButtons.style.display = "none !important";
-         // Force display style with inline style
-         actionButtons.setAttribute("style", "display: none !important");
-       }
-     } catch (error) {
-       console.error("Error hiding report elements:", error);
-     }
-   }
-   
+
+// Get CSS class for status badge
+function getStatusClass(status) {
+  if (!status) return "bg-secondary";
+
+  status = status.toLowerCase();
+  if (status === "approved" || status === "disetujui") {
+    return "bg-success";
+  } else if (status === "rejected" || status === "ditolak") {
+    return "bg-danger";
+  } else {
+    return "bg-warning";
+  }
+}
+
+// Get CSS class for replacement status badge
+function getReplacementStatusClass(status) {
+  if (!status || status === "Belum Diganti") {
+    return "bg-danger";
+  } else if (status === "Sudah Diganti") {
+    return "bg-success";
+  } else {
+    return "bg-secondary";
+  }
+}
+
+// Show report elements
+function showReportElements() {
+  try {
+    // Show table container
+    const tableContainer = document.getElementById("tableContainer");
+    if (tableContainer) {
+      tableContainer.style.display = "block";
+    }
+
+    // Show summary cards
+    const summaryCards = document.getElementById("summaryCards");
+    if (summaryCards) {
+      summaryCards.style.display = "flex";
+    }
+
+    // Show action buttons
+    const actionButtons = document.getElementById("actionButtons");
+    if (actionButtons) {
+      actionButtons.style.display = "flex !important";
+      // Force display style with inline style
+      actionButtons.setAttribute("style", "display: flex !important");
+    }
+
+    // Hide no data message
+    const noDataMessage = document.getElementById("noDataMessage");
+    if (noDataMessage) {
+      noDataMessage.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Error showing report elements:", error);
+  }
+}
+
+// Hide report elements
+function hideReportElements() {
+  try {
+    // Hide table container
+    const tableContainer = document.getElementById("tableContainer");
+    if (tableContainer) {
+      tableContainer.style.display = "none";
+    }
+
+    // Hide summary cards
+    const summaryCards = document.getElementById("summaryCards");
+    if (summaryCards) {
+      summaryCards.style.display = "none";
+    }
+
+    // Hide action buttons
+    const actionButtons = document.getElementById("actionButtons");
+    if (actionButtons) {
+      actionButtons.style.display = "none !important";
+      // Force display style with inline style
+      actionButtons.setAttribute("style", "display: none !important");
+    }
+  } catch (error) {
+    console.error("Error hiding report elements:", error);
+  }
+}
+
 // Filter leave data by status or replacement status
 function filterLeaveData(type, filter) {
   try {
@@ -1005,7 +1012,7 @@ function filterLeaveData(type, filter) {
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
     const cacheKey = `${month}_${year}`;
-    
+
     let originalData = [];
     if (reportCache.has(cacheKey)) {
       originalData = [...reportCache.get(cacheKey).data];
@@ -1033,15 +1040,14 @@ function filterLeaveData(type, filter) {
       // Filter by replacement status
       currentLeaveData = originalData.filter((leave) => {
         // Check if it's a multi-day leave
-        const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && 
-                          leave.leaveStartDate !== leave.leaveEndDate;
-        
+        const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
+
         if (isMultiDay && leave.replacementStatusArray) {
           // For multi-day, check if any day matches the filter
           if (filter === "sudah") {
-            return leave.replacementStatusArray.some(s => s === "Sudah Diganti");
+            return leave.replacementStatusArray.some((s) => s === "Sudah Diganti");
           } else if (filter === "belum") {
-            return leave.replacementStatusArray.some(s => s === "Belum Diganti" || !s);
+            return leave.replacementStatusArray.some((s) => s === "Belum Diganti" || !s);
           }
         } else {
           // For single-day, check replacementStatus
@@ -1065,8 +1071,7 @@ function filterLeaveData(type, filter) {
   }
 }
 
-   
-   // Filter by replacement type - perbaikan fungsi ini
+// Filter by replacement type - perbaikan fungsi ini
 function filterByReplacementType(type) {
   try {
     // If no data, do nothing
@@ -1076,7 +1081,7 @@ function filterByReplacementType(type) {
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
     const cacheKey = `${month}_${year}`;
-    
+
     let originalData = [];
     if (reportCache.has(cacheKey)) {
       originalData = [...reportCache.get(cacheKey).data];
@@ -1107,81 +1112,86 @@ function filterByReplacementType(type) {
     showAlert("danger", "Terjadi kesalahan saat memfilter data: " + error.message);
   }
 }
-   
-   // Show delete confirmation modal
-   function showDeleteConfirmation() {
-     try {
-       const deleteModal = document.getElementById("deleteConfirmModal");
-       if (deleteModal) {
-         const bsModal = new bootstrap.Modal(deleteModal);
-         bsModal.show();
-       }
-     } catch (error) {
-       console.error("Error showing delete confirmation:", error);
-       showAlert("danger", "Terjadi kesalahan saat menampilkan konfirmasi: " + error.message);
-     }
-   }
-   
-   // Delete month data
-   async function deleteMonthData() {
-     try {
-       const month = parseInt(document.getElementById("monthSelector").value);
-       const year = parseInt(document.getElementById("yearSelector").value);
-   
-        // Show loading state
-        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-        if (confirmDeleteBtn) {
-          confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
-          confirmDeleteBtn.disabled = true;
-        }
-    
-        // Delete data
-        const deletedCount = await deleteLeaveRequestsByMonth(month, year);
-    
-        // Hide modal
-        const deleteModal = document.getElementById("deleteConfirmModal");
-        if (deleteModal) {
-          const bsModal = bootstrap.Modal.getInstance(deleteModal);
-          if (bsModal) {
-            bsModal.hide();
-          }
-        }
-    
-        // Reset button
-        if (confirmDeleteBtn) {
-          confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
-          confirmDeleteBtn.disabled = false;
-        }
-    
-        // Show success message
-        showAlert("success", `Berhasil menghapus ${deletedCount} data izin untuk bulan ${monthNames[month - 1]} ${year}`);
-    
-        // Clear cache for this month/year
-        const cacheKey = `${month}_${year}`;
-        reportCache.delete(cacheKey);
-        cacheTimestamps.delete(cacheKey);
-    
-        // Clear leave service cache
-        clearLeaveCache();
-    
-        // Reset UI
-        currentLeaveData = [];
-        hideReportElements();
-        document.getElementById("noDataMessage").style.display = "block";
-      } catch (error) {
-        console.error("Error deleting month data:", error);
-        showAlert("danger", "Terjadi kesalahan saat menghapus data: " + error.message);
-    
-        // Reset button
-        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-        if (confirmDeleteBtn) {
-          confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
-          confirmDeleteBtn.disabled = false;
+
+// Show delete confirmation modal
+function showDeleteConfirmation() {
+  try {
+    const deleteModal = document.getElementById("deleteConfirmModal");
+    if (deleteModal) {
+      const bsModal = new bootstrap.Modal(deleteModal);
+      bsModal.show();
+    }
+  } catch (error) {
+    console.error("Error showing delete confirmation:", error);
+    showAlert("danger", "Terjadi kesalahan saat menampilkan konfirmasi: " + error.message);
+  }
+}
+
+// Delete month data
+async function deleteMonthData() {
+  try {
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+
+    // Show loading state
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
+      confirmDeleteBtn.disabled = true;
+    }
+
+    // Delete data
+    const deletedCount = await deleteLeaveRequestsByMonth(month, year);
+
+      // Hide modal - PERBAIKAN DISINI
+      const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+      if (deleteConfirmModal) {
+        const modal = bootstrap.Modal.getInstance(deleteConfirmModal);
+        if (modal) {
+          modal.hide();
+        } else {
+          // Fallback jika instance modal tidak ditemukan
+          const newModal = new bootstrap.Modal(deleteConfirmModal);
+          newModal.hide();
         }
       }
+
+    // Reset button
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
+      confirmDeleteBtn.disabled = false;
     }
     
-    // Export to Excel - update untuk mendukung format baru
+
+    // Show success message
+    showAlert("success", `Berhasil menghapus ${deletedCount} data izin untuk bulan ${monthNames[month - 1]} ${year}`);
+
+    // Clear cache for this month/year
+    const cacheKey = `${month}_${year}`;
+    reportCache.delete(cacheKey);
+    cacheTimestamps.delete(cacheKey);
+
+    // Clear leave service cache
+    clearLeaveCache();
+
+    // Reset UI
+    currentLeaveData = [];
+    hideReportElements();
+    document.getElementById("noDataMessage").style.display = "block";
+  } catch (error) {
+    console.error("Error deleting month data:", error);
+    showAlert("danger", "Terjadi kesalahan saat menghapus data: " + error.message);
+
+    // Reset button
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Ya, Hapus Data';
+      confirmDeleteBtn.disabled = false;
+    }
+  }
+}
+
+// Export to Excel - update untuk mendukung format baru
 function exportToExcel() {
   try {
     if (!currentLeaveData || currentLeaveData.length === 0) {
@@ -1195,7 +1205,7 @@ function exportToExcel() {
 
     // Create a new workbook
     const wb = XLSX.utils.book_new();
-    
+
     // Prepare data for export
     const exportData = [];
     let rowNumber = 1;
@@ -1203,8 +1213,7 @@ function exportToExcel() {
     // Process each leave request
     currentLeaveData.forEach((leave) => {
       // Periksa apakah izin multi-hari
-      const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && 
-                        leave.leaveStartDate !== leave.leaveEndDate;
+      const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
 
       if (!isMultiDay) {
         // Format dates
@@ -1219,11 +1228,9 @@ function exportToExcel() {
         // Format replacement info
         let replacementType = "-";
         let replacementInfo = "-";
-        
+
         // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && 
-            leave.replacementDetails && 
-            leave.replacementDetails.hasMedicalCertificate) {
+        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           replacementInfo = "Tidak perlu diganti";
@@ -1233,8 +1240,12 @@ function exportToExcel() {
             replacementType = "Ganti Libur";
             if (leave.replacementDetails && leave.replacementDetails.formattedDate) {
               replacementInfo = `${leave.replacementDetails.formattedDate}`;
-            } else if (leave.replacementDetails && leave.replacementDetails.dates && leave.replacementDetails.dates.length > 0) {
-              replacementInfo = leave.replacementDetails.dates.map(d => d.formattedDate).join(", ");
+            } else if (
+              leave.replacementDetails &&
+              leave.replacementDetails.dates &&
+              leave.replacementDetails.dates.length > 0
+            ) {
+              replacementInfo = leave.replacementDetails.dates.map((d) => d.formattedDate).join(", ");
             }
           } else if (leave.replacementType === "jam") {
             replacementType = "Ganti Jam";
@@ -1247,17 +1258,17 @@ function exportToExcel() {
         }
 
         exportData.push({
-          "No": rowNumber,
+          No: rowNumber,
           "ID Karyawan": leave.employeeId || "-",
-          "Nama": leave.name || "-",
+          Nama: leave.name || "-",
           "Tanggal Izin": leaveDate,
-          "Alasan": leave.reason || "-",
+          Alasan: leave.reason || "-",
           "Jenis Pengganti": replacementType,
           "Detail Pengganti": replacementInfo,
-          "Status": leave.status || "Pending",
+          Status: leave.status || "Pending",
           "Status Pengganti": leave.replacementStatus || "Belum Diganti",
         });
-        
+
         rowNumber++;
       } else {
         // Untuk izin multi-hari
@@ -1283,11 +1294,9 @@ function exportToExcel() {
         // Format replacement type
         let replacementType = "-";
         let baseReplacementInfo = "-";
-        
+
         // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && 
-            leave.replacementDetails && 
-            leave.replacementDetails.hasMedicalCertificate) {
+        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           baseReplacementInfo = "Tidak perlu diganti";
@@ -1321,11 +1330,11 @@ function exportToExcel() {
 
           // Tampilkan informasi penggantian untuk hari ini
           let replacementInfo = baseReplacementInfo;
-          
+
           // Jika bukan izin sakit dengan surat DC, cek detail pengganti
-          if (!(leave.leaveType === "sakit" && 
-                leave.replacementDetails && 
-                leave.replacementDetails.hasMedicalCertificate)) {
+          if (
+            !(leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate)
+          ) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
               // Jika ada tanggal pengganti spesifik untuk hari ini
               if (leave.replacementDetails.dates[i]) {
@@ -1337,18 +1346,18 @@ function exportToExcel() {
           }
 
           exportData.push({
-            "No": `${currentRowNumber} (${i + 1}/${dayDiff})`,
+            No: `${currentRowNumber} (${i + 1}/${dayDiff})`,
             "ID Karyawan": leave.employeeId || "-",
-            "Nama": leave.name || "-",
+            Nama: leave.name || "-",
             "Tanggal Izin": formattedDate,
-            "Alasan": leave.reason || "-",
+            Alasan: leave.reason || "-",
             "Jenis Pengganti": replacementType,
             "Detail Pengganti": replacementInfo,
-            "Status": leave.status || "Pending",
+            Status: leave.status || "Pending",
             "Status Pengganti": dayStatus,
           });
         }
-        
+
         // Increment row number only once after all days of multi-day leave
         rowNumber++;
       }
@@ -1358,24 +1367,24 @@ function exportToExcel() {
     const ws = XLSX.utils.json_to_sheet(exportData);
 
     // Add title to the worksheet (merge cells A1:I1)
-    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
-    
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
+
     // Insert title row at the top
-    XLSX.utils.sheet_add_aoa(ws, [
-      [`Laporan Izin Staff Melati Gold Shop Periode ${monthName} ${year}`]
-    ], { origin: 'A1' });
-    
+    XLSX.utils.sheet_add_aoa(ws, [[`Laporan Izin Staff Melati Gold Shop Periode ${monthName} ${year}`]], {
+      origin: "A1",
+    });
+
     // Style the title (bold and centered)
-    if (!ws['!cols']) ws['!cols'] = [];
-    ws['!cols'][0] = { wch: 10 }; // No column
-    ws['!cols'][1] = { wch: 15 }; // ID Karyawan
-    ws['!cols'][2] = { wch: 25 }; // Nama
-    ws['!cols'][3] = { wch: 25 }; // Tanggal Izin
-    ws['!cols'][4] = { wch: 30 }; // Alasan
-    ws['!cols'][5] = { wch: 20 }; // Jenis Pengganti
-    ws['!cols'][6] = { wch: 30 }; // Detail Pengganti
-    ws['!cols'][7] = { wch: 15 }; // Status
-    ws['!cols'][8] = { wch: 15 }; // Status Pengganti
+    if (!ws["!cols"]) ws["!cols"] = [];
+    ws["!cols"][0] = { wch: 10 }; // No column
+    ws["!cols"][1] = { wch: 15 }; // ID Karyawan
+    ws["!cols"][2] = { wch: 25 }; // Nama
+    ws["!cols"][3] = { wch: 25 }; // Tanggal Izin
+    ws["!cols"][4] = { wch: 30 }; // Alasan
+    ws["!cols"][5] = { wch: 20 }; // Jenis Pengganti
+    ws["!cols"][6] = { wch: 30 }; // Detail Pengganti
+    ws["!cols"][7] = { wch: 15 }; // Status
+    ws["!cols"][8] = { wch: 15 }; // Status Pengganti
 
     // Add worksheet to workbook
     XLSX.utils.book_append_sheet(wb, ws, "Laporan Izin");
@@ -1390,8 +1399,8 @@ function exportToExcel() {
     showAlert("danger", "Terjadi kesalahan saat mengekspor ke Excel: " + error.message);
   }
 }
-    
-   // Export to PDF - update untuk mendukung format baru
+
+// Export to PDF - update untuk mendukung format baru
 function exportToPDF() {
   try {
     if (!currentLeaveData || currentLeaveData.length === 0) {
@@ -1405,17 +1414,27 @@ function exportToPDF() {
 
     // Create a new jsPDF instance
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation for more space
+    const doc = new jsPDF("l", "mm", "a4"); // Landscape orientation for more space
 
     // Add title
     doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Laporan Izin Staff Melati Gold Shop`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
-    doc.text(`Periode ${monthName} ${year}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
-    doc.setFont(undefined, 'normal');
+    doc.setFont(undefined, "bold");
+    doc.text(`Laporan Izin Staff Melati Gold Shop`, doc.internal.pageSize.getWidth() / 2, 15, { align: "center" });
+    doc.text(`Periode ${monthName} ${year}`, doc.internal.pageSize.getWidth() / 2, 22, { align: "center" });
+    doc.setFont(undefined, "normal");
 
     // Prepare table data
-    const tableColumn = ["No", "ID Karyawan", "Nama", "Tanggal Izin", "Alasan", "Jenis Pengganti", "Detail Pengganti", "Status", "Status Pengganti"];
+    const tableColumn = [
+      "No",
+      "ID Karyawan",
+      "Nama",
+      "Tanggal Izin",
+      "Alasan",
+      "Jenis Pengganti",
+      "Detail Pengganti",
+      "Status",
+      "Status Pengganti",
+    ];
     const tableRows = [];
 
     // Counter untuk nomor urut
@@ -1424,8 +1443,7 @@ function exportToPDF() {
     // Process each leave request
     currentLeaveData.forEach((leave) => {
       // Periksa apakah izin multi-hari
-      const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && 
-                        leave.leaveStartDate !== leave.leaveEndDate;
+      const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
 
       if (!isMultiDay) {
         // Format dates
@@ -1440,11 +1458,9 @@ function exportToPDF() {
         // Format replacement info
         let replacementType = "-";
         let replacementInfo = "-";
-        
+
         // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && 
-            leave.replacementDetails && 
-            leave.replacementDetails.hasMedicalCertificate) {
+        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           replacementInfo = "Tidak perlu diganti";
@@ -1454,8 +1470,12 @@ function exportToPDF() {
             replacementType = "Ganti Libur";
             if (leave.replacementDetails && leave.replacementDetails.formattedDate) {
               replacementInfo = `${leave.replacementDetails.formattedDate}`;
-            } else if (leave.replacementDetails && leave.replacementDetails.dates && leave.replacementDetails.dates.length > 0) {
-              replacementInfo = leave.replacementDetails.dates.map(d => d.formattedDate).join(", ");
+            } else if (
+              leave.replacementDetails &&
+              leave.replacementDetails.dates &&
+              leave.replacementDetails.dates.length > 0
+            ) {
+              replacementInfo = leave.replacementDetails.dates.map((d) => d.formattedDate).join(", ");
             }
           } else if (leave.replacementType === "jam") {
             replacementType = "Ganti Jam";
@@ -1478,7 +1498,7 @@ function exportToPDF() {
           leave.status || "Pending",
           leave.replacementStatus || "Belum Diganti",
         ]);
-        
+
         rowNumber++;
       } else {
         // Untuk izin multi-hari
@@ -1504,11 +1524,9 @@ function exportToPDF() {
         // Format replacement type
         let replacementType = "-";
         let baseReplacementInfo = "-";
-        
+
         // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && 
-            leave.replacementDetails && 
-            leave.replacementDetails.hasMedicalCertificate) {
+        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           baseReplacementInfo = "Tidak perlu diganti";
@@ -1542,11 +1560,11 @@ function exportToPDF() {
 
           // Tampilkan informasi penggantian untuk hari ini
           let replacementInfo = baseReplacementInfo;
-          
+
           // Jika bukan izin sakit dengan surat DC, cek detail pengganti
-          if (!(leave.leaveType === "sakit" && 
-                leave.replacementDetails && 
-                leave.replacementDetails.hasMedicalCertificate)) {
+          if (
+            !(leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate)
+          ) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
               // Jika ada tanggal pengganti spesifik untuk hari ini
               if (leave.replacementDetails.dates[i]) {
@@ -1569,7 +1587,7 @@ function exportToPDF() {
             dayStatus,
           ]);
         }
-        
+
         // Increment row number only once after all days of multi-day leave
         rowNumber++;
       }
@@ -1580,19 +1598,19 @@ function exportToPDF() {
       head: [tableColumn],
       body: tableRows,
       startY: 35,
-      theme: 'grid',
+      theme: "grid",
       styles: {
         fontSize: 8,
         cellPadding: 1,
-        overflow: 'linebreak',
-        halign: 'left',
-        valign: 'middle',
+        overflow: "linebreak",
+        halign: "left",
+        valign: "middle",
       },
       headStyles: {
         fillColor: [41, 128, 185],
         textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center',
+        fontStyle: "bold",
+        halign: "center",
       },
       columnStyles: {
         0: { cellWidth: 13 }, // No
@@ -1605,21 +1623,21 @@ function exportToPDF() {
         7: { cellWidth: 20 }, // Status
         8: { cellWidth: 35 }, // Status Pengganti
       },
-      didDrawPage: function(data) {
+      didDrawPage: function (data) {
         // Footer with page number
         const pageSize = doc.internal.pageSize;
         const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
         doc.setFontSize(8);
         doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, pageSize.width - 20, pageHeight - 10);
-        
+
         // Add date printed
-        const today = new Date().toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
+        const today = new Date().toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
         });
         doc.text(`Dicetak pada: ${today}`, 14, pageHeight - 10);
-      }
+      },
     });
 
     // Generate PDF file
@@ -1632,99 +1650,97 @@ function exportToPDF() {
     showAlert("danger", "Terjadi kesalahan saat mengekspor ke PDF: " + error.message);
   }
 }
-    // Show alert message
-    function showAlert(type, message, autoHide = true) {
-      try {
-        const alertContainer = document.getElementById("alertContainer");
-        if (!alertContainer) {
-          console.error("Alert container not found");
-          return;
-        }
-    
-        // Create alert element
-        const alertDiv = document.createElement("div");
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
+// Show alert message
+function showAlert(type, message, autoHide = true) {
+  try {
+    const alertContainer = document.getElementById("alertContainer");
+    if (!alertContainer) {
+      console.error("Alert container not found");
+      return;
+    }
+
+    // Create alert element
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
           ${message}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
-    
-        // Clear previous alerts
-        alertContainer.innerHTML = "";
-        alertContainer.appendChild(alertDiv);
-        alertContainer.style.display = "block";
-    
-        // Auto-hide after 5 seconds if autoHide is true
-        if (autoHide) {
+
+    // Clear previous alerts
+    alertContainer.innerHTML = "";
+    alertContainer.appendChild(alertDiv);
+    alertContainer.style.display = "block";
+
+    // Auto-hide after 5 seconds if autoHide is true
+    if (autoHide) {
+      setTimeout(() => {
+        if (alertDiv.parentNode) {
+          alertDiv.classList.remove("show");
           setTimeout(() => {
             if (alertDiv.parentNode) {
-              alertDiv.classList.remove("show");
-              setTimeout(() => {
-                if (alertDiv.parentNode) {
-                  alertDiv.parentNode.removeChild(alertDiv);
-                }
-    
-                // Hide container if no alerts
-                if (alertContainer.children.length === 0) {
-                  alertContainer.style.display = "none";
-                }
-              }, 150);
+              alertDiv.parentNode.removeChild(alertDiv);
             }
-          }, 5000);
+
+            // Hide container if no alerts
+            if (alertContainer.children.length === 0) {
+              alertContainer.style.display = "none";
+            }
+          }, 150);
         }
-      } catch (error) {
-        console.error("Error showing alert:", error);
-      }
+      }, 5000);
     }
-    
-    // Hide alert
-    function hideAlert() {
-      try {
-        const alertContainer = document.getElementById("alertContainer");
-        if (alertContainer) {
-          alertContainer.innerHTML = "";
-          alertContainer.style.display = "none";
-        }
-      } catch (error) {
-        console.error("Error hiding alert:", error);
-      }
+  } catch (error) {
+    console.error("Error showing alert:", error);
+  }
+}
+
+// Hide alert
+function hideAlert() {
+  try {
+    const alertContainer = document.getElementById("alertContainer");
+    if (alertContainer) {
+      alertContainer.innerHTML = "";
+      alertContainer.style.display = "none";
     }
-    
-    // Logout handler
-    window.handleLogout = function() {
-      // Clear all caches before logout
-      reportCache.clear();
-      cacheTimestamps.clear();
-      clearLeaveCache();
-      
-      // Redirect to login page
-      window.location.href = "login.html";
-    };
-    
-    // Expose functions for debugging
-    window.debugFunctions = {
-      clearCache: function() {
-        reportCache.clear();
-        cacheTimestamps.clear();
-        clearLeaveCache();
-        console.log("Cache cleared");
-      },
-      getCacheStatus: function() {
+  } catch (error) {
+    console.error("Error hiding alert:", error);
+  }
+}
+
+// Logout handler
+window.handleLogout = function () {
+  // Clear all caches before logout
+  reportCache.clear();
+  cacheTimestamps.clear();
+  clearLeaveCache();
+
+  // Redirect to login page
+  window.location.href = "login.html";
+};
+
+// Expose functions for debugging
+window.debugFunctions = {
+  clearCache: function () {
+    reportCache.clear();
+    cacheTimestamps.clear();
+    clearLeaveCache();
+    console.log("Cache cleared");
+  },
+  getCacheStatus: function () {
+    return {
+      reportCache: Array.from(reportCache.keys()),
+      cacheTimestamps: Object.fromEntries(cacheTimestamps.entries()),
+      cacheAge: Array.from(cacheTimestamps.entries()).map(([key, time]) => {
         return {
-          reportCache: Array.from(reportCache.keys()),
-          cacheTimestamps: Object.fromEntries(cacheTimestamps.entries()),
-          cacheAge: Array.from(cacheTimestamps.entries()).map(([key, time]) => {
-            return {
-              key,
-              age: (Date.now() - time) / 1000 + " seconds",
-              isValid: (Date.now() - time) < CACHE_DURATION
-            };
-          })
+          key,
+          age: (Date.now() - time) / 1000 + " seconds",
+          isValid: Date.now() - time < CACHE_DURATION,
         };
-      },
-      forceRefresh: function() {
-        generateReport(true);
-      }
+      }),
     };
-      
-   
+  },
+  forceRefresh: function () {
+    generateReport(true);
+  },
+};
