@@ -3,20 +3,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize buyback form
   setupBuybackForm();
 });
-  // Tambahkan event listener untuk tombol print
-  const printButton = document.getElementById("printModalButton");
-  if (printButton) {
-    printButton.addEventListener("click", printModal);
-  }
+// Tambahkan event listener untuk tombol print
+const printButton = document.getElementById("printModalButton");
+if (printButton) {
+  printButton.addEventListener("click", printModal);
+}
 
 // Setup buyback form
 function setupBuybackForm() {
   // Add row button
   document.getElementById("btnTambahPenerimaan").addEventListener("click", addNewRow);
-  
+
   // Form submission
   document.getElementById("penerimaanForm").addEventListener("submit", calculateBuyback);
-  
+
   // Enable the first delete button
   setupDeleteButtons();
 }
@@ -25,7 +25,7 @@ function setupBuybackForm() {
 function addNewRow() {
   const tbody = document.querySelector("#tablePenerimaan tbody");
   const rowCount = tbody.querySelectorAll("tr").length + 1;
-  
+
   const newRow = document.createElement("tr");
   newRow.innerHTML = `
     <td>${rowCount}</td>
@@ -82,7 +82,7 @@ function addNewRow() {
       </button>
     </td>
   `;
-  
+
   tbody.appendChild(newRow);
   setupDeleteButtons();
 }
@@ -90,11 +90,11 @@ function addNewRow() {
 // Setup delete buttons
 function setupDeleteButtons() {
   const deleteButtons = document.querySelectorAll(".hapus-baris");
-  
+
   // Enable all delete buttons if there's more than one row
   const rows = document.querySelectorAll("#tablePenerimaan tbody tr");
   if (rows.length > 1) {
-    deleteButtons.forEach(btn => {
+    deleteButtons.forEach((btn) => {
       btn.disabled = false;
       btn.addEventListener("click", deleteRow);
     });
@@ -109,13 +109,13 @@ function deleteRow(e) {
   const button = e.currentTarget;
   const row = button.closest("tr");
   row.remove();
-  
+
   // Renumber rows
   const rows = document.querySelectorAll("#tablePenerimaan tbody tr");
   rows.forEach((row, index) => {
     row.cells[0].textContent = index + 1;
   });
-  
+
   // Update delete buttons
   setupDeleteButtons();
 }
@@ -123,15 +123,15 @@ function deleteRow(e) {
 // Calculate buyback
 function calculateBuyback(e) {
   e.preventDefault();
-  
+
   // Get all rows
   const rows = document.querySelectorAll("#tablePenerimaan tbody tr");
   const items = [];
-  
+
   // Validate form
   let isValid = true;
-  
-  rows.forEach(row => {
+
+  rows.forEach((row) => {
     const namaBarangInput = row.querySelector('input[name="namaBarang"]');
     const kadar = row.querySelector("[name='kadar']").value;
     const asalToko = row.querySelector("[name='asalToko']").value;
@@ -139,30 +139,30 @@ function calculateBuyback(e) {
     const kondisiBarang = row.querySelector("[name='kondisiBarang']").value;
     const hargaBeli = parseFloat(row.querySelector("[name='hargaBeli']").value);
     const hargaHariIni = parseFloat(row.querySelector("[name='hargaHariIni']").value);
-    
+
     if (!kadar || !asalToko || !kondisiBarang || isNaN(hargaBeli) || isNaN(hargaHariIni)) {
       isValid = false;
       return;
     }
-    
+
     items.push({
       kadar,
       asalToko,
       namaBarang,
       kondisiBarang,
       hargaBeli,
-      hargaHariIni
+      hargaHariIni,
     });
   });
-  
+
   if (!isValid) {
     showAlert("Mohon lengkapi semua field yang diperlukan", "danger");
     return;
   }
-  
+
   // Calculate buyback price
   const results = calculateBuybackPrice(items);
-  
+
   // Show results
   showResults(results);
 }
@@ -170,15 +170,15 @@ function calculateBuyback(e) {
 /// Calculate buyback price
 function calculateBuybackPrice(items) {
   const results = [];
-  
-  items.forEach(item => {
+
+  items.forEach((item) => {
     let buybackPercentage = 0;
     let buybackPrice = 0;
-    
+
     // Bandingkan harga per gram saat beli dengan harga per gram saat ini
     const hargaPerGramBeli = item.hargaBeli; // Asumsikan ini sudah dalam format per gram
     const hargaPerGramHariIni = item.hargaHariIni; // Asumsikan ini sudah dalam format per gram
-    
+
     if (hargaPerGramBeli <= hargaPerGramHariIni) {
       // Kasus 1: Harga beli lebih rendah dari harga hari ini
       // Gunakan logika perhitungan yang sudah ada berdasarkan kondisi dan asal toko
@@ -190,39 +190,46 @@ function calculateBuybackPrice(items) {
         // For items from other stores, use the calculateLuarTokoPersentase function
         buybackPercentage = calculateLuarTokoPersentase(item.kondisiBarang);
       }
+
+      // Calculate buyback price based on current price and percentage
+      buybackPrice = (item.hargaHariIni * buybackPercentage) / 100;
+
+      // Terapkan aturan pembulatan
+      buybackPrice = roundBuybackPrice(buybackPrice);
+
+      // Jika harga penerimaan setelah dihitung lebih rendah dari harga beli,
+      // maka gunakan harga beli
+      if (buybackPrice < item.hargaBeli) {
+        buybackPrice = item.hargaBeli;
+      }
     } else {
       // Kasus 2: Harga beli lebih tinggi dari harga hari ini
-      // Gunakan persentase 100% (harga penuh hari ini)
-      buybackPercentage = 100;
+      // Gunakan harga hari ini tanpa pembulatan
+      buybackPrice = item.hargaHariIni;
     }
-    
-    // Calculate buyback price based on current price and percentage
-    buybackPrice = (item.hargaHariIni * buybackPercentage) / 100;
-    
-    // Terapkan aturan pembulatan baru
-    buybackPrice = roundBuybackPrice(buybackPrice);
-    
+
     // Calculate price difference
     const priceDifference = buybackPrice - item.hargaBeli;
     const percentageDifference = ((priceDifference / item.hargaBeli) * 100).toFixed(2);
-    
+
     results.push({
       ...item,
       buybackPercentage: parseFloat(buybackPercentage.toFixed(2)), // Format to 2 decimal places
       buybackPrice,
       priceDifference,
       percentageDifference,
-      isHigherPurchasePrice: hargaPerGramBeli > hargaPerGramHariIni // Flag untuk UI
+      isHigherPurchasePrice: hargaPerGramBeli > hargaPerGramHariIni, // Flag untuk UI
     });
   });
-  
+
   return results;
 }
-// Fungsi untuk membulatkan harga buyback sesuai ketentuan baru
+
+// Fungsi untuk membulatkan harga buyback sesuai ketentuan
 function roundBuybackPrice(price) {
   // Ekstrak ribuan terakhir dari harga
-  const lastThousand = Math.floor(price % 10000 / 1000);
-  
+  const lastThousand = Math.floor((price % 10000) / 1000);
+
   if (lastThousand < 5) {
     // Jika ribuan terakhir < 5, bulatkan ke 5 ribu
     return Math.floor(price / 10000) * 10000 + 5000;
@@ -232,49 +239,48 @@ function roundBuybackPrice(price) {
   }
 }
 
-
 // New helper functions for calculating percentages
 function calculateMelatiPersentase(kondisiBarang, persentaseBeli) {
   if (persentaseBeli >= 95) {
     const persentaseMap = {
       1: 98,
       2: 97,
-      3: 96
+      3: 96,
     };
     return persentaseMap[kondisiBarang];
   } else if (persentaseBeli >= 90) {
     const persentaseMap = {
       1: 97,
       2: 95,
-      3: 94
+      3: 94,
     };
     return persentaseMap[kondisiBarang];
   } else if (persentaseBeli >= 85) {
     const persentaseMap = {
       1: 95,
       2: 93,
-      3: 92
+      3: 92,
     };
     return persentaseMap[kondisiBarang];
   } else if (persentaseBeli >= 80) {
     const persentaseMap = {
       1: 93,
       2: 90,
-      3: 88
+      3: 88,
     };
     return persentaseMap[kondisiBarang];
   } else if (persentaseBeli >= 75) {
     const persentaseMap = {
       1: 90,
       2: 87,
-      3: 80
+      3: 80,
     };
     return persentaseMap[kondisiBarang];
   } else {
     const persentaseMap = {
       1: 90,
       2: 83,
-      3: 77
+      3: 77,
     };
     return persentaseMap[kondisiBarang];
   }
@@ -289,7 +295,6 @@ function calculateLuarTokoPersentase(kondisiBarang) {
   return persentaseMap[kondisiBarang] || 60;
 }
 
-
 // Show results in modal
 function showResults(results) {
   const modalBody = document.getElementById("modalMessage");
@@ -299,16 +304,16 @@ function showResults(results) {
       Berikut adalah hasil perhitungan buyback perhiasan.
     </div>
   `;
-  
+
   results.forEach((result, index) => {
-    const conditionText = result.kondisiBarang === "1" ? "Sangat Baik (K1)" : 
-                          result.kondisiBarang === "2" ? "Sedang (K2)" : "Kurang (K3)";
-    
+    const conditionText =
+      result.kondisiBarang === "1" ? "Sangat Baik (K1)" : result.kondisiBarang === "2" ? "Sedang (K2)" : "Kurang (K3)";
+
     const priceStatus = result.priceDifference >= 0 ? "text-success" : "text-danger";
     const priceIcon = result.priceDifference >= 0 ? "fa-arrow-up" : "fa-arrow-down";
-    
+
     // Tambahkan notifikasi khusus jika harga beli lebih tinggi
-    let specialNotice = '';
+    let specialNotice = "";
     if (result.isHigherPurchasePrice) {
       specialNotice = `
         <div class="alert alert-warning mb-3">
@@ -336,7 +341,7 @@ function showResults(results) {
           <p class="mb-1"><strong>Persentase Buyback:</strong> ${result.buybackPercentage}%</p>
         </div>
       </div>
-      <div class="alert ${result.priceDifference >= 0 ? 'alert-success' : 'alert-danger'} mb-0">
+      <div class="alert ${result.priceDifference >= 0 ? "alert-success" : "alert-danger"} mb-0">
         <div class="row">
           <div class="col-md-6">
             <h5 class="mb-0">Harga Buyback: Rp ${formatNumber(result.buybackPrice)}</h5>
@@ -345,51 +350,49 @@ function showResults(results) {
       </div>
     </div>
   `;
-});
+  });
 
-// Add timestamp
-const now = new Date();
-content += `
+  // Add timestamp
+  const now = new Date();
+  content += `
   <div class="text-end text-muted mt-3">
-    <small>Dihitung pada: ${now.toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    <small>Dihitung pada: ${now.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })}</small>
   </div>
 `;
 
-modalBody.innerHTML = content;
+  modalBody.innerHTML = content;
 
-// Show modal
-const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
-resultModal.show();
+  // Show modal
+  const resultModal = new bootstrap.Modal(document.getElementById("resultModal"));
+  resultModal.show();
 }
-
-
 
 // Format number to currency format
 function formatNumber(number) {
-  return number.toLocaleString('id-ID');
+  return number.toLocaleString("id-ID");
 }
 
 // Show alert message
-function showAlert(message, type = 'warning') {
+function showAlert(message, type = "warning") {
   // Create alert element
-  const alertDiv = document.createElement('div');
+  const alertDiv = document.createElement("div");
   alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
   alertDiv.innerHTML = `
-    <i class="fas fa-${type === 'danger' ? 'exclamation-circle' : 'exclamation-triangle'} me-2"></i>
+    <i class="fas fa-${type === "danger" ? "exclamation-circle" : "exclamation-triangle"} me-2"></i>
     ${message}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   `;
-  
+
   // Insert at the top of the form
-  const form = document.getElementById('penerimaanForm');
+  const form = document.getElementById("penerimaanForm");
   form.parentNode.insertBefore(alertDiv, form);
-  
+
   // Auto dismiss after 5 seconds
   setTimeout(() => {
     const bsAlert = new bootstrap.Alert(alertDiv);
@@ -402,7 +405,7 @@ window.printModal = printModal;
 // Print modal content - simplified and direct approach
 function printModal() {
   const modalContent = document.getElementById("modalMessage").innerHTML;
-  
+
   // Create a simplified print window with direct content
   const printContent = `
     <!DOCTYPE html>
@@ -497,21 +500,18 @@ function printModal() {
   `;
 
   // Open a new window with the content
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open("", "_blank");
   printWindow.document.write(printContent);
   printWindow.document.close();
 
   // Print immediately when loaded
-  printWindow.onload = function() {
+  printWindow.onload = function () {
     // Short delay to ensure content is rendered
     setTimeout(() => {
       printWindow.print();
-      printWindow.onafterprint = function() {
+      printWindow.onafterprint = function () {
         printWindow.close();
       };
     }, 500);
   };
 }
-
-
-
