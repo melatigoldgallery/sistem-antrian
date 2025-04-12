@@ -307,7 +307,7 @@ function showResults(results) {
 
   results.forEach((result, index) => {
     const conditionText =
-      result.kondisiBarang === "1" ? "Sangat Baik (K1)" : result.kondisiBarang === "2" ? "Sedang (K2)" : "Kurang (K3)";
+      result.kondisiBarang === "1" ? "(K1)" : result.kondisiBarang === "2" ? "(K2)" : "(K3)";
 
     const priceStatus = result.priceDifference >= 0 ? "text-success" : "text-danger";
     const priceIcon = result.priceDifference >= 0 ? "fa-arrow-up" : "fa-arrow-down";
@@ -332,12 +332,9 @@ function showResults(results) {
         <div class="col-md-6">
           <p class="mb-1"><strong>Nama Barang:</strong> ${namaBarang}</p>
           <p class="mb-1"><strong>Kadar:</strong> ${result.kadar}</p>
-          <p class="mb-1"><strong>Asal Toko:</strong> ${result.asalToko}</p>
-          <p class="mb-1"><strong>Kondisi:</strong> ${conditionText}</p>
         </div>
         <div class="col-md-6">
-          <p class="mb-1"><strong>Harga Beli:</strong> Rp ${formatNumber(result.hargaBeli)}</p>
-          <p class="mb-1"><strong>Harga Hari Ini:</strong> Rp ${formatNumber(result.hargaHariIni)}</p>
+          <p class="mb-1"><strong>Asal Toko:</strong> ${result.asalToko}</p>
           <p class="mb-1"><strong>Persentase Buyback:</strong> ${result.buybackPercentage}%</p>
         </div>
       </div>

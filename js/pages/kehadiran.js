@@ -382,8 +382,6 @@ function loadReportCacheFromStorage() {
       for (const [key, value] of Object.entries(metaObj)) {
         attendanceDataCacheMeta.set(key, value);
       }
-
-      console.log("Report cache loaded from localStorage");
     }
   } catch (error) {
     console.error("Error loading report cache from localStorage:", error);
@@ -513,8 +511,6 @@ function initializeDatePickers() {
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
     const formattedDate = `${year}-${month}-${day}`;
-
-    console.log(`Setting date picker to: ${formattedDate}`); // Debugging
     startDateInput.value = formattedDate;
   }
 
@@ -551,7 +547,6 @@ function setupEventListeners() {
   // Delete data button
   const deleteDataBtn = document.getElementById("deleteDataBtn");
   if (deleteDataBtn) {
-    console.log("Delete button found, attaching event listener");
     deleteDataBtn.addEventListener("click", function() {
       console.log("Delete button clicked");
       showDeleteConfirmation();
@@ -563,7 +558,6 @@ function setupEventListeners() {
   // Confirm delete button
   const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
   if (confirmDeleteBtn) {
-    console.log("Confirm delete button found, attaching event listener");
     confirmDeleteBtn.addEventListener("click", function() {
       console.log("Confirm delete button clicked");
       deleteAttendanceData();
@@ -683,9 +677,7 @@ async function generateReport() {
     
     // Check if data is in cache and still valid (less than 1 hour old)
     if (attendanceDataCache.has(cacheKey) && !shouldUpdateReportCache(cacheKey)) {
-      attendanceData = attendanceDataCache.get(cacheKey);
-      console.log("Using cached attendance report data (less than 1 hour old)");
-      
+      attendanceData = attendanceDataCache.get(cacheKey);      
       // Hide loading message
       hideAlert();
     } else {
@@ -886,9 +878,6 @@ function getLocalDateStringFromDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-
-  console.log(`Converting date ${date} to: ${year}-${month}-${day}`); // Debugging
-
   return `${year}-${month}-${day}`;
 }
 

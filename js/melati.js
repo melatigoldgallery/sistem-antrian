@@ -69,8 +69,6 @@ async function initializeQueueSystem() {
 
     // Set up customer count listener
     setupCustomerCountListener();
-
-    console.log("Queue system initialized successfully");
   } catch (error) {
     console.error("Error initializing queue system:", error);
   }
@@ -550,16 +548,6 @@ document.getElementById("logoutBtn")?.addEventListener("click", () => {
 async function initializePage() {
   try {
     await initializeUsers();
-    console.log("Users initialized successfully");
-
-    const isAuthenticated = await checkAuth();
-    if (isAuthenticated) {
-      console.log("User is authenticated");
-      // Continue with authenticated user logic
-    } else {
-      console.log("User is not authenticated");
-      // Handle unauthenticated state
-    }
   } catch (error) {
     console.error("Authentication initialization error:", error);
   }
@@ -568,13 +556,10 @@ async function initializePage() {
 // Add this to ensure voices are loaded
 window.speechSynthesis.onvoiceschanged = () => {
   const voices = window.speechSynthesis.getVoices();
-  console.log("Available voices loaded:", voices.length);
 };
 
 // Main DOM content loaded event
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("DOM fully loaded");
-
   // Initialize authentication
   initializePage();
 

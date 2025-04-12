@@ -27,7 +27,6 @@ export function sidebarToggle() {
  * Setup dropdown toggles in sidebar
  */
 function setupDropdownToggles() {
-    console.log("Setting up dropdown toggles");
     const dropdownToggles = document.querySelectorAll('.sidebar .nav-link[data-bs-toggle="collapse"]');
     
     dropdownToggles.forEach(toggle => {

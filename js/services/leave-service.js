@@ -144,15 +144,11 @@ export async function getAllLeaveRequestsForDate(date, forceRefresh = false) {
       const day = String(date.getDate()).padStart(2, "0");
       formattedDate = `${year}-${month}-${day}`;
     }
-
-    console.log("Getting ALL leave requests for date:", formattedDate, "Force refresh:", forceRefresh);
-
     // Kunci cache khusus untuk fungsi ini
     const cacheKey = `all_${formattedDate}`;
 
     // Check if data is in cache and we're not forcing a refresh
     if (!forceRefresh && leaveCache.has(cacheKey)) {
-      console.log("Using cached ALL leave data for date:", formattedDate);
       return leaveCache.get(cacheKey);
     }
 
@@ -303,8 +299,6 @@ function saveLeaveCacheToStorage() {
     localStorage.setItem("leaveCache", JSON.stringify(cacheSerialized));
     localStorage.setItem("leaveMonthCache", JSON.stringify(monthCacheSerialized));
     localStorage.setItem("pendingLeaveCache", JSON.stringify(pendingCacheSerialized));
-
-    console.log("Leave cache saved to localStorage");
   } catch (error) {
     console.error("Error saving leave cache to localStorage:", error);
   }
@@ -357,8 +351,6 @@ export function loadLeaveCacheFromStorage() {
         }
       }
     }
-
-    console.log("Leave cache loaded from localStorage (decompressed)");
   } catch (error) {
     console.error("Error loading leave cache from localStorage:", error);
   }
@@ -845,7 +837,6 @@ export async function getLeaveRequestsByMonth(month, year, lastDoc = null, items
 
     // Check if data is in cache and we're not paginating
     if (leaveMonthCache.has(cacheKey) && !lastDoc) {
-      console.log("Using cached leave data for month:", cacheKey);
       const cachedData = leaveMonthCache.get(cacheKey);
       return {
         leaveRequests: cachedData.slice(0, itemsPerPage),
@@ -1481,8 +1472,6 @@ export async function getPendingLeaveRequests() {
       console.log("Using cached pending leave requests");
       return pendingRequestsCache;
     }
-
-    console.log("Fetching pending leave requests from Firestore");
     const leaveCollection = collection(db, "leaveRequests");
 
     // First try with exact "pending" status

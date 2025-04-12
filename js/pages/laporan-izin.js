@@ -4,6 +4,7 @@ import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 import { attendanceCache } from "../services/attendance-service.js"; // Impor dari attendance-service
 
 // Global variables
+let allCachedData = []; // Untuk menyimpan semua data dari cache
 let currentLeaveData = [];
 let lastVisibleDoc = null;
 let hasMoreData = false;
@@ -69,8 +70,6 @@ function saveReportCacheToStorage() {
     // Kompresi data sebelum disimpan
     localStorage.setItem('leaveReportCache', compressData(cacheObj));
     localStorage.setItem('leaveReportTimestamps', compressData(timestampsObj));
-    
-    console.log("Leave report cache saved to localStorage (compressed)");
   } catch (error) {
     console.error("Error saving report cache to localStorage:", error);
   }
@@ -99,8 +98,6 @@ function loadReportCacheFromStorage() {
         for (const [key, value] of Object.entries(timestampsObj)) {
           cacheTimestamps.set(key, value);
         }
-        
-        console.log("Leave report cache loaded from localStorage (decompressed)");
       }
     }
   } catch (error) {
@@ -271,7 +268,7 @@ function setupRealtimeListener() {
       reportCache.set(cacheKey, {
         data: leaveRequests,
         lastDoc: null, // Tidak perlu lastDoc karena kita mendapatkan semua data
-        hasMore: false
+        hasMore: leaveRequests.length > itemsPerPage
       });
       
       // Update timestamp
@@ -286,11 +283,20 @@ function setupRealtimeListener() {
         const selectedYear = parseInt(yearSelector.value);
         
         if (currentMonth === selectedMonth && currentYear === selectedYear) {
-          currentLeaveData = leaveRequests;
-          
-          // Update UI
-          updateSummaryCards();
-          populateLeaveTable();
+           // PERBAIKAN: Batasi data yang ditampilkan ke itemsPerPage
+           currentLeaveData = leaveRequests.slice(0, itemsPerPage);
+           // Simpan semua data di variabel terpisah
+           allCachedData = leaveRequests;
+           
+           // Update UI
+           updateSummaryCards();
+           populateLeaveTable();
+
+          // Tampilkan tombol Load More jika ada data lebih
+          const loadMoreContainer = document.getElementById("loadMoreContainer");
+          if (loadMoreContainer) {
+            loadMoreContainer.style.display = leaveRequests.length > itemsPerPage ? "block" : "none";
+          }
           
           // Show cache indicator
           const cacheIndicator = document.getElementById('cacheIndicator');
@@ -373,11 +379,16 @@ async function generateReport(forceRefresh = false) {
         cacheIndicator.style.display = 'inline-block';
       }
       
-      // Ambil data dari cache
-      const cachedData = reportCache.get(cacheKey);
-      currentLeaveData = cachedData.data;
-      lastVisibleDoc = cachedData.lastDoc;
-      hasMoreData = cachedData.hasMore;
+       // Ambil data dari cache
+       const cachedData = reportCache.get(cacheKey);
+       // PERBAIKAN: Batasi data yang ditampilkan ke itemsPerPage
+       currentLeaveData = cachedData.data.slice(0, itemsPerPage);
+       lastVisibleDoc = cachedData.lastDoc;
+       // Tandai hasMoreData jika total data lebih dari itemsPerPage
+       hasMoreData = cachedData.data.length > itemsPerPage;
+       
+       // Simpan semua data di variabel terpisah untuk keperluan pagination
+       allCachedData = cachedData.data;
       
       // Terapkan filter jenis pengganti jika dipilih
       if (selectedReplacementType !== "all") {
@@ -597,76 +608,78 @@ function setupEventListeners() {
   }
 }
 
-
-// Load more data (pagination)
+// 4. Perbaikan pada fungsi loadMoreData
 async function loadMoreData() {
-  if (!hasMoreData || !lastVisibleDoc) return;
-
   try {
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
+    const cacheKey = `${month}_${year}`;
 
-       // Show loading state on the button
-       const loadMoreBtn = document.getElementById("loadMoreBtn");
-       if (loadMoreBtn) {
-         loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
-         loadMoreBtn.disabled = true;
-       }
-   
-       // Fetch next page of data
-       const result = await getLeaveRequestsByMonth(month, year, lastVisibleDoc, itemsPerPage);
-   
-       // Update pagination variables
-       const newData = result.leaveRequests || [];
-       lastVisibleDoc = result.lastDoc;
-       hasMoreData = result.hasMore;
-   
-       // Integrate with attendance data
-       await integrateAttendanceData(newData, month, year);
-   
-       // Add new data to current data
-       currentLeaveData = [...currentLeaveData, ...newData];
-   
-       // Update cache
-       const cacheKey = `${month}_${year}`;
-       if (reportCache.has(cacheKey)) {
-         reportCache.set(cacheKey, {
-           data: currentLeaveData,
-           lastDoc: lastVisibleDoc,
-           hasMore: hasMoreData
-         });
-         
-         // Update timestamp
-         cacheTimestamps.set(cacheKey, Date.now());
-       }
-   
-       // Update UI
-       populateLeaveTable();
-       updateSummaryCards();
-   
-       // Reset load more button
-       if (loadMoreBtn) {
-         loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
-         loadMoreBtn.disabled = false;
-       }
-   
-       // Show/hide load more button based on hasMoreData
-       const loadMoreContainer = document.getElementById("loadMoreContainer");
-       if (loadMoreContainer) {
-         loadMoreContainer.style.display = hasMoreData ? "block" : "none";
-       }
-     } catch (error) {
-       console.error("Error loading more data:", error);
-       showAlert("danger", "Terjadi kesalahan saat memuat data tambahan: " + error.message);
-   
-       // Reset load more button
-       const loadMoreBtn = document.getElementById("loadMoreBtn");
-       if (loadMoreBtn) {
-         loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
-         loadMoreBtn.disabled = false;
-       }
-     }
-   }
+    // Show loading state on the button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
+      loadMoreBtn.disabled = true;
+    }
+
+    // Cek apakah kita menggunakan data dari cache
+    if (reportCache.has(cacheKey) && allCachedData.length > 0) {
+      // Kita sudah memiliki semua data di allCachedData
+      // Tambahkan itemsPerPage data berikutnya ke currentLeaveData
+      const nextBatch = allCachedData.slice(currentLeaveData.length, currentLeaveData.length + itemsPerPage);
+      
+      if (nextBatch.length > 0) {
+        // Tambahkan data baru ke currentLeaveData
+        currentLeaveData = [...currentLeaveData, ...nextBatch];
+        
+        // Update UI
+        populateLeaveTable();
+        updateSummaryCards();
+        
+        // Periksa apakah masih ada data lagi
+        hasMoreData = currentLeaveData.length < allCachedData.length;
+      } else {
+        hasMoreData = false;
+      }
+    } else {
+      // Jika tidak menggunakan cache, gunakan Firestore pagination
+      if (!hasMoreData || !lastVisibleDoc) return;
+      
+      // Fetch next page of data
+      const result = await getLeaveRequestsByMonth(month, year, lastVisibleDoc, itemsPerPage);
+      
+      // Update pagination variables
+      const newData = result.leaveRequests || [];
+      lastVisibleDoc = result.lastDoc;
+      hasMoreData = result.hasMore;
+      
+      // Add new data to current data
+      currentLeaveData = [...currentLeaveData, ...newData];
+    }
+
+    // Reset load more button
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+    }
+
+    // Show/hide load more button based on hasMoreData
+    const loadMoreContainer = document.getElementById("loadMoreContainer");
+    if (loadMoreContainer) {
+      loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+    }
+  } catch (error) {
+    console.error("Error loading more data:", error);
+    showAlert("danger", "Terjadi kesalahan saat memuat data tambahan: " + error.message);
+
+    // Reset load more button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.innerHTML = '<i class="fas fa-plus me-2"></i> Muat Lebih Banyak';
+      loadMoreBtn.disabled = false;
+    }
+  }
+}
    
    // Update summary cards with statistics
    function updateSummaryCards() {
@@ -1009,6 +1022,8 @@ function filterLeaveData(type, filter) {
     let originalData = [];
     if (reportCache.has(cacheKey)) {
       originalData = [...reportCache.get(cacheKey).data];
+       // Update allCachedData dengan data lengkap dari cache
+       allCachedData = [...originalData];
     } else {
       originalData = [...currentLeaveData];
     }
@@ -1055,58 +1070,26 @@ function filterLeaveData(type, filter) {
         return true;
       });
     }
+// Update data untuk tampilan dan ekspor
+currentLeaveData = filteredData.slice(0, itemsPerPage); // Batasi tampilan
+allCachedData = filteredData; // Update allCachedData dengan hasil filter
+hasMoreData = filteredData.length > itemsPerPage;
 
-    // Update UI
-    populateLeaveTable();
-    updateSummaryCards();
+// Update UI
+populateLeaveTable();
+updateSummaryCards();
+
+// Update tombol Load More
+const loadMoreContainer = document.getElementById("loadMoreContainer");
+if (loadMoreContainer) {
+  loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+}
   } catch (error) {
     console.error("Error filtering leave data:", error);
     showAlert("danger", "Terjadi kesalahan saat memfilter data: " + error.message);
   }
 }
 
-   
-   // Filter by replacement type - perbaikan fungsi ini
-function filterByReplacementType(type) {
-  try {
-    // If no data, do nothing
-    if (!currentLeaveData || currentLeaveData.length === 0) return;
-
-    // Get original data from cache if needed
-    const month = parseInt(document.getElementById("monthSelector").value);
-    const year = parseInt(document.getElementById("yearSelector").value);
-    const cacheKey = `${month}_${year}`;
-    
-    let originalData = [];
-    if (reportCache.has(cacheKey)) {
-      originalData = [...reportCache.get(cacheKey).data];
-    } else {
-      originalData = [...currentLeaveData];
-    }
-
-    if (type === "all") {
-      // Reset to original data
-      currentLeaveData = [...originalData];
-    } else if (type === "libur") {
-      // Filter izin dengan ganti libur
-      currentLeaveData = originalData.filter((leave) => {
-        return leave.replacementType === "libur";
-      });
-    } else if (type === "jam") {
-      // Filter izin dengan ganti jam
-      currentLeaveData = originalData.filter((leave) => {
-        return leave.replacementType === "jam";
-      });
-    }
-
-    // Update UI
-    populateLeaveTable();
-    updateSummaryCards();
-  } catch (error) {
-    console.error("Error filtering by replacement type:", error);
-    showAlert("danger", "Terjadi kesalahan saat memfilter data: " + error.message);
-  }
-}
    
    // Show delete confirmation modal
    function showDeleteConfirmation() {
@@ -1184,10 +1167,13 @@ function filterByReplacementType(type) {
     // Export to Excel - update untuk mendukung format baru
 function exportToExcel() {
   try {
-    if (!currentLeaveData || currentLeaveData.length === 0) {
-      showAlert("warning", "Tidak ada data untuk diekspor");
-      return;
-    }
+       // Gunakan allCachedData jika tersedia, jika tidak gunakan currentLeaveData
+       const dataToExport = allCachedData.length > 0 ? allCachedData : currentLeaveData;
+    
+       if (!dataToExport || dataToExport.length === 0) {
+         showAlert("warning", "Tidak ada data untuk diekspor");
+         return;
+       }
 
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
@@ -1394,7 +1380,10 @@ function exportToExcel() {
    // Export to PDF - update untuk mendukung format baru
 function exportToPDF() {
   try {
-    if (!currentLeaveData || currentLeaveData.length === 0) {
+    // Gunakan allCachedData jika tersedia, jika tidak gunakan currentLeaveData
+    const dataToExport = allCachedData.length > 0 ? allCachedData : currentLeaveData;
+    
+    if (!dataToExport || dataToExport.length === 0) {
       showAlert("warning", "Tidak ada data untuk diekspor");
       return;
     }
@@ -1422,7 +1411,7 @@ function exportToPDF() {
     let rowNumber = 1;
 
     // Process each leave request
-    currentLeaveData.forEach((leave) => {
+    dataToExport.forEach((leave) => {
       // Periksa apakah izin multi-hari
       const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && 
                         leave.leaveStartDate !== leave.leaveEndDate;
@@ -1632,6 +1621,83 @@ function exportToPDF() {
     showAlert("danger", "Terjadi kesalahan saat mengekspor ke PDF: " + error.message);
   }
 }
+
+// Tambahkan fungsi untuk memastikan allCachedData selalu berisi data lengkap
+function ensureCompleteDataForExport() {
+  const month = parseInt(document.getElementById("monthSelector").value);
+  const year = parseInt(document.getElementById("yearSelector").value);
+  const cacheKey = `${month}_${year}`;
+  
+  // Jika allCachedData kosong tapi ada data di cache, ambil dari cache
+  if (allCachedData.length === 0 && reportCache.has(cacheKey)) {
+    allCachedData = reportCache.get(cacheKey).data;
+  }
+  
+  // Jika masih kosong tapi currentLeaveData ada isinya, gunakan currentLeaveData
+  if (allCachedData.length === 0 && currentLeaveData.length > 0) {
+    allCachedData = [...currentLeaveData];
+  }
+  
+  return allCachedData.length > 0;
+}
+
+// Pastikan allCachedData diperbarui saat filter diterapkan
+function filterByReplacementType(type) {
+  try {
+    // If no data, do nothing
+    if (!currentLeaveData || currentLeaveData.length === 0) return;
+
+    // Get original data from cache if needed
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+    const cacheKey = `${month}_${year}`;
+    
+    let originalData = [];
+    if (reportCache.has(cacheKey)) {
+      originalData = [...reportCache.get(cacheKey).data];
+      // Update allCachedData dengan data lengkap dari cache
+      allCachedData = [...originalData];
+    } else {
+      originalData = [...currentLeaveData];
+    }
+
+    if (type === "all") {
+      // Reset to original data
+      currentLeaveData = originalData.slice(0, itemsPerPage); // Batasi tampilan
+      hasMoreData = originalData.length > itemsPerPage;
+    } else if (type === "libur") {
+      // Filter izin dengan ganti libur
+      const filteredData = originalData.filter((leave) => {
+        return leave.replacementType === "libur";
+      });
+      currentLeaveData = filteredData.slice(0, itemsPerPage); // Batasi tampilan
+      allCachedData = filteredData; // Update allCachedData dengan hasil filter
+      hasMoreData = filteredData.length > itemsPerPage;
+    } else if (type === "jam") {
+      // Filter izin dengan ganti jam
+      const filteredData = originalData.filter((leave) => {
+        return leave.replacementType === "jam";
+      });
+      currentLeaveData = filteredData.slice(0, itemsPerPage); // Batasi tampilan
+      allCachedData = filteredData; // Update allCachedData dengan hasil filter
+      hasMoreData = filteredData.length > itemsPerPage;
+    }
+
+    // Update UI
+    populateLeaveTable();
+    updateSummaryCards();
+    
+    // Update tombol Load More
+    const loadMoreContainer = document.getElementById("loadMoreContainer");
+    if (loadMoreContainer) {
+      loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+    }
+  } catch (error) {
+    console.error("Error filtering by replacement type:", error);
+    showAlert("danger", "Terjadi kesalahan saat memfilter data: " + error.message);
+  }
+}
+
     // Show alert message
     function showAlert(type, message, autoHide = true) {
       try {

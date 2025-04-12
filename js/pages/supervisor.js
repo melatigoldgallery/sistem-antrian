@@ -36,9 +36,7 @@ async function loadPendingLeaveRequests(forceRefresh = false) {
     const now = Date.now();
     const shouldRefresh = forceRefresh || !lastDataRefresh || (now - lastDataRefresh > CACHE_DURATION);
     
-    if (shouldRefresh) {
-      console.log("Fetching pending leave requests from server...");
-      
+    if (shouldRefresh) {      
       // Clear cache in the service if forcing refresh
       if (forceRefresh) {
         clearLeaveCache();
@@ -46,7 +44,6 @@ async function loadPendingLeaveRequests(forceRefresh = false) {
       
       // Dapatkan pengajuan izin yang menunggu persetujuan
       const pendingRequests = await getPendingLeaveRequests();
-      console.log("Pending leave requests fetched:", pendingRequests.length);
       
       // Update data dan timestamp
       pendingLeaves = pendingRequests;
@@ -151,7 +148,6 @@ async function loadAllLeaveRequests(forceRefresh = false) {
         allRequestsData = allRequestsData.filter(request => {
           // Hanya proses pengajuan yang sudah disetujui
           if (request.status !== "Approved" && request.status !== "Disetujui") {
-            console.log(`Request ${request.id || 'unknown'} filtered out: not approved`);
             return false;
           }
           
@@ -162,7 +158,6 @@ async function loadAllLeaveRequests(forceRefresh = false) {
               request.replacementDetails.medicalCertificateFile) {
             
             const result = currentReplacementFilter === "Sudah Diganti";
-            console.log(`Request ${request.id || 'unknown'} (sick with cert): ${result ? 'included' : 'filtered out'}`);
             return result;
           }
           
@@ -174,35 +169,26 @@ async function loadAllLeaveRequests(forceRefresh = false) {
             // Untuk multi-day, periksa apakah ada status yang sesuai filter
             if (currentReplacementFilter === "Sudah Diganti") {
               const result = request.replacementStatusArray.some(s => s === "Sudah Diganti");
-              console.log(`Request ${request.id || 'unknown'} (multi-day): ${result ? 'included' : 'filtered out'} for Sudah Diganti`);
               return result;
             } else if (currentReplacementFilter === "Belum Diganti") {
               const result = request.replacementStatusArray.some(s => s === "Belum Diganti" || !s);
-              console.log(`Request ${request.id || 'unknown'} (multi-day): ${result ? 'included' : 'filtered out'} for Belum Diganti`);
               return result;
             }
           } else {
             // Untuk single-day, periksa replacementStatus
             if (currentReplacementFilter === "Sudah Diganti") {
               const result = request.replacementStatus === "Sudah Diganti";
-              console.log(`Request ${request.id || 'unknown'} (single-day): ${result ? 'included' : 'filtered out'} for Sudah Diganti`);
               return result;
             } else if (currentReplacementFilter === "Belum Diganti") {
               const result = !request.replacementStatus || 
                      request.replacementStatus === "" || 
                      request.replacementStatus === "Belum Diganti";
-              console.log(`Request ${request.id || 'unknown'} (single-day): ${result ? 'included' : 'filtered out'} for Belum Diganti, status: ${request.replacementStatus}`);
               return result;
             }
           }
-          
-          console.log(`Request ${request.id || 'unknown'} filtered out: no matching condition`);
           return false;
         });
-      }
-      
-      console.log("Filtered leave requests count:", allRequestsData.length);
-      
+      }      
       // Update allLeaves dengan data yang sudah difilter
       allLeaves = allRequestsData;
       
@@ -261,17 +247,7 @@ function updatePendingLeaveTable() {
     return new Date(b.submissionDate || 0) - new Date(a.submissionDate || 0);
   });
   
-  sortedLeaves.forEach((record) => {
-    // Debug log untuk memeriksa data surat keterangan sakit
-    if (record.leaveType === "sakit") {
-      console.log(`Record ID ${record.id} - leaveType: ${record.leaveType}`);
-      console.log("Has replacementDetails:", !!record.replacementDetails);
-      if (record.replacementDetails) {
-        console.log("Has medical certificate:", record.replacementDetails.hasMedicalCertificate);
-        console.log("Medical certificate file:", record.replacementDetails.medicalCertificateFile);
-      }
-    }
-    
+  sortedLeaves.forEach((record) => {    
     const row = document.createElement("tr");
     
     // Format tanggal izin
@@ -292,7 +268,6 @@ function updatePendingLeaveTable() {
       record.replacementDetails.medicalCertificateFile &&
       record.replacementDetails.medicalCertificateFile.url // Pastikan URL ada
     ) {
-      console.log("Adding view certificate button for record:", record.id);
       medicalCertButton = `
         <button class="btn btn-sm btn-info view-cert-btn ms-2" data-id="${record.id}">
           <i class="fas fa-file-medical me-1"></i> Lihat Surat
@@ -324,8 +299,6 @@ function updatePendingLeaveTable() {
       const record = pendingLeaves.find((item) => item.id === id);
       
       if (record && record.replacementDetails && record.replacementDetails.medicalCertificateFile) {
-        console.log("Viewing medical certificate for record:", id);
-        console.log("Certificate data:", record.replacementDetails.medicalCertificateFile);
         viewMedicalCertificate(record.replacementDetails.medicalCertificateFile);
       } else {
         showAlert("warning", "Tidak ada surat keterangan sakit yang tersedia");
@@ -780,8 +753,6 @@ async function refreshData(forceRefresh = false) {
     if (alertContainer) {
       alertContainer.style.display = "none";
     }
-
-    console.log("Data refreshed successfully");
   } catch (error) {
     console.error("Error refreshing data:", error);
     showAlert("danger", "Terjadi kesalahan saat memuat ulang data: " + error.message);
@@ -962,8 +933,6 @@ function setupRefreshButton() {
 
 // Fungsi untuk melihat surat keterangan sakit
 function viewMedicalCertificate(fileInfo) {
-  console.log("Viewing medical certificate:", fileInfo);
-  
   if (!fileInfo || !fileInfo.url) {
     console.error("Invalid file info or missing URL:", fileInfo);
     showAlert("warning", "Tidak ada URL surat keterangan sakit yang tersedia");
@@ -1013,14 +982,12 @@ function viewMedicalCertificate(fileInfo) {
                   fileInfo.url.match(/\.pdf$/i);
     
     if (isImage) {
-      console.log("Displaying image");
       const img = document.createElement("img");
       img.src = fileInfo.url;
       img.className = "img-fluid";
       img.alt = "Surat Keterangan Sakit";
       modalBody.appendChild(img);
     } else if (isPdf) {
-      console.log("Displaying PDF");
       const embed = document.createElement("embed");
       embed.src = fileInfo.url;
       embed.type = "application/pdf";
@@ -1124,8 +1091,6 @@ document.addEventListener("DOMContentLoaded", () => {
    leaveRequestTabs.forEach((tab) => {
      tab.addEventListener("shown.bs.tab", function (event) {
        const targetId = event.target.getAttribute("data-bs-target");
-       console.log("Tab changed to:", targetId);
-
        // Dapatkan container filter
        const filterContainer = document.getElementById("filterContainer");
 
@@ -1660,8 +1625,6 @@ function addEventListenersToButtons() {
       }
       
       if (record && record.replacementDetails && record.replacementDetails.medicalCertificateFile) {
-        console.log("Viewing medical certificate for record:", id);
-        console.log("Certificate data:", record.replacementDetails.medicalCertificateFile);
         viewMedicalCertificate(record.replacementDetails.medicalCertificateFile);
       } else {
         // If not found in local data, try to fetch from server

@@ -115,8 +115,6 @@ function setupBarcodeScanner() {
       this.dataset.isScanner = "false";
     }
   });
-  
-  console.log("Barcode scanner detection setup complete");
 }
 
 
@@ -246,7 +244,6 @@ async function processScannedBarcode(barcode) {
       }
 
       // Update attendance with checkout time
-      console.log("Updating attendance record with checkout time:", existingRecord.id, now);
       await updateAttendanceOut(existingRecord.id, now);
 
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
@@ -288,7 +285,6 @@ function checkAudioAvailability(audioPath) {
 async function checkOpeningAudio() {
   try {
     isOpeningAudioAvailable = await checkAudioAvailability("audio/antrian.mp3");
-    console.log("Opening audio available:", isOpeningAudioAvailable);
   } catch (error) {
     console.error("Error checking audio availability:", error);
     isOpeningAudioAvailable = false;
@@ -402,12 +398,9 @@ function playNotificationSound(type) {
 // Fungsi untuk menginisialisasi dan memuat suara Indonesia
 function initSpeechSynthesis() {
   if ("speechSynthesis" in window) {
-    console.log("Speech synthesis supported");
-
     // Fungsi untuk mencari suara Indonesia
     const findIndonesianVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      console.log("Available voices:", voices.map((v) => `${v.name} (${v.lang})`).join(", "));
 
       // Cari suara Indonesia atau Melayu (sebagai fallback)
       const idVoice = voices.find((voice) => voice.lang.includes("id-ID") || voice.lang.includes("id"));
@@ -419,7 +412,6 @@ function initSpeechSynthesis() {
       indonesianVoice = idVoice || msVoice || voices.find((v) => v.default) || voices[0];
 
       if (indonesianVoice) {
-        console.log("Selected voice:", indonesianVoice.name, indonesianVoice.lang);
 
         // Test suara
         const testUtterance = new SpeechSynthesisUtterance("Sistem absensi siap digunakan");
@@ -543,9 +535,7 @@ async function processBarcode() {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const today = `${year}-${month}-${day}`;
-    
-    console.log("Today's date for attendance (from timestamp):", today);
-    console.log("Current time:", now);
+
 
     if (scanType === "in") {
       // Check if already checked in
@@ -585,8 +575,6 @@ async function processBarcode() {
         lateMinutes: isLate ? lateMinutes : 0,
         date: today,
       };
-
-      console.log("Saving attendance record:", attendance);
       await recordAttendance(attendance);
 
       showScanResult(
@@ -624,7 +612,6 @@ async function processBarcode() {
       }
 
       // Update attendance with checkout time
-      console.log("Updating attendance record with checkout time:", existingRecord.id, now);
       await updateAttendanceOut(existingRecord.id, now);
 
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
@@ -645,7 +632,6 @@ async function processBarcode() {
   
   // Log tanggal absensi yang disimpan untuk debugging
   const attendanceDate = today;
-  console.log("Attendance date being saved:", attendanceDate);
 }
 
 
@@ -658,8 +644,6 @@ async function loadTodayAttendance(forceRefresh = false) {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const today = `${year}-${month}-${day}`; // Format YYYY-MM-DD
-    
-    console.log("Today's date for attendance and leave:", today, "Force refresh:", forceRefresh);
 
     // Tampilkan loading indicator
     const leaveCountEl = document.getElementById("leaveCount");
@@ -672,24 +656,8 @@ async function loadTodayAttendance(forceRefresh = false) {
 
     // PENTING: Gunakan fungsi baru yang mengambil SEMUA izin untuk hari ini
     try {
-      console.log("Fetching ALL leave requests for today using new function");
-      leaveRequests = await getAllLeaveRequestsForDate(today, forceRefresh);
+      leaveRequests = await getAllLeaveRequestsForDate(today, forceRefresh);    
       
-      // Log untuk debugging
-      console.log("Total leave requests found:", leaveRequests.length);
-      console.log("Leave requests data:", leaveRequests);
-      
-      // Log detail setiap izin
-      leaveRequests.forEach((leave, index) => {
-        console.log(`Leave #${index + 1}:`, {
-          id: leave.id,
-          name: leave.name || leave.employeeId,
-          status: leave.status,
-          date: leave.leaveDate || leave.date,
-          isMultiDay: leave.leaveStartDate && leave.leaveEndDate && 
-                     leave.leaveStartDate !== leave.leaveEndDate
-        });
-      });
     } catch (leaveError) {
       console.error("Error loading leave requests:", leaveError);
       leaveRequests = [];
@@ -728,7 +696,6 @@ function updateDateInfo() {
     };
 
     dateInfoEl.textContent = today.toLocaleDateString("id-ID", options);
-    console.log("Date info updated:", dateInfoEl.textContent);
   } else {
     console.warn("dateInfo element not found");
   }
@@ -742,22 +709,11 @@ function updateStats() {
   const day = String(now.getDate()).padStart(2, '0');
   const today = `${year}-${month}-${day}`; // Format YYYY-MM-DD
   
-  console.log("Today's date for updateStats:", today);
-  console.log("All attendance records:", attendanceRecords);
-  
-  // Log format tanggal untuk debugging
-  attendanceRecords.forEach(record => {
-    if (record.date) {
-      console.log(`Record date: ${record.date}, type: ${typeof record.date}`);
-    }
-  });
-  
   // Filter dengan pendekatan yang lebih fleksibel
   const todayRecords = attendanceRecords.filter(record => {
     // Jika record.date adalah string, bandingkan langsung
     if (typeof record.date === 'string') {
       const result = record.date === today;
-      console.log(`Comparing string dates: ${record.date} === ${today} => ${result}`);
       return result;
     }
     
@@ -765,30 +721,21 @@ function updateStats() {
     if (record.date instanceof Date) {
       const recordDateStr = `${record.date.getFullYear()}-${String(record.date.getMonth() + 1).padStart(2, '0')}-${String(record.date.getDate()).padStart(2, '0')}`;
       const result = recordDateStr === today;
-      console.log(`Comparing date objects: ${recordDateStr} === ${today} => ${result}`);
       return result;
     }
     
     // Fallback: coba konversi ke string dan bandingkan
     const recordDateStr = String(record.date);
     const result = recordDateStr === today;
-    console.log(`Fallback comparison: ${recordDateStr} === ${today} => ${result}`);
     return result;
   });
-  
-  console.log("Filtered records for today:", todayRecords);
 
   const presentCount = todayRecords.length;
   const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
-
-  // Log untuk debugging
-  console.log("All leave requests:", leaveRequests);
   
    // PENTING: Hitung semua izin, termasuk yang pending
    const leaveCount = Array.isArray(leaveRequests) ? leaveRequests.length : 0;
-  
-   console.log("Total leave count (including pending):", leaveCount);
-   
+     
    // Hitung berdasarkan status (untuk informasi tambahan)
    const approvedLeaves = Array.isArray(leaveRequests) 
      ? leaveRequests.filter(leave => 
@@ -803,10 +750,7 @@ function updateStats() {
          leave.status === "Pending"
        ).length
      : 0;
-   
-   console.log("Approved leaves:", approvedLeaves);
-   console.log("Pending leaves:", pendingLeaves);
-   
+      
    // Update UI
    const leaveCountEl = document.getElementById("leaveCount");
    if (leaveCountEl) {
@@ -817,7 +761,6 @@ function updateStats() {
   const presentCountEl = document.getElementById("presentCount");
   if (presentCountEl) {
     presentCountEl.textContent = presentCount;
-    console.log("Updated presentCount:", presentCount);
   } else {
     console.warn("presentCount element not found");
   }
@@ -825,11 +768,7 @@ function updateStats() {
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) {
     lateCountEl.textContent = lateCount;
-    console.log("Updated lateCount:", lateCount);
-  } else {
-    console.warn("lateCount element not found");
   }
-
   // Update tanggal absensi
   updateDateInfo();
 }
@@ -840,7 +779,6 @@ function updateStats() {
 // Inisialisasi event listeners saat DOM sudah siap
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    console.log("DOM Content Loaded - Initializing attendance system");
     // Periksa ketersediaan audio pembuka
     await checkOpeningAudio();
 
@@ -901,8 +839,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (barcodeInput) {
       barcodeInput.focus();
     }
-
-    console.log("Attendance system initialized successfully");
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
@@ -994,8 +930,6 @@ async function loadEmployees() {
           employeeCache.set(employee.barcode, employee);
         }
       });
-
-      console.log(`Cached ${employeeCache.size} employees`);
     }
   } catch (error) {
     console.error("Error loading employees:", error);

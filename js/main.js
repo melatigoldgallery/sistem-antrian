@@ -2,17 +2,13 @@ import { sidebarToggle } from "./components/sidebar.js";
 import { initializeDateTime } from "./components/header.js";
 
 // Panggil fungsi-fungsi ini di awal file
-try {
-  console.log("Initializing UI components...");
-  
+try {  
   // Inisialisasi komponen UI utama
   sidebarToggle();
   initializeDateTime();
   
   // Tambahkan event listener untuk dokumen setelah DOM loaded
   document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM fully loaded");
-    
     // Tambahkan event listener untuk menutup sidebar ketika mengklik di luar sidebar
     const appContainer = document.querySelector('.app-container');
     const sidebar = document.querySelector('.sidebar');
@@ -36,8 +32,6 @@ try {
   
   // Fungsi untuk setup autentikasi Supervisor
   function setupSupervisorAuthentication() {
-    console.log("Setting up supervisor authentication");
-    
     // Cari tombol toggle Supervisor di sidebar
     const supervisorToggle = document.querySelector('.sidebar a[data-bs-target="#supervisorSubmenu"]');
     
@@ -53,16 +47,11 @@ try {
       
       // Tambahkan event listener baru
       newToggle.addEventListener('click', supervisorClickHandler);
-      
-      console.log("Supervisor click handler attached");
-    } else {
-      console.error("Supervisor toggle element not found");
     }
   }
   
   // Handler function untuk click event
   function supervisorClickHandler(event) {
-    console.log("Supervisor toggle clicked");
     event.preventDefault();
     
     // Tampilkan modal autentikasi
@@ -70,16 +59,11 @@ try {
     if (authModal) {
       const bsModal = new bootstrap.Modal(authModal);
       bsModal.show();
-      console.log("Auth modal shown");
-    } else {
-      console.error("Auth modal element not found");
     }
   }
   
   // Fungsi untuk membuat modal autentikasi
   function createSupervisorAuthModal() {
-    console.log("Creating supervisor auth modal");
-    
     // Buat elemen modal
     const modalHTML = `
       <div class="modal fade" id="supervisorAuthModal" tabindex="-1" aria-labelledby="supervisorAuthModalLabel" aria-hidden="true">
@@ -123,14 +107,10 @@ try {
     
     // Setup event listeners untuk modal
     setupSupervisorAuthEvents();
-    
-    console.log("Supervisor auth modal created");
   }
   
   // Fungsi untuk setup event listeners pada modal autentikasi
   function setupSupervisorAuthEvents() {
-    console.log("Setting up supervisor auth events");
-    
     // Ambil elemen-elemen yang diperlukan
     const modal = document.getElementById('supervisorAuthModal');
     const loginBtn = document.getElementById('supervisorLoginBtn');
@@ -149,8 +129,6 @@ try {
     // Event listener untuk tombol login
     if (loginBtn) {
       loginBtn.addEventListener('click', function() {
-        console.log("Login button clicked");
-        
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
         
@@ -178,8 +156,6 @@ try {
           errorAlert.classList.remove('d-none');
         }
       });
-      
-      console.log("Login button event listener attached");
     }
     
     // Event listener untuk form submit
@@ -188,8 +164,6 @@ try {
         event.preventDefault();
         loginBtn.click();
       });
-      
-      console.log("Form submit event listener attached");
     }
     
     // Event listener untuk toggle password visibility
@@ -208,8 +182,6 @@ try {
           icon.classList.add('fa-eye');
         }
       });
-      
-      console.log("Toggle password button event listener attached");
     }
     
     // Reset form saat modal ditutup
@@ -224,8 +196,6 @@ try {
         icon.classList.remove('fa-eye-slash');
         icon.classList.add('fa-eye');
       });
-      
-      console.log("Modal hidden event listener attached");
     }
   }
   
@@ -247,8 +217,6 @@ try {
   
   // Panggil fungsi untuk cek autentikasi
   checkSupervisorAuth();
-  
-  console.log("UI components initialized successfully");
 } catch (error) {
   console.error("Error initializing UI components:", error);
 }

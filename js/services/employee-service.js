@@ -49,13 +49,11 @@ export async function getEmployees(forceRefresh = false) {
     if (!forceRefresh && isCacheValid()) {
       const cachedEmployees = getFromCache();
       if (cachedEmployees) {
-        console.log("Using cached employee data");
         return cachedEmployees;
       }
     }
 
     // If cache is invalid or we're forcing refresh, get from Firestore
-    console.log("Fetching employee data from Firestore");
     const employeesCollection = collection(db, "employees");
     const snapshot = await getDocs(employeesCollection);
     const employees = snapshot.docs.map((doc) => ({

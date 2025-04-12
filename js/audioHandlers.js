@@ -36,6 +36,7 @@ async function speak(text, rate = 0.85, pitch = 1.2) {
   window.speechSynthesis.cancel(); // Bersihkan antrian
   
   return new Promise((resolve) => {
+    // Preload dan siapkan utterance
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "id-ID";
     utterance.rate = rate;
@@ -46,15 +47,20 @@ async function speak(text, rate = 0.85, pitch = 1.2) {
     const idVoice = voices.find(v => v.lang.includes('id'));
     if (idVoice) utterance.voice = idVoice;
     
+    // Siapkan event handlers sebelum memanggil speak
     utterance.onend = resolve;
     utterance.onerror = () => {
       console.error("TTS error");
       resolve();
     };
     
-    window.speechSynthesis.speak(utterance);
+    // Mulai TTS dengan prioritas tinggi
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+    }, 0);
   });
 }
+
 
 // Fungsi-fungsi ekspor
 export async function playWaitMessageSequence() {
@@ -134,15 +140,44 @@ export async function playQueueAnnouncement(queueNumber) {
   try {
     isAudioPlaying = true;
     
-    // Putar nada pembuka
-    await playAudio(AUDIO_PATHS.antrian);
-    
-    // Umumkan nomor antrian
+    // Siapkan teks pengumuman terlebih dahulu
     const letter = queueNumber.charAt(0);
     const numbers = queueNumber.substring(1);
     const text = `Nomor antrian, ${letter}, ${numbers.split("").join("")}`;
     
-    await speak(text);
+    // Siapkan utterance sebelum memulai audio
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "id-ID";
+    utterance.rate = 0.85;
+    utterance.pitch = 1.2;
+    
+    // Coba dapatkan suara Indonesia
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang.includes('id'));
+    if (idVoice) utterance.voice = idVoice;
+    
+    // Putar nada pembuka dengan Promise yang lebih efisien
+    const openingAudio = new Audio(AUDIO_PATHS.antrian);
+    
+    // Gunakan event listener untuk memastikan TTS dimulai segera setelah audio selesai
+    await new Promise((resolve) => {
+      openingAudio.addEventListener("ended", () => {
+        // Mulai TTS segera setelah audio selesai
+        window.speechSynthesis.speak(utterance);
+        
+        // Tunggu TTS selesai
+        utterance.onend = resolve;
+        utterance.onerror = () => {
+          console.error("TTS error");
+          resolve();
+        };
+      }, { once: true });
+      
+      openingAudio.play().catch(err => {
+        console.error(`Error playing opening audio:`, err);
+        resolve(); // Lanjutkan meskipun ada error
+      });
+    });
     
     isAudioPlaying = false;
     return true; // Berhasil
@@ -152,6 +187,7 @@ export async function playQueueAnnouncement(queueNumber) {
     return false; // Gagal
   }
 }
+
 
 export async function announceVehicleMessage(carType, plateNumber, vehicleColor = '') {
   if (isAudioPlaying) return false; // Abaikan jika sudah ada audio yang diputar

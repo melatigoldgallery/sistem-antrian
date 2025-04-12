@@ -119,16 +119,12 @@ export const cacheMeta = new Map(); // Untuk menyimpan metadata cache (timestamp
 export function getLocalDateString() {
   // Gunakan tanggal lokal Indonesia
   const now = new Date();
-  
-  // Tambahkan logging untuk debugging
-  console.log("Raw Date for getLocalDateString:", now);
-  
+   
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   
   const formattedDate = `${year}-${month}-${day}`;
-  console.log("Formatted local date:", formattedDate);
   
   return formattedDate;
 }
@@ -149,7 +145,6 @@ export function saveAttendanceCacheToStorage() {
     // Kompresi data sebelum disimpan
     localStorage.setItem('attendanceCache', compressData(cacheObj));
     localStorage.setItem('attendanceCacheMeta', compressData(metaObj));
-    console.log("Attendance cache saved to localStorage (compressed)");
   } catch (error) {
     console.error("Error saving cache to localStorage:", error);
   }
@@ -356,7 +351,6 @@ export async function getTodayAttendance() {
   try {
     // Gunakan tanggal lokal untuk konsistensi
     const today = getLocalDateString();
-    console.log("Getting attendance for date:", today);
     
     // Check if data is in cache and still valid
     if (attendanceCache.has(today) && !shouldUpdateCache(today)) {
@@ -368,7 +362,6 @@ export async function getTodayAttendance() {
     const q = query(attendanceCollection, where("date", "==", today), orderBy("timeIn", "desc"));
 
     const snapshot = await getDocs(q);
-    console.log(`Found ${snapshot.docs.length} attendance records for today`);
     
     const attendanceData = snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -381,8 +374,6 @@ export async function getTodayAttendance() {
       };
     });
     
-    // Log data untuk debugging
-    console.log("Attendance data from Firestore:", attendanceData);
     
     // Store in cache with timestamp
     attendanceCache.set(today, attendanceData);
