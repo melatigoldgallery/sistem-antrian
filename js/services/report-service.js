@@ -16,7 +16,7 @@ import {
   updateCacheTimestamp as updateAttendanceCacheTimestamp,
   syncCacheWithReport
 } from "./attendance-service.js";
-import { leaveCache, leaveMonthCache, updateCacheTimestamp } from "./leave-service.js";
+import { leaveCache, leaveMonthCache, updateCacheTimestamp,clearLeaveCache } from "./leave-service.js";
 
 // Perbarui fungsi untuk menyertakan filter shift
 export async function getAttendanceByDateRange(startDate, endDate, lastDoc = null, itemLimit = 1000, shift = null) {
@@ -290,20 +290,16 @@ export async function deleteLeaveRequestsByMonth(month, year) {
 
     const snapshot = await getDocs(q);
     
-    // Delete each document
-    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
-    await Promise.all(deletePromises);
-    
-    // Hapus dari cache
-    const cacheKey = `${month}_${year}`;
-    leaveMonthCache.delete(cacheKey);
-    
-    // Simpan perubahan ke localStorage
-    saveLeaveCacheToStorage();
-    
-    return snapshot.docs.length; // Return number of deleted records
-  } catch (error) {
-    console.error("Error deleting leave requests by month:", error);
-    throw error;
-  }
+     // Delete each document
+     const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+     await Promise.all(deletePromises);
+ 
+     // Clear cache menggunakan fungsi yang diimpor
+     clearLeaveCache();
+ 
+     return snapshot.docs.length; // Return number of deleted records
+   } catch (error) {
+     console.error("Error deleting leave requests by month:", error);
+     throw error;
+   }
 }
