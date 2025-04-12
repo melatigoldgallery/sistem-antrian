@@ -2,7 +2,7 @@ let pendingAction = "";
 // Import statements
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
 import { QueueAnalytics } from "./queueAnalytics.js";
-import { database } from "./configFirebase.js";
+import { rtdb } from "./configFirebase.js";
 import { QueueManager } from "./antrian.js";
 import { initializeUsers } from "./auth/initUsers.js";
 import { authService } from "./configFirebase.js";
@@ -22,6 +22,10 @@ let queueManager;
 let queueDisplay;
 let nextQueueDisplay;
 let delayQueueDisplay;
+
+
+// Expose handleLogout to global scope for the onclick attribute
+window.handleLogout = handleLogout;
 
 // Function to update queue displays
 function updateDisplays() {
@@ -46,7 +50,7 @@ function updateDisplays() {
 // Main initialization function
 async function initializeQueueSystem() {
   try {
-    const queueAnalytics = new QueueAnalytics(database);
+    const queueAnalytics = new QueueAnalytics(rtdb);
 
     // Initialize DOM elements
     queueDisplay = document.getElementById("queueNumber");
@@ -74,7 +78,6 @@ async function initializeQueueSystem() {
   }
 }
 
-// Initialize all buttons and their event handlers
 // Tambahkan visual feedback untuk tombol audio
 function addAudioButtonFeedback(button) {
   if (!button) return;
@@ -539,10 +542,6 @@ if (typeof QueueManager !== "undefined") {
   };
 }
 
-// Initialize authentication
-document.getElementById("logoutBtn")?.addEventListener("click", () => {
-  handleLogout();
-});
 
 // Main initialization function
 async function initializePage() {
@@ -560,6 +559,12 @@ window.speechSynthesis.onvoiceschanged = () => {
 
 // Main DOM content loaded event
 document.addEventListener("DOMContentLoaded", function () {
+  
+     // Tambahkan event listener untuk tombol logout jika menggunakan event listener
+     const logoutBtn = document.getElementById('logoutBtn');
+     if (logoutBtn) {
+         logoutBtn.addEventListener('click', handleLogout);
+     }
   // Initialize authentication
   initializePage();
 

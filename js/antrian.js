@@ -1,11 +1,11 @@
 import { ref, set, get } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js';
-import { database } from './configFirebase.js';
+import { rtdb } from './configFirebase.js';
 
 export class QueueManager {
     constructor() {
         this.letters = ["A", "B", "C", "D"];
         this.initializeFromFirebase();
-        this.customerRef = ref(database, 'customerCount');
+        this.customerRef = ref(rtdb, 'customerCount');
         this.initializeCustomerCount();
         this.skipList = [];
         // Tambahkan baris ini untuk memastikan tampilan diperbarui saat inisialisasi
@@ -14,7 +14,7 @@ export class QueueManager {
 
     async initializeFromFirebase() {
         try {
-            const queueRef = ref(database, 'queue');
+            const queueRef = ref(rtdb, 'queue');
             const snapshot = await get(queueRef);
             if (snapshot.exists()) {
                 const data = snapshot.val();

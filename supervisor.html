@@ -610,41 +610,9 @@
     </div>
 
     <!-- Script imports -->
-    <script type="module" src="js/configFirebase.js"></script>
+    <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/supervisor.js"></script>
-    <!-- Tambahkan script ini sebelum </body> -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Fungsi untuk logout
-        window.handleLogout = function () {
-          console.log("Logout clicked");
-          // Hapus status autentikasi
-          sessionStorage.removeItem("supervisorAuthenticated");
-
-          // Redirect ke halaman utama
-          window.location.href = "dashboard.html";
-        };
-
-        // Buka dropdown Absensi secara otomatis
-        const absensiDropdown = document.getElementById("absensiSubmenu");
-        const absensiToggle = document.querySelector('[data-bs-target="#absensiSubmenu"]');
-
-        if (absensiDropdown && absensiToggle) {
-          const absensiCollapse = new bootstrap.Collapse(absensiDropdown, { toggle: false });
-          absensiCollapse.show();
-          absensiToggle.setAttribute("aria-expanded", "true");
-          absensiToggle.classList.remove("collapsed");
-        }
-
-        // Mencegah dropdown Absensi tertutup saat mengklik di dalamnya
-        if (absensiDropdown) {
-          absensiDropdown.addEventListener("click", function (event) {
-            event.stopPropagation();
-          });
-        }
-      });
-    </script>
   </body>
 </html>
 

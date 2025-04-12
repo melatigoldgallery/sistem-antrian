@@ -602,21 +602,57 @@ function setupEventListeners() {
   });
 }
 
-
-
-// Fungsi untuk menyembunyikan tombol aksi (export dan hapus)
+// Fungsi untuk menyembunyikan tombol aksi (export dan hapus) - versi yang lebih kuat
 function hideActionButtons() {
-  const actionButtons = document.getElementById("actionButtons");
-  if (actionButtons) {
-    actionButtons.style.display = "none";
+  try {
+    const actionButtons = document.getElementById("actionButtons");
+    if (actionButtons) {
+      // Gunakan !important untuk memastikan style diterapkan
+      actionButtons.setAttribute("style", "display: none !important");
+      
+      // Log untuk debugging
+      console.log("Action buttons hidden");
+      
+      // Tambahan: sembunyikan juga tombol-tombol individual jika ada
+      const exportExcelBtn = document.getElementById("exportExcelBtn");
+      const exportPdfBtn = document.getElementById("exportPdfBtn");
+      const deleteDataBtn = document.getElementById("deleteDataBtn");
+      
+      if (exportExcelBtn) exportExcelBtn.style.display = "none";
+      if (exportPdfBtn) exportPdfBtn.style.display = "none";
+      if (deleteDataBtn) deleteDataBtn.style.display = "none";
+    } else {
+      console.warn("Action buttons element not found with ID 'actionButtons'");
+    }
+  } catch (error) {
+    console.error("Error hiding action buttons:", error);
   }
 }
 
-// Fungsi untuk menampilkan tombol aksi (export dan hapus)
+// Fungsi untuk menampilkan tombol aksi (export dan hapus) - versi yang lebih kuat
 function showActionButtons() {
-  const actionButtons = document.getElementById("actionButtons");
-  if (actionButtons) {
-    actionButtons.style.display = "flex";
+  try {
+    const actionButtons = document.getElementById("actionButtons");
+    if (actionButtons) {
+      // Gunakan !important untuk memastikan style diterapkan
+      actionButtons.setAttribute("style", "display: flex !important");
+      
+      // Log untuk debugging
+      console.log("Action buttons shown");
+      
+      // Tambahan: tampilkan juga tombol-tombol individual jika ada
+      const exportExcelBtn = document.getElementById("exportExcelBtn");
+      const exportPdfBtn = document.getElementById("exportPdfBtn");
+      const deleteDataBtn = document.getElementById("deleteDataBtn");
+      
+      if (exportExcelBtn) exportExcelBtn.style.display = "inline-block";
+      if (exportPdfBtn) exportPdfBtn.style.display = "inline-block";
+      if (deleteDataBtn) deleteDataBtn.style.display = "inline-block";
+    } else {
+      console.warn("Action buttons element not found with ID 'actionButtons'");
+    }
+  } catch (error) {
+    console.error("Error showing action buttons:", error);
   }
 }
 
@@ -736,12 +772,19 @@ async function generateReport() {
       
       // Tampilkan tombol export dan hapus data setelah laporan di-generate
       showActionButtons();
+      // Sembunyikan pesan tidak ada data
+        const noDataMessage = document.getElementById("noDataMessage");
+        if (noDataMessage) noDataMessage.style.display = "none";
     } else {
       hideReportElements();
       // Pastikan tombol aksi tetap tersembunyi jika tidak ada data
       hideActionButtons();
+
       const noDataMessage = document.getElementById("noDataMessage");
       if (noDataMessage) noDataMessage.style.display = "block";
+
+     // TAMBAHAN: Tampilkan alert peringatan bahwa tidak ada data
+     showAlert("warning", '<i class="fas fa-exclamation-triangle me-2"></i> Tidak ada data kehadiran untuk periode yang dipilih');
     }
     
     // Update delete confirmation modal with date range

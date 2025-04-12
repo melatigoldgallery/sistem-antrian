@@ -299,23 +299,24 @@
               </div>
             </div>
 
-            <!-- Perbaikan pada tombol hapus data -->
-            <div class="d-flex justify-content-between mb-3 d-none" id="actionButtons">
-              <div>
-                <button id="exportExcelBtn" class="btn btn-success export-btn">
-                  <i class="fas fa-file-excel me-2"></i>
-                  Export Excel
-                </button>
-                <button id="exportPdfBtn" class="btn btn-danger export-btn">
-                  <i class="fas fa-file-pdf me-2"></i>
-                  Export PDF
-                </button>
-              </div>
-              <button id="deleteDataBtn" class="btn btn-outline-danger">
-                <i class="fas fa-trash-alt me-2"></i>
-                Hapus Data
-              </button>
-            </div>
+           <!-- Pastikan ID adalah "actionButtons" -->
+<div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important;">
+  <div>
+    <button id="exportExcelBtn" class="btn btn-success me-2">
+      <i class="fas fa-file-excel me-2"></i>
+      Export Excel
+    </button>
+    <button id="exportPdfBtn" class="btn btn-danger me-2">
+      <i class="fas fa-file-pdf me-2"></i>
+      Export PDF
+    </button>
+  </div>
+  <button id="deleteDataBtn" class="btn btn-outline-danger">
+    <i class="fas fa-trash-alt me-2"></i>
+    Hapus Data
+  </button>
+</div>
+
 
             <!-- Table Container -->
             <div class="card mb-4" id="tableContainer" style="display: none">
@@ -501,16 +502,7 @@
         </div>
       </div>
     </div>
-
-    <!-- Di bagian bawah file, sebelum </body> -->
-    <!-- Firebase SDK -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"></script>
-
-    <!-- Custom Scripts -->
-    <script type="module" src="js/configFirebase.js"></script>
+    <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/kehadiran.js"></script>
   </body>

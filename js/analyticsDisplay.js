@@ -1,5 +1,5 @@
 import { ref, get, remove } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js';
-import { database } from './configFirebase.js';
+import { rtdb } from './configFirebase.js';
 
 let hourlyChart = null;
 let dailyChart = null;
@@ -11,8 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     loadAnalytics();
     resetAnalyticsHandler();
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
 });
 
 // Set up all event listeners
@@ -46,7 +44,7 @@ async function loadAnalytics() {
     }
 
     const today = new Date();
-    const analyticsRef = ref(database, `analytics/${today.getFullYear()}/${today.getMonth() + 1}`);
+    const analyticsRef = ref(rtdb, `analytics/${today.getFullYear()}/${today.getMonth() + 1}`);
     
     // Initialize data arrays
     const hourlyData = new Array(24).fill(0);
@@ -271,7 +269,7 @@ function resetAnalyticsHandler() {
                     resetButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mereset...';
                     resetButton.disabled = true;
                     
-                    const analyticsRef = ref(database, 'analytics');
+                    const analyticsRef = ref(rtdb, 'analytics');
                     await remove(analyticsRef);
                     
                     // Reset counters

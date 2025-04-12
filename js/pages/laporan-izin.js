@@ -385,15 +385,13 @@ async function generateReport(forceRefresh = false) {
       
        // Ambil data dari cache
        const cachedData = reportCache.get(cacheKey);
+         // PENTING: Simpan semua data di allCachedData terlebih dahulu
+      allCachedData = cachedData.data;
        // PERBAIKAN: Batasi data yang ditampilkan ke itemsPerPage
-       currentLeaveData = cachedData.data.slice(0, itemsPerPage);
+       currentLeaveData = allCachedData.slice(0, itemsPerPage);
        lastVisibleDoc = cachedData.lastDoc;
        // Tandai hasMoreData jika total data lebih dari itemsPerPage
-       hasMoreData = cachedData.data.length > itemsPerPage;
-       
-       // Simpan semua data di variabel terpisah untuk keperluan pagination
-       allCachedData = cachedData.data;
-      
+       hasMoreData = allCachedData.length > itemsPerPage;
       // Terapkan filter jenis pengganti jika dipilih
       if (selectedReplacementType !== "all") {
         filterByReplacementType(selectedReplacementType);
@@ -693,7 +691,7 @@ async function loadMoreData() {
        // Total leave requests
        const totalLeaves = document.getElementById("totalLeaves");
        if (totalLeaves) {
-         totalLeaves.textContent = currentLeaveData.length;
+        totalLeaves.textContent = allCachedData.length;
        }
    
        // Count by status
