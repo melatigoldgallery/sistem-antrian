@@ -153,7 +153,7 @@ previousQueue() {
 }
 
     saveState() {
-        const queueRef = ref(database, 'queue');
+        const queueRef = ref(rtdb, 'queue');
         set(queueRef, {
             currentLetter: this.currentLetter,
             currentNumber: this.currentNumber,

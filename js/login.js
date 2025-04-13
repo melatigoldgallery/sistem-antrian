@@ -102,3 +102,28 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       }
     }
   });
+  document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    const togglePasswordButton = document.querySelector('.toggle-password');
+    const passwordInput = document.getElementById('password');
+    
+    if (togglePasswordButton && passwordInput) {
+        togglePasswordButton.addEventListener('click', function() {
+            // Toggle tipe input antara 'password' dan 'text'
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle icon antara 'eye' dan 'eye-slash'
+            const icon = this.querySelector('i');
+            if (type === 'password') {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        });
+    }
+    
+    // Kode login lainnya yang sudah ada...
+});
