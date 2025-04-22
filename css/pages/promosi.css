@@ -599,7 +599,7 @@ body, html {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
-  color: #fff;
+  color: #656565;
 }
 
 .custom-slide .content-wrapper h1,
@@ -608,13 +608,13 @@ body, html {
 .custom-slide .content-wrapper h4,
 .custom-slide .content-wrapper h5,
 .custom-slide .content-wrapper h6 {
-  color: #fff;
+  color: #1e1e1e;
   margin-bottom: 15px;
   font-family: 'Playfair Display', serif;
 }
 
 .custom-slide .content-wrapper p {
-  color: #fff;
+  color: #656565;
   font-size: 1.1rem;
   line-height: 1.6;
   margin-bottom: 15px;
@@ -623,13 +623,13 @@ body, html {
 
 .custom-slide .content-wrapper ul,
 .custom-slide .content-wrapper ol {
-  color: #fff;
+  color: #656565;
   margin-left: 20px;
   margin-bottom: 15px;
 }
 
 .custom-slide .content-wrapper a {
-  color: #ffd700;
+  color: #fee243;
   text-decoration: none;
   transition: color 0.3s;
 }
@@ -1201,6 +1201,848 @@ body, html {
 .toast-body {
   padding: 12px 15px;
   font-weight: 500;
+}
+
+/* Typography */
+.slide-content h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.slide-content h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.slide-content p {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+/* Divider */
+.divider {
+  position: relative;
+  width: 80%;
+  max-width: 300px;
+  margin: 1rem auto;
+  text-align: center;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.divider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  padding: 0 15px;
+}
+
+.divider i {
+  color: #ffd700;
+  font-size: 1.5rem;
+}
+
+/* Decorative elements */
+.decorative-element {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  opacity: 0.2;
+}
+
+.decorative-element.left {
+  top: 20px;
+  left: 20px;
+  border-top: 2px solid #ffd700;
+  border-left: 2px solid #ffd700;
+}
+
+.decorative-element.right {
+  bottom: 20px;
+  right: 20px;
+  border-bottom: 2px solid #ffd700;
+  border-right: 2px solid #ffd700;
+}
+
+/* Highlight */
+.promo-highlight {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid #ffd700;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 5px;
+}
+
+.highlight-text {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Logo */
+.logo-container {
+  margin-top: 2rem;
+}
+
+.slide-logo {
+  max-width: 150px;
+  border-radius: 50%;
+  border: 3px solid #ffd700;
+}
+
+/* Carousel controls */
+.carousel-control-prev, .carousel-control-next {
+  width: 5%;
+}
+
+.carousel-indicators {
+  margin-bottom: 2rem;
+}
+
+.carousel-indicators button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin: 0 5px;
+}
+
+/* Time display */
+.time-display {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px 15px;
+  border-radius: 5px;
+  z-index: 100;
+  text-align: right;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+
+#current-date {
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+#current-time {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Fullscreen container */
+.fullscreen-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Carousel */
+#promotionFullscreen {
+  height: 100%;
+}
+
+#promotionFullscreen .carousel-inner {
+  height: 100%;
+}
+
+#promotionFullscreen .carousel-item {
+  height: 100%;
+}
+
+/* Fade transition */
+.carousel-fade .carousel-item {
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+}
+
+.carousel-fade .carousel-item.active {
+  opacity: 1;
+}
+
+/* Zoom effect */
+.carousel-item.zoom-effect .slide-content {
+  animation: zoomIn 30s linear forwards;
+}
+
+@keyframes zoomIn {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+/* Animation */
+.slide-content:not(.no-animation) {
+  animation: fadeInUp 1s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.carousel-item {
+  opacity: 1 !important; /* Override untuk carousel-fade */
+}
+
+.carousel-item.active {
+  display: block !important;
+}
+
+/* Pastikan animasi tidak menyembunyikan konten */
+.slide-content {
+  opacity: 1 !important;
+}
+
+/* Pastikan AOS tidak menyembunyikan konten setelah animasi */
+[data-aos].aos-animate {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Pastikan konten tetap terlihat bahkan jika carousel berhenti */
+.carousel-inner {
+  min-height: 100vh;
+}
+
+/* Pastikan konten wrapper memiliki ukuran minimum */
+.content-wrapper {
+  min-height: 50vh;
+}
+
+/* Fullscreen image styling */
+.fullscreen-image-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+.fullscreen-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ini akan memastikan gambar menutupi seluruh area tanpa distorsi */
+  object-position: center;
+}
+
+/* Pastikan indikator waktu tetap terlihat di atas gambar */
+.time-display {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px 15px;
+  border-radius: 5px;
+  z-index: 100; /* Nilai z-index yang lebih tinggi untuk memastikan tetap di atas */
+  text-align: right;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Pastikan indikator carousel tetap terlihat */
+#promotionCarousel .carousel-control-prev:hover,
+#promotionCarousel .carousel-control-next:hover {
+  opacity: 1;
+}
+
+#promotionCarousel .carousel-indicators {
+  z-index: 10;
+  margin-bottom: 10px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .thank-you-slide h2,
+  .promo-slide h2,
+  .info-slide h2,
+  .custom-slide h2 {
+    font-size: 3rem;
+  }
+  
+  .thank-you-slide h3,
+  .promo-slide h3,
+  .info-slide h3 {
+    font-size: 1.8rem;
+  }
+  
+  .gallery-img {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .promotion-preview {
+    height: 400px;
+  }
+}
+
+@media (max-width: 992px) {
+  .thank-you-slide h2,
+  .promo-slide h2,
+  .info-slide h2,
+  .custom-slide h2 {
+    font-size: 2.5rem;
+  }
+  
+  .thank-you-slide h3,
+  .promo-slide h3,
+  .info-slide h3 {
+    font-size: 1.6rem;
+  }
+  
+  .thank-you-slide p,
+  .promo-slide p,
+  .info-details p,
+  .custom-slide p {
+    font-size: 1.3rem;
+  }
+  
+  .highlight-text {
+    font-size: 1.5rem;
+    padding: 12px 24px;
+  }
+  
+  .price-label {
+    font-size: 1.4rem;
+  }
+  
+  .price-value {
+    font-size: 1.6rem;
+  }
+  
+  .image-gallery {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .gallery-img {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .decorative-element {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .promotion-preview {
+    height: 380px;
+  }
+  
+  .preview-image-container img,
+  .preview-video {
+    max-height: 150px;
+  }
+  
+  .preview-gallery-item {
+    flex: 0 0 calc(50% - 10px);
+    max-width: calc(50% - 10px);
+  }
+  
+  .preview-gallery-item img {
+    height: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .slide-content {
+    padding: 20px;
+  }
+  
+  .thank-you-slide h2,
+  .promo-slide h2,
+  .info-slide h2,
+  .custom-slide h2 {
+    font-size: 2.2rem;
+  }
+  
+  .thank-you-slide h3,
+  .promo-slide h3,
+  .info-slide h3 {
+    font-size: 1.4rem;
+  }
+  
+  .thank-you-slide p,
+  .promo-slide p,
+  .info-details p,
+  .custom-slide p {
+    font-size: 1.1rem;
+  }
+  
+  .highlight-text {
+    font-size: 1.3rem;
+    padding: 10px 20px;
+  }
+  
+  .info-details {
+    padding: 15px;
+  }
+  
+  .price-label {
+    font-size: 1.2rem;
+  }
+  
+  .price-value {
+    font-size: 1.4rem;
+  }
+  
+  .slide-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .decorative-element {
+    width: 60px;
+    height: 60px;
+  }
+  .promotion-preview {
+    height: 350px;
+  }
+  
+  .preview-slide h2 {
+    font-size: 1.8rem;
+  }
+  
+  .preview-slide h3 {
+    font-size: 1.2rem;
+  }
+  
+  .preview-slide p {
+    font-size: 1rem;
+  }
+  
+  .slide-title-badge {
+    font-size: 0.8rem;
+    padding: 4px 12px;
+  }
+  
+  .preview-image-container img,
+  .preview-video {
+    max-height: 120px;
+  }
+}
+
+@media (max-width: 576px) {
+  .time-display {
+    top: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  
+  #current-date {
+    font-size: 0.8rem;
+  }
+  
+  #current-time {
+    font-size: 1rem;
+  }
+  
+  .thank-you-slide h2,
+  .promo-slide h2,
+  .info-slide h2,
+  .custom-slide h2 {
+    font-size: 1.8rem;
+  }
+  
+  .thank-you-slide h3,
+  .promo-slide h3,
+  .info-slide h3 {
+    font-size: 1.2rem;
+  }
+  
+  .thank-you-slide p,
+  .promo-slide p,
+  .info-details p,
+  .custom-slide p {
+    font-size: 1rem;
+  }
+  
+  .highlight-text {
+    font-size: 1.1rem;
+    padding: 8px 16px;
+  }
+  
+  .info-details p i {
+    margin-right: 10px;
+  }
+  
+  .slide-logo {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .gallery-img {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .item-caption {
+    font-size: 0.9rem;
+    bottom: -20px;
+  }
+  
+  .decorative-element {
+    display: none;
+  }
+  
+  .divider:before, .divider:after {
+    width: 30%;
+  }
+  
+  .promotion-preview {
+    height: 300px;
+  }
+  
+  .preview-slide h2 {
+    font-size: 1.5rem;
+  }
+  
+  .preview-slide h3 {
+    font-size: 1rem;
+  }
+  
+  .preview-slide p {
+    font-size: 0.8rem;
+  }
+  
+  .preview-image-container img,
+  .preview-video {
+    max-height: 100px;
+  }
+  
+  .preview-gallery-item {
+    flex: 0 0 calc(100% - 10px);
+    max-width: calc(100% - 10px);
+  }
+  
+  .preview-gallery-item img {
+    height: 70px;
+  }
+  
+  .promo-highlight {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+  
+  .slide-title-badge {
+    font-size: 0.7rem;
+    padding: 3px 10px;
+  }
+}
+
+/* Fullscreen Preview Modal Styles */
+.promotion-fullscreen-preview {
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+}
+
+#fullscreenCarousel {
+  height: 100%;
+}
+
+#fullscreenCarousel .carousel-inner,
+#fullscreenCarousel .carousel-item {
+  height: 100%;
+}
+
+/* Toast Notifications */
+.toast-container {
+  z-index: 1060;
+}
+
+.toast {
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border: none;
+}
+
+.toast-body {
+  padding: 12px 15px;
+  font-weight: 500;
+}
+
+/* Typography */
+.slide-content h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.slide-content h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.slide-content p {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+/* Divider */
+.divider {
+  position: relative;
+  width: 80%;
+  max-width: 300px;
+  margin: 1rem auto;
+  text-align: center;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.divider span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  padding: 0 15px;
+}
+
+.divider i {
+  color: #ffd700;
+  font-size: 1.5rem;
+}
+
+/* Decorative elements */
+.decorative-element {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  opacity: 0.2;
+}
+
+.decorative-element.left {
+  top: 20px;
+  left: 20px;
+  border-top: 2px solid #ffd700;
+  border-left: 2px solid #ffd700;
+}
+
+.decorative-element.right {
+  bottom: 20px;
+  right: 20px;
+  border-bottom: 2px solid #ffd700;
+  border-right: 2px solid #ffd700;
+}
+
+/* Highlight */
+.promo-highlight {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid #ffd700;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 5px;
+}
+
+.highlight-text {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Logo */
+.logo-container {
+  margin-top: 2rem;
+}
+
+.slide-logo {
+  max-width: 150px;
+  border-radius: 50%;
+  border: 3px solid #ffd700;
+}
+
+/* Carousel controls */
+.carousel-control-prev, .carousel-control-next {
+  width: 5%;
+}
+
+.carousel-indicators {
+  margin-bottom: 2rem;
+}
+
+.carousel-indicators button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin: 0 5px;
+}
+
+/* Time display */
+.time-display {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px 15px;
+  border-radius: 5px;
+  z-index: 100;
+  text-align: right;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+
+#current-date {
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+#current-time {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Fullscreen container */
+.fullscreen-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Carousel */
+#promotionFullscreen {
+  height: 100%;
+}
+
+#promotionFullscreen .carousel-inner {
+  height: 100%;
+}
+
+#promotionFullscreen .carousel-item {
+  height: 100%;
+}
+
+/* Fade transition */
+.carousel-fade .carousel-item {
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+}
+
+.carousel-fade .carousel-item.active {
+  opacity: 1;
+}
+
+/* Zoom effect */
+.carousel-item.zoom-effect .slide-content {
+  animation: zoomIn 30s linear forwards;
+}
+
+@keyframes zoomIn {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+/* Animation */
+.slide-content:not(.no-animation) {
+  animation: fadeInUp 1s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.carousel-item {
+  opacity: 1 !important; /* Override untuk carousel-fade */
+}
+
+.carousel-item.active {
+  display: block !important;
+}
+
+/* Pastikan animasi tidak menyembunyikan konten */
+.slide-content {
+  opacity: 1 !important;
+}
+
+/* Pastikan AOS tidak menyembunyikan konten setelah animasi */
+[data-aos].aos-animate {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Pastikan konten tetap terlihat bahkan jika carousel berhenti */
+.carousel-inner {
+  min-height: 100vh;
+}
+
+/* Pastikan konten wrapper memiliki ukuran minimum */
+.content-wrapper {
+  min-height: 50vh;
+}
+
+/* Fullscreen image styling */
+.fullscreen-image-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+.fullscreen-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ini akan memastikan gambar menutupi seluruh area tanpa distorsi */
+  object-position: center;
+}
+
+/* Pastikan indikator waktu tetap terlihat di atas gambar */
+.time-display {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 15px;
+  border-radius: 5px;
+  z-index: 100; /* Nilai z-index yang lebih tinggi untuk memastikan tetap di atas */
+  text-align: right;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Pastikan indikator carousel tetap terlihat */
+.carousel-indicators {
+  z-index: 100;
+  position: absolute;
+  bottom: 20px;
 }
 
 
