@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <link rel="stylesheet" href="css/pages/promosi.css" />
+    <!-- Favicon sederhana -->
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <style>
+      /* ===== LAYOUT & GENERAL STYLES ===== */
+      body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f5f5f5;
+        color: #333;
+      }
+      
+      .app-container {
+        display: flex;
+        min-height: 100vh;
+      }
+      
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f5f5f5;
+      }
+      
+      .page-content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      
+      .page-header h1 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+      }
+      
+      /* ===== CARD STYLES ===== */
+      .card {
+        border-radius: 15px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+        overflow: hidden;
+        border: none;
+        margin-bottom: 25px;
+      }
+      
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+      }
+      
+      .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        padding: 18px 25px;
+      }
+      
+      .card-title {
+        margin: 0;
+        font-weight: 600;
+        color: #343a40;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+      }
+      
+      .card-title i {
+        margin-right: 10px;
+        color: #6c757d;
+        font-size: 1.1em;
+      }
+      
+      .card-body {
+        padding: 25px;
+        background-color: #fff;
+      }
+      
+      /* ===== FORM ELEMENTS ===== */
+      .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 8px;
+      }
+      
+      .form-control, .form-select {
+        border-radius: 10px;
+        border: 1px solid #ced4da;
+        padding: 12px 15px;
+        transition: all 0.3s;
+        font-size: 0.95rem;
+      }
+      
+      .form-control:focus, .form-select:focus {
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+      }
+      
+      /* Form switch styling */
+      .form-check-input {
+        width: 3em;
+        height: 1.5em;
+        margin-top: 0.25em;
+        margin-right: 10px;
+      }
+      
+      .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+      }
+      
+      .form-check-label {
+        font-weight: 500;
+        color: #495057;
+      }
+      
+      /* ===== BUTTON STYLES ===== */
+      .btn {
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+      }
+      
+      .btn i {
+        margin-right: 8px;
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        border: none;
+      }
+      
+      .btn-primary:hover {
+        background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+      }
+      
+      .btn-success {
+        background: linear-gradient(135deg, #198754 0%, #157347 100%);
+        border: none;
+      }
+      
+      .btn-success:hover {
+        background: linear-gradient(135deg, #157347 0%, #146c43 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
+      }
+      
+      .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+      }
+      
+      .btn-secondary:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #4e555b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+      }
+      
+      .btn-info {
+        background: linear-gradient(135deg, #0dcaf0 0%, #0bacce 100%);
+        border: none;
+        color: #fff;
+      }
+      
+      .btn-info:hover {
+        background: linear-gradient(135deg, #0bacce 0%, #099ab8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(13, 202, 240, 0.3);
+        color: #fff;
+      }
+      
+      .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+        border: none;
+      }
+      
+      .btn-danger:hover {
+        background: linear-gradient(135deg, #bb2d3b 0%, #a52834 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+      }
+      
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+      }
+      
+      /* ===== TAB STYLES ===== */
+      .nav-tabs {
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 20px;
+      }
+      
+      .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        padding: 12px 20px;
+        font-weight: 500;
+        transition: all 0.3s;
+        border-radius: 0;
+        position: relative;
+        margin-right: 5px;
+      }
+      
+      .nav-tabs .nav-link:hover {
+        color: #495057;
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+      
+      .nav-tabs .nav-link.active {
+        color: #0d6efd;
+        background-color: transparent;
+        font-weight: 600;
+      }
+      
+      .nav-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: #0d6efd;
+        border-radius: 3px 3px 0 0;
+      }
+      
+      /* ===== TABLE STYLES ===== */
+      .table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      
+      .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        border-top: none;
+        padding: 15px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+      }
+      
+      .table td {
+        padding: 15px;
+        vertical-align: middle;
+        border-top: 1px solid #f2f2f2;
+      }
+      
+      .table tbody tr {
+        transition: background-color 0.3s;
+      }
+      
+      .table tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+      
+      /* ===== BADGE STYLES ===== */
+      .badge {
+        padding: 8px 12px;
+        font-weight: 500;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+      }
+      
+      .bg-success {
+        background: linear-gradient(135deg, #198754 0%, #157347 100%) !important;
+      }
+      
+      .bg-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+      }
+      
+      .bg-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+        color: #212529 !important;
+      }
+      
+      /* ===== MODAL STYLES ===== */
+      .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+      
+      .modal-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 15px 15px 0 0;
+        padding: 15px 20px;
+      }
+      
+      .modal-title {
+        font-weight: 600;
+        color: #343a40;
+      }
+      
+      .modal-body {
+        padding: 20px;
+      }
+      
+      .modal-footer {
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 15px 15px;
+        padding: 15px 20px;
+        background-color: #f8f9fa;
+      }
+      
+      /* Modal backdrop styling */
+      .modal-backdrop {
+        background-color: #000;
+      }
+      
+      .modal-backdrop.show {
+        opacity: 0.5 !important; /* Memaksa opacity yang sama untuk semua backdrop */
+      }
+      
+      body.modal-open {
+        overflow: hidden;
+        padding-right: 17px !important; /* Konsisten untuk semua browser */
+      }
+      
+      /* ===== PREVIEW CAROUSEL STYLES ===== */
+      .promotion-preview {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        margin: 20px 0;
+      }
+      
+      #promotionCarousel {
+        background-color: #000;
+      }
+      
+      #promotionCarousel .carousel-item {
+        height: 400px;
+      }
+      
+      .preview-slide {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        text-align: center;
+      }
+      
+      .preview-slide .slide-content {
+        width: 100%;
+        max-width: 800px;
+        color: #fff;
+        padding: 30px;
+        position: relative;
+        z-index: 2;
+      }
+      
+      /* Slide variants */
+      .thank-you-slide {
+        background: linear-gradient(135deg, #1a1a1a 0%, #333 50%, #1a1a1a 100%);
+        position: relative;
+        height: 100%;
+      }
+      
+      .thank-you-slide::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+        z-index: 1;
+      }
+      
+      .variant-2 {
+        background: linear-gradient(135deg, #2c3e50 0%, #4a6572 50%, #2c3e50 100%);
+        position: relative;
+        height: 100%;
+      }
+      
+      .variant-2::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, rgba(192, 192, 192, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+        z-index: 1;
+      }
+      
+      .variant-3 {
+        background: linear-gradient(135deg, #4a3c29 0%, #8a6d3b 50%, #4a3c29 100%);
+        position: relative;
+        height: 100%;
+      }
+      
+      .variant-3::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, rgba(218, 165, 32, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+        z-index: 1;
+      }
+      
+      /* Slide content styling */
+      .preview-slide h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .preview-slide h3 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .preview-slide p {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .preview-slide .logo-container {
+    margin-top: 1.5rem;
+  }
+  
+  .preview-slide .slide-logo {
+    max-width: 100px;
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  }
+  
+  /* Divider styling */
+  .preview-slide .divider {
+    width: 100%;
+    max-width: 200px;
+    margin: 15px auto;
+    position: relative;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .preview-slide .divider span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .preview-slide .divider i {
+    color: #ffd700;
+  }
+  
+  /* Carousel controls */
+  #promotionCarousel .carousel-indicators {
+    margin-bottom: 10px;
+  }
+  
+  #promotionCarousel .carousel-indicators button {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: none;
+  }
+  
+  #promotionCarousel .carousel-indicators button.active {
+    background-color: #fff;
+    transform: scale(1.2);
+  }
+  
+  #promotionCarousel .carousel-control-prev,
+  #promotionCarousel .carousel-control-next {
+    width: 10%;
+    opacity: 0.7;
+  }
+  
+  #promotionCarousel .carousel-control-prev:hover,
+  #promotionCarousel .carousel-control-next:hover {
+    opacity: 1;
+  }
+  
+  /* ===== FULLSCREEN PREVIEW MODAL ===== */
+  .promotion-fullscreen-preview {
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+  }
+  
+  #fullscreenCarousel {
+    height: 100%;
+  }
+  
+  #fullscreenCarousel .carousel-inner,
+  #fullscreenCarousel .carousel-item {
+    height: 100%;
+  }
+  
+  /* ===== TOAST NOTIFICATIONS ===== */
+  .toast-container {
+    z-index: 1060;
+  }
+  
+  .toast {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border: none;
+  }
+  
+  .toast-body {
+    padding: 12px 15px;
+    font-weight: 500;
+  }
+  
+  /* ===== RESPONSIVE ADJUSTMENTS ===== */
+  @media (max-width: 992px) {
+    .preview-slide h2 {
+      font-size: 2rem;
+    }
+    
+    .preview-slide h3 {
+      font-size: 1.3rem;
+    }
+    
+    .preview-slide p {
+      font-size: 1rem;
+    }
+    
+    #promotionCarousel .carousel-item {
+      height: 350px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .card-body {
+      padding: 15px;
+    }
+    
+    .preview-slide h2 {
+      font-size: 1.8rem;
+    }
+    
+    .preview-slide h3 {
+      font-size: 1.1rem;
+    }
+    
+    .preview-slide p {
+      font-size: 0.9rem;
+    }
+    
+    #promotionCarousel .carousel-item {
+      height: 300px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      font-size: 0.8rem;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .page-header h1 {
+      margin-bottom: 10px;
+    }
+    
+    .preview-slide h2 {
+      font-size: 1.5rem;
+    }
+    
+    .preview-slide h3 {
+      font-size: 1rem;
+    }
+    
+    #promotionCarousel .carousel-item {
+      height: 250px;
+    }
+    
+    .preview-slide .slide-logo {
+      max-width: 80px;
+    }
+  }
+  
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.5s ease-in-out;
+  }
+  
+  /* ===== CUSTOM SCROLLBAR ===== */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+  }
+</style>
+
+    
+    
+    <title>Promosi - Melati Gold Shop</title>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold Shop</h1>
+        </div>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column" id="sidebarAccordion">
+            <li class="nav-item">
+              <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="promosi.html">
+                <i class="fas fa-ad"></i>
+                <span class="menu-text">Promosi</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
+                      <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
+                    </a>
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+          <div class="menu-toggle d-md-flex d-none">
+            <i class="fa-solid fa-minimize"></i>
+          </div>
+          <div class="hamburger d-md-none d-flex">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class="nav-right">
+            <div class="date-time">
+              <div class="current-date" id="current-date"></div>
+              <div class="current-time" id="current-time"></div>
+            </div>
+            <div class="user-profile dropdown">
+              <div class="profile-img" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="user-avatar">M</span>
+              </div>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <button class="dropdown-item" id="logoutBtn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Promosi Toko</h1>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                <li class="breadcrumb-item">Antrian</li>
+                <li class="breadcrumb-item active" aria-current="page">Promosi</li>
+              </ol>
+            </nav>
+          </div>
+
+          <!-- Promotion Management Section -->
+          <div class="row mb-4">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Pengaturan Promosi
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group mb-3">
+                        <label for="slideInterval" class="form-label">Interval Slide (detik)</label>
+                        <input type="number" class="form-control" id="slideInterval" value="30" min="5" max="120" />
+                      </div>
+                      <div class="form-group mb-3">
+                        <label for="transitionEffect" class="form-label">Efek Transisi</label>
+                        <select class="form-select" id="transitionEffect">
+                          <option value="fade">Fade</option>
+                          <option value="slide">Slide</option>
+                          <option value="zoom">Zoom</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="autoPlaySwitch" checked />
+                        <label class="form-check-label" for="autoPlaySwitch">Putar Otomatis</label>
+                      </div>
+                      <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="showControlsSwitch" checked />
+                        <label class="form-check-label" for="showControlsSwitch">Tampilkan Kontrol</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-end">
+                    <button class="btn btn-primary" id="saveSettingsBtn">
+                      <i class="fas fa-save me-2"></i>
+                      Simpan Pengaturan
+                    </button>
+                    <button class="btn btn-success ms-2" id="previewBtn">
+                      <i class="fas fa-eye me-2"></i>
+                      Pratinjau
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Promotion Content Management -->
+          <div class="row mb-4">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title mb-0">
+                    <i class="fas fa-images me-2"></i>
+                    Konten Promosi
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <ul class="nav nav-tabs" id="promoTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                      <button
+                        class="nav-link"
+                        id="events-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#events"
+                        type="button"
+                        role="tab"
+                        aria-controls="events"
+                        aria-selected="false"
+                      >
+                        Event & Promo
+                      </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button
+                        class="nav-link"
+                        id="custom-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#custom"
+                        type="button"
+                        role="tab"
+                        aria-controls="custom"
+                        aria-selected="false"
+                      >
+                        Konten Kustom
+                      </button>
+                    </li>
+                  </ul>
+                  <div class="tab-content p-3" id="promoTabsContent">
+                    <!-- Events & Promos Tab -->
+                    <div class="tab-pane fade show active" id="events" role="tabpanel" aria-labelledby="events-tab">
+                      <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6>Daftar Event & Promo</h6>
+                          <button class="btn btn-sm btn-primary" id="addEventBtn">
+                            <i class="fas fa-plus me-1"></i>
+                            Tambah Event
+                          </button>
+                        </div>
+                        <div class="table-responsive">
+                          <table class="table table-hover">
+                            <thead>
+                              <tr>
+                                <th>No</th>
+                                <th>Judul Event</th>
+                                <th>Tanggal</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                              </tr>
+                            </thead>
+                            <tbody id="eventList"></tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Important Information Tab -->
+                    <div class="tab-pane fade" id="info" role="tabpanel" aria-labelledby="info-tab">
+                      <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6>Daftar Informasi Penting</h6>
+                          <button class="btn btn-sm btn-primary" id="addInfoBtn">
+                            <i class="fas fa-plus me-1"></i>
+                            Tambah Informasi
+                          </button>
+                        </div>
+                        <div class="table-responsive">
+                          <table class="table table-hover">
+                            <thead>
+                              <tr>
+                                <th>No</th>
+                                <th>Judul Informasi</th>
+                                <th>Kategori</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                              </tr>
+                            </thead>
+                            <tbody id="infoList">
+                              <tr>
+                                <td>3</td>
+                                <td>Panduan Perawatan Perhiasan Emas</td>
+                                <td>Edukasi</td>
+                                <td><span class="badge bg-success">Aktif</span></td>
+                                <td>
+                                  <button class="btn btn-sm btn-info edit-info" data-id="3">
+                                    <i class="fas fa-edit"></i>
+                                  </button>
+                                  <button class="btn btn-sm btn-danger delete-info" data-id="3">
+                                    <i class="fas fa-trash"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Custom Content Tab -->
+                    <div class="tab-pane fade" id="custom" role="tabpanel" aria-labelledby="custom-tab">
+                      <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6>Konten Kustom</h6>
+                          <button class="btn btn-sm btn-primary" id="addCustomBtn">
+                            <i class="fas fa-plus me-1"></i>
+                            Tambah Konten
+                          </button>
+                        </div>
+                        <div class="table-responsive">
+                          <table class="table table-hover">
+                            <thead>
+                              <tr>
+                                <th>No</th>
+                                <th>Judul</th>
+                                <th>Jenis</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                              </tr>
+                            </thead>
+                            <tbody id="customList">
+                              <tr>
+                                <td>1</td>
+                                <td>Koleksi Perhiasan Terbaru</td>
+                                <td>Gambar</td>
+                                <td><span class="badge bg-success">Aktif</span></td>
+                                <td>
+                                  <button class="btn btn-sm btn-info edit-custom" data-id="1">
+                                    <i class="fas fa-edit"></i>
+                                  </button>
+                                  <button class="btn btn-sm btn-danger delete-custom" data-id="1">
+                                    <i class="fas fa-trash"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>2</td>
+                                <td>Video Testimonial Pelanggan</td>
+                                <td>Video</td>
+                                <td><span class="badge bg-success">Aktif</span></td>
+                                <td>
+                                  <button class="btn btn-sm btn-info edit-custom" data-id="2">
+                                    <i class="fas fa-edit"></i>
+                                  </button>
+                                  <button class="btn btn-sm btn-danger delete-custom" data-id="2">
+                                    <i class="fas fa-trash"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bagian Pratinjau Tampilan di promosi.html -->
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-tv me-2"></i>
+          Pratinjau Tampilan
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="promotion-preview">
+          <div id="promotionCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-indicators">
+              <button type="button" data-bs-target="#promotionCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+              <button type="button" data-bs-target="#promotionCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+              <button type="button" data-bs-target="#promotionCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+            </div>
+            <div class="carousel-inner">
+              <!-- Slide 1: Terima Kasih -->
+              <div class="carousel-item active">
+                <div class="preview-slide thank-you-slide">
+                  <div class="slide-content">
+                    <h2>Terima Kasih</h2>
+                    <h3>Telah Mengunjungi Melati Gold Shop</h3>
+                    <p>Kami sangat menghargai kepercayaan Anda</p>
+                    <div class="logo-container">
+                      <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Slide 2: Kami Senang -->
+              <div class="carousel-item">
+                <div class="preview-slide variant-2">
+                  <div class="slide-content">
+                    <h2>Kami Senang</h2>
+                    <h3>Dapat Melayani Anda di Melati Gold Shop</h3>
+                    <p>Semoga pengalaman berbelanja Anda menyenangkan</p>
+                    <div class="logo-container">
+                      <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Slide 3: Terima Kasih Atas Kepercayaan -->
+              <div class="carousel-item">
+                <div class="preview-slide variant-3">
+                  <div class="slide-content">
+                    <h2>Terima Kasih</h2>
+                    <h3>Atas Kepercayaan Anda Kepada Melati Gold Shop</h3>
+                    <p>Kami berkomitmen memberikan produk dan layanan terbaik</p>
+                    <div class="logo-container">
+                      <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#promotionCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#promotionCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+          <div class="card-body">
+            <div class="d-flex justify-content-end">
+              <a href="promosi-display.html" target="_blank" class="btn btn-success ms-2">
+                <i class="fas fa-external-link-alt me-2"></i>
+                Buka Tampilan Promosi
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Modal for Adding/Editing Events -->
+    <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="eventModalLabel">Tambah Event</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="eventForm">
+              <input type="hidden" id="eventId" value="" />
+              <div class="mb-3">
+                <label for="eventTitle" class="form-label">Judul Event</label>
+                <input type="text" class="form-control" id="eventTitle" placeholder="Masukkan judul event" required />
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="eventStartDate" class="form-label">Tanggal Mulai</label>
+                  <input type="date" class="form-control" id="eventStartDate" required />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="eventEndDate" class="form-label">Tanggal Selesai</label>
+                  <input type="date" class="form-control" id="eventEndDate" />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="eventImage" class="form-label">Gambar Event</label>
+                <input type="file" class="form-control" id="eventImage" accept="image/*" />
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="eventActive" checked />
+                <label class="form-check-label" for="eventActive">Aktif</label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary" id="saveEvent">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Adding/Editing Custom Content -->
+<div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="customModalLabel">Tambah Konten Kustom</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="customForm">
+          <input type="hidden" id="customId" value="" />
+          <div class="mb-3">
+            <label for="customTitle" class="form-label">Judul Konten</label>
+            <input type="text" class="form-control" id="customTitle" placeholder="Masukkan judul konten" required />
+          </div>
+          <div class="mb-3">
+            <label for="customType" class="form-label">Jenis Konten</label>
+            <select class="form-select" id="customType" required>
+              <option value="">Pilih jenis konten</option>
+              <option value="Gambar">Gambar</option>
+              <option value="Video">Video</option>
+              <option value="HTML">HTML Kustom</option>
+            </select>
+          </div>
+          <div class="mb-3 content-upload">
+            <label for="customFile" class="form-label">Unggah File</label>
+            <input type="file" class="form-control" id="customFile" />
+          </div>
+          <div class="mb-3 content-html d-none">
+            <label for="customHtml" class="form-label">Kode HTML</label>
+            <textarea class="form-control" id="customHtml" rows="5" placeholder="Masukkan kode HTML"></textarea>
+            <small class="form-text text-muted">
+              Gunakan tag HTML untuk mengatur konten. Contoh: &lt;h2&gt;Judul&lt;/h2&gt;, &lt;p&gt;Paragraf&lt;/p&gt;
+            </small>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="customActive" checked />
+            <label class="form-check-label" for="customActive">Aktif</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" id="saveCustom">Simpan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Preview Modal -->
+    <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="previewModalLabel">Pratinjau Tampilan Promosi</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="promotion-fullscreen-preview">
+              <div id="fullscreenCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                  <div class="carousel-item active">
+                    <div class="thank-you-slide">
+                      <div class="slide-content">
+                        <h2>Terima Kasih</h2>
+                        <h3>Telah Mengunjungi Melati Gold Shop</h3>
+                        <p>Kami sangat menghargai kepercayaan Anda</p>
+                        <div class="logo-container">
+                          <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="carousel-item">
+                    <div class="thank-you-slide variant-2">
+                      <div class="slide-content">
+                        <h2>Kami Senang</h2>
+                        <h3>Dapat Melayani Anda di Melati Gold Shop</h3>
+                        <p>Semoga pengalaman berbelanja Anda menyenangkan</p>
+                        <div class="logo-container">
+                          <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="carousel-item">
+                    <div class="promo-slide">
+                      <div class="slide-content">
+                        <h2>Promo Spesial Hari Raya</h2>
+                        <h3>Diskon hingga 20% untuk semua koleksi perhiasan</h3>
+                        <p>Periode: 1 April - 15 April 2024</p>
+                        <div class="promo-highlight">Jangan lewatkan kesempatan ini!</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="carousel-item">
+                    <div class="info-slide">
+                      <div class="slide-content">
+                        <h2>Informasi Penting</h2>
+                        <h3>Perubahan Jam Operasional Selama Bulan Ramadhan</h3>
+                        <div class="info-details">
+                          <p>Senin - Jumat: 09.00 - 17.00</p>
+                          <p>Sabtu: 09.00 - 15.00</p>
+                          <p>Minggu: Tutup</p>
+                        </div>
+                        <p class="info-note">Terima kasih atas pengertian Anda</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="carousel-item">
+                    <div class="custom-slide">
+                      <div class="slide-content">
+                        <h2>Koleksi Perhiasan Terbaru</h2>
+                        <!-- <div class="image-gallery">
+                          <img src="img/jewelry1.jpg" alt="Perhiasan 1" class="gallery-img" />
+                          <img src="img/jewelry2.jpg" alt="Perhiasan 2" class="gallery-img" />
+                          <img src="img/jewelry3.jpg" alt="Perhiasan 3" class="gallery-img" />
+                        </div> -->
+                        <p>Kunjungi toko kami untuk melihat koleksi lengkap</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/melati.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/promosi.js"></script>
+  </body>
+</html>

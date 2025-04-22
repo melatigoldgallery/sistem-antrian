@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/promosi.css" />
+    <!-- Favicon sederhana -->
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <style>
+      /* Typography */
+      .slide-content h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #fff;
+      }
+      
+      .slide-content h3 {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        color: #fff;
+      }
+      
+      .slide-content p {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.2rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        color: #fff;
+      }
+      
+      /* Divider */
+      .divider {
+        position: relative;
+        width: 80%;
+        max-width: 300px;
+        margin: 1rem auto;
+        text-align: center;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.3);
+      }
+      
+      .divider span {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: transparent;
+        padding: 0 15px;
+      }
+      
+      .divider i {
+        color: #ffd700;
+        font-size: 1.5rem;
+      }
+      
+      /* Decorative elements */
+      .decorative-element {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        opacity: 0.2;
+      }
+      
+      .decorative-element.left {
+        top: 20px;
+        left: 20px;
+        border-top: 2px solid #ffd700;
+        border-left: 2px solid #ffd700;
+      }
+      
+      .decorative-element.right {
+        bottom: 20px;
+        right: 20px;
+        border-bottom: 2px solid #ffd700;
+        border-right: 2px solid #ffd700;
+      }
+      
+      /* Highlight */
+      .promo-highlight {
+        background: rgba(255, 215, 0, 0.2);
+        border: 1px solid #ffd700;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 5px;
+      }
+      
+      .highlight-text {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 600;
+        color: #fff;
+      }
+      
+      /* Logo */
+      .logo-container {
+        margin-top: 2rem;
+      }
+      
+      .slide-logo {
+        max-width: 150px;
+        border-radius: 50%;
+        border: 3px solid #ffd700;
+      }
+      
+      /* Carousel controls */
+      .carousel-control-prev, .carousel-control-next {
+        width: 5%;
+      }
+      
+      .carousel-indicators {
+        margin-bottom: 2rem;
+      }
+      
+      .carousel-indicators button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin: 0 5px;
+      }
+      
+      /* Time display */
+      .time-display {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px 15px;
+        border-radius: 5px;
+        z-index: 100;
+        text-align: right;
+        color: #fff;
+        font-family: 'Montserrat', sans-serif;
+      }
+      
+      #current-date {
+        font-size: 1rem;
+        margin-bottom: 5px;
+      }
+      
+      #current-time {
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+      
+      /* Fullscreen container */
+      .fullscreen-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: #000;
+      }
+      
+      /* Carousel */
+      #promotionFullscreen {
+        height: 100%;
+      }
+      
+      #promotionFullscreen .carousel-inner {
+        height: 100%;
+      }
+      
+      #promotionFullscreen .carousel-item {
+        height: 100%;
+      }
+      
+      /* Fade transition */
+      .carousel-fade .carousel-item {
+        opacity: 0;
+        transition: opacity 0.6s ease-in-out;
+      }
+      
+      .carousel-fade .carousel-item.active {
+        opacity: 1;
+      }
+      
+      /* Zoom effect */
+      .carousel-item.zoom-effect .slide-content {
+        animation: zoomIn 30s linear forwards;
+      }
+      
+      @keyframes zoomIn {
+        from { transform: scale(1); }
+        to { transform: scale(1.1); }
+      }
+      
+      /* Animation */
+      .slide-content:not(.no-animation) {
+        animation: fadeInUp 1s ease-out;
+      }
+      
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .carousel-item {
+    opacity: 1 !important; /* Override untuk carousel-fade */
+  }
+  
+  .carousel-item.active {
+    display: block !important;
+  }
+  
+  /* Pastikan animasi tidak menyembunyikan konten */
+  .slide-content {
+    opacity: 1 !important;
+  }
+  
+  /* Pastikan AOS tidak menyembunyikan konten setelah animasi */
+  [data-aos].aos-animate {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  /* Pastikan konten tetap terlihat bahkan jika carousel berhenti */
+  .carousel-inner {
+    min-height: 100vh;
+  }
+  
+  /* Pastikan konten wrapper memiliki ukuran minimum */
+  .content-wrapper {
+    min-height: 50vh;
+  }
+
+  /* Fullscreen image styling */
+  .fullscreen-image-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+  }
+  
+  .fullscreen-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ini akan memastikan gambar menutupi seluruh area tanpa distorsi */
+    object-position: center;
+  }
+  
+  /* Pastikan indikator waktu tetap terlihat di atas gambar */
+  .time-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 15px;
+    border-radius: 5px;
+    z-index: 100; /* Nilai z-index yang lebih tinggi untuk memastikan tetap di atas */
+    text-align: right;
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+  }
+  
+  /* Pastikan indikator carousel tetap terlihat */
+  .carousel-indicators {
+    z-index: 100;
+    position: absolute;
+    bottom: 20px;
+  }
+    </style>
+    
+    <title>Display Promosi - Melati Gold Shop</title>
+  </head>
+  <body>
+    <div class="fullscreen-container">
+      <div class="time-display">
+        <div id="current-date"></div>
+        <div id="current-time"></div>
+      </div>
+      
+      <div id="promotionFullscreen" class="carousel slide" data-bs-ride="carousel" data-bs-interval="30000">
+        <div class="carousel-inner">
+          <!-- Konten akan diisi secara dinamis dari Firebase -->
+          <div class="carousel-item active">
+            <div class="thank-you-slide elegant-gold">
+              <div class="slide-content" data-aos="fade-up">
+                <div class="decorative-element left"></div>
+                <div class="content-wrapper">
+                  <h2>Memuat Konten...</h2>
+                  <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+                  <h3>Mohon tunggu sebentar</h3>
+                  <div class="logo-container">
+                    <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+                  </div>
+                </div>
+                <div class="decorative-element right"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="carousel-indicators custom-indicators">
+          <!-- Indikator akan diisi secara dinamis -->
+          <button type="button" data-bs-target="#promotionFullscreen" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      // Import Firebase modules
+      import { db, rtdb } from './js/configFirebase.js';
+      import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js";
+      
+      // Variabel global untuk carousel
+      let carouselInstance = null;
+      
+      // Initialize AOS dengan opsi yang tepat
+      AOS.init({
+        duration: 1000,
+        once: true,  // Pastikan animasi hanya berjalan sekali
+        disable: 'mobile' // Nonaktifkan pada perangkat mobile untuk performa
+      });
+      
+      // Update date and time
+      function updateDateTime() {
+        const now = new Date();
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        
+        document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', dateOptions);
+        document.getElementById('current-time').textContent = now.toLocaleTimeString('id-ID', timeOptions);
+      }
+      
+      // Initial call and set interval for date/time
+      updateDateTime();
+      setInterval(updateDateTime, 1000);
+      
+      // Function to apply settings to carousel
+      function applySettings(settings) {
+        const slideInterval = settings.slideInterval || 30;
+        const transitionEffect = settings.transitionEffect || 'fade';
+        const enableAnimation = settings.enableAnimation !== false;
+        const showControls = settings.showControls !== false;
+        
+        const carousel = document.getElementById('promotionFullscreen');
+        if (carousel) {
+          // Hapus instance carousel yang ada jika ada
+          if (carouselInstance) {
+            carouselInstance.dispose();
+          }
+          
+          // Set interval (convert to milliseconds)
+          carousel.setAttribute('data-bs-interval', slideInterval * 1000);
+          
+          // Apply transition effect
+          carousel.classList.remove('carousel-fade');
+          document.querySelectorAll('.carousel-item').forEach(item => {
+            item.classList.remove('zoom-effect');
+          });
+          
+          if (transitionEffect === 'fade') {
+            carousel.classList.add('carousel-fade');
+          } else if (transitionEffect === 'zoom') {
+            document.querySelectorAll('.carousel-item').forEach(item => {
+              item.classList.add('zoom-effect');
+            });
+          }
+          
+          // Apply animation settings
+          if (!enableAnimation) {
+            document.querySelectorAll('.slide-content').forEach(content => {
+              content.classList.add('no-animation');
+            });
+          } else {
+            document.querySelectorAll('.slide-content').forEach(content => {
+              content.classList.remove('no-animation');
+            });
+          }
+          
+          // Show/hide controls
+          const controls = carousel.querySelectorAll('.carousel-control-prev, .carousel-control-next');
+          controls.forEach(control => {
+            control.style.display = showControls ? 'flex' : 'none';
+          });
+          
+          // Initialize Bootstrap carousel dengan interval yang sangat panjang jika hanya ada 1 slide
+          const slideCount = carousel.querySelectorAll('.carousel-item').length;
+          const actualInterval = slideCount <= 1 ? false : (slideInterval * 1000);
+          
+          carouselInstance = new bootstrap.Carousel(carousel, {
+            interval: actualInterval,
+            wrap: true,
+            keyboard: false,
+            pause: false // Jangan pause saat hover
+          });
+          
+          console.log(`Carousel initialized with ${slideCount} slides, interval: ${actualInterval}`);
+        }
+      }
+      
+      // Function to update carousel content
+function updateCarouselContent(content) {
+  console.log("Updating carousel content");
+  const carouselInner = document.querySelector('#promotionFullscreen .carousel-inner');
+  const carouselIndicators = document.querySelector('#promotionFullscreen .carousel-indicators');
+  
+  if (!carouselInner || !carouselIndicators) {
+    console.error("Carousel elements not found");
+    return;
+  }
+  
+  // Clear existing content
+  carouselInner.innerHTML = '';
+  carouselIndicators.innerHTML = '';
+  
+  // Combine all content types
+  let allSlides = [];
+  
+  // Add events if they exist
+  if (content.events) {
+    // Convert to array if it's an object
+    const events = typeof content.events === 'object' && !Array.isArray(content.events) 
+      ? Object.values(content.events) 
+      : content.events;
+    
+    allSlides = allSlides.concat(events.filter(event => event && event.isActive));
+  }
+  
+  // Add custom items if they exist
+  if (content.customItems) {
+    // Convert to array if it's an object
+    const customItems = typeof content.customItems === 'object' && !Array.isArray(content.customItems) 
+      ? Object.values(content.customItems) 
+      : content.customItems;
+    
+    allSlides = allSlides.concat(customItems.filter(item => item && item.isActive));
+  }
+  
+  // Sort slides if needed (e.g., by priority or date)
+  allSlides.sort((a, b) => (a.order || 0) - (b.order || 0));
+  
+  console.log(`Found ${allSlides.length} active slides`);
+  
+  // Tambahkan slide default (ucapan terima kasih) di awal
+  const defaultSlides = [
+    {
+      type: 'default',
+      template: `
+        <div class="thank-you-slide elegant-gold">
+          <div class="slide-content" data-aos="fade-up">
+            <div class="decorative-element left"></div>
+            <div class="content-wrapper">
+              <h2>Terima Kasih</h2>
+              <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+              <h3>Telah Mengunjungi Melati Gold Shop</h3>
+              <p>Kami sangat menghargai kepercayaan Anda</p>
+              <div class="logo-container">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+              </div>
+            </div>
+            <div class="decorative-element right"></div>
+          </div>
+        </div>
+      `
+    },
+    {
+      type: 'default',
+      template: `
+        <div class="thank-you-slide elegant-silver">
+          <div class="slide-content" data-aos="fade-up">
+            <div class="decorative-element left"></div>
+            <div class="content-wrapper">
+              <h2>Kami Senang</h2>
+              <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+              <h3>Dapat Melayani Anda di Melati Gold Shop</h3>
+              <p>Semoga pengalaman berbelanja Anda menyenangkan</p>
+              <div class="logo-container">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+              </div>
+            </div>
+            <div class="decorative-element right"></div>
+          </div>
+        </div>
+      `
+    },
+    {
+      type: 'default',
+      template: `
+        <div class="thank-you-slide elegant-rose">
+          <div class="slide-content" data-aos="fade-up">
+            <div class="decorative-element left"></div>
+            <div class="content-wrapper">
+              <h2>Terima Kasih</h2>
+              <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+              <h3>Atas Kepercayaan Anda Kepada Melati Gold Shop</h3>
+              <p>Kami berkomitmen memberikan produk dan layanan terbaik</p>
+              <div class="logo-container">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+              </div>
+            </div>
+            <div class="decorative-element right"></div>
+          </div>
+        </div>
+      `
+    }
+  ];
+  
+  // Gabungkan slide default dengan slide konten
+  const combinedSlides = [...defaultSlides, ...allSlides];
+  
+  // Add slides to carousel
+  combinedSlides.forEach((slide, index) => {
+    // Create indicator
+    const indicator = document.createElement('button');
+    indicator.setAttribute('type', 'button');
+    indicator.setAttribute('data-bs-target', '#promotionFullscreen');
+    indicator.setAttribute('data-bs-slide-to', index.toString());
+    if (index === 0) {
+      indicator.classList.add('active');
+      indicator.setAttribute('aria-current', 'true');
+    }
+    indicator.setAttribute('aria-label', `Slide ${index + 1}`);
+    carouselIndicators.appendChild(indicator);
+    
+    // Create slide based on type
+    const slideElement = document.createElement('div');
+    slideElement.classList.add('carousel-item');
+    if (index === 0) slideElement.classList.add('active');
+    
+    // Determine slide content based on type
+    if (slide.type === 'default') {
+      slideElement.innerHTML = slide.template;
+    } else if (slide.type === 'event') {
+      slideElement.innerHTML = createEventSlide(slide);
+    } else if (slide.type === 'custom') {
+      slideElement.innerHTML = createCustomSlide(slide);
+    }
+    
+    carouselInner.appendChild(slideElement);
+  });
+  
+  // Reinitialize AOS for new content
+  if (typeof AOS !== 'undefined') {
+    setTimeout(() => {
+      AOS.refresh();
+    }, 100);
+  }
+  
+  // Get settings and apply them
+  const settingsRef = ref(rtdb, 'settings/promotion');
+  get(settingsRef).then((snapshot) => {
+    const settings = snapshot.val() || {};
+    applySettings(settings);
+  }).catch(error => {
+    console.error("Error getting settings:", error);
+    // Apply default settings
+    applySettings({});
+  });
+}
+
+      
+      // Function to create event slide HTML
+function createEventSlide(slide) {
+  // Jika ada gambar, tampilkan sebagai full screen
+  if (slide.imageUrl) {
+    return `
+      <div class="fullscreen-image-slide">
+        <img src="${slide.imageUrl}" alt="${slide.title}" class="fullscreen-image">
+        
+        <!-- Optional: Tambahkan overlay dengan judul event jika diperlukan -->
+        <div class="event-overlay">
+          <h2>${slide.title}</h2>
+          ${slide.subtitle ? `<h3>${slide.subtitle}</h3>` : ''}
+          ${slide.highlight ? `<div class="event-highlight">${slide.highlight}</div>` : ''}
+        </div>
+      </div>
+    `;
+  } else {
+    // Jika tidak ada gambar, gunakan tampilan standar
+    return `
+      <div class="promo-slide ${slide.variant || 'luxury-gold'}">
+        <div class="slide-content" data-aos="fade-up">
+          <div class="decorative-element left"></div>
+          <div class="content-wrapper">
+            <h2>${slide.title}</h2>
+            <div class="divider"><span><i class="fas fa-${slide.icon || 'percentage'}"></i></span></div>
+            <h3>${slide.subtitle || ''}</h3>
+            <p>${slide.description || ''}</p>
+            ${slide.highlight ? `
+              <div class="promo-highlight">
+                <span class="highlight-text">${slide.highlight}</span>
+              </div>
+            ` : ''}
+          </div>
+          <div class="decorative-element right"></div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+      
+
+      // Function to create custom slide HTML
+function createCustomSlide(slide) {
+  if (slide.contentType === 'HTML') {
+    return `
+      <div class="custom-slide">
+        <div class="slide-content" data-aos="fade-up">
+          <div class="decorative-element left"></div>
+          <div class="content-wrapper">
+            ${slide.htmlContent || '<p>No content available</p>'}
+          </div>
+          <div class="decorative-element right"></div>
+        </div>
+      </div>
+    `;
+  } else if (slide.contentType === 'Gambar') {
+    // Untuk gambar, tampilkan full screen tanpa elemen tambahan
+    return `
+      <div class="fullscreen-image-slide">
+        <img src="${slide.fileUrl}" alt="${slide.title}" class="fullscreen-image">
+      </div>
+    `;
+  } else if (slide.contentType === 'Video') {
+    return `
+      <div class="custom-slide">
+        <div class="slide-content" data-aos="fade-up">
+          <div class="decorative-element left"></div>
+          <div class="content-wrapper">
+            <h2>${slide.title}</h2>
+            <div class="divider"><span><i class="fas fa-video"></i></span></div>
+            <div class="video-container">
+              <video src="${slide.fileUrl}" controls autoplay muted loop class="custom-video"></video>
+            </div>
+            <p>${slide.description || ''}</p>
+          </div>
+          <div class="decorative-element right"></div>
+        </div>
+      </div>
+    `;
+  } else if (slide.contentType === 'Gallery') {
+    const galleryItems = (slide.images || []).map(img => `
+      <div class="gallery-item">
+        <img src="${img.url}" alt="${img.caption || ''}" class="gallery-img">
+        ${img.caption ? `<div class="item-caption">${img.caption}</div>` : ''}
+      </div>
+    `).join('');
+    
+    return `
+      <div class="custom-slide collection-display">
+        <div class="slide-content" data-aos="fade-up">
+          <div class="decorative-element left"></div>
+          <div class="content-wrapper">
+            <h2>${slide.title}</h2>
+            <div class="divider"><span><i class="fas fa-${slide.icon || 'crown'}"></i></span></div>
+            <div class="image-gallery">
+              ${galleryItems}
+            </div>
+            <p>${slide.description || ''}</p>
+          </div>
+          <div class="decorative-element right"></div>
+        </div>
+      </div>
+    `;
+  }
+  
+  return '';
+}
+
+      
+      // Initialize display with Firebase - SINGLE LISTENER APPROACH
+document.addEventListener('DOMContentLoaded', function() {
+  console.log("DOM Content Loaded");
+  
+  // Tampilkan tampilan default terlebih dahulu
+  const carouselInner = document.querySelector('#promotionFullscreen .carousel-inner');
+  const carouselIndicators = document.querySelector('#promotionFullscreen .carousel-indicators');
+  
+  if (carouselInner && carouselIndicators) {
+    // Tampilan default
+    carouselInner.innerHTML = `
+      <div class="carousel-item active">
+        <div class="thank-you-slide elegant-gold">
+          <div class="slide-content" data-aos="fade-up">
+            <div class="decorative-element left"></div>
+            <div class="content-wrapper">
+              <h2>Terima Kasih</h2>
+              <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+              <h3>Telah Mengunjungi Melati Gold Shop</h3>
+              <p>Kami sangat menghargai kepercayaan Anda</p>
+              <div class="logo-container">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+              </div>
+            </div>
+            <div class="decorative-element right"></div>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <div class="thank-you-slide elegant-silver">
+          <div class="slide-content" data-aos="fade-up">
+            <div class="decorative-element left"></div>
+            <div class="content-wrapper">
+              <h2>Kami Senang</h2>
+              <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+              <h3>Dapat Melayani Anda di Melati Gold Shop</h3>
+              <p>Semoga pengalaman berbelanja Anda menyenangkan</p>
+              <div class="logo-container">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+              </div>
+            </div>
+            <div class="decorative-element right"></div>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <div class="thank-you-slide elegant-rose">
+          <div class="slide-content" data-aos="fade-up">
+            <div class="decorative-element left"></div>
+            <div class="content-wrapper">
+              <h2>Terima Kasih</h2>
+              <div class="divider"><span><i class="fas fa-gem"></i></span></div>
+              <h3>Atas Kepercayaan Anda Kepada Melati Gold Shop</h3>
+              <p>Kami berkomitmen memberikan produk dan layanan terbaik</p>
+              <div class="logo-container">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="slide-logo">
+              </div>
+            </div>
+            <div class="decorative-element right"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    carouselIndicators.innerHTML = `
+      <button type="button" data-bs-target="#promotionFullscreen" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+      <button type="button" data-bs-target="#promotionFullscreen" data-bs-slide-to="1" aria-label="Slide 2"></button>
+      <button type="button" data-bs-target="#promotionFullscreen" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    `;
+    
+    // Initialize AOS
+    if (typeof AOS !== 'undefined') {
+      AOS.init({
+        duration: 1000,
+        once: true
+      });
+    }
+  }
+  
+  // Listen for settings changes
+  const settingsRef = ref(rtdb, 'settings/promotion');
+  onValue(settingsRef, (snapshot) => {
+    const settings = snapshot.val() || {};
+    applySettings(settings);
+  });
+  
+  // Listen for content changes
+  const contentRef = ref(rtdb, 'content/promotion');
+  onValue(contentRef, (snapshot) => {
+    const content = snapshot.val() || {};
+    updateCarouselContent(content);
+  });
+  
+  // Handle connection state
+  const connectedRef = ref(rtdb, '.info/connected');
+  onValue(connectedRef, (snap) => {
+    if (snap.val() === true) {
+      console.log('Connected to Firebase');
+    } else {
+      console.log('Disconnected from Firebase');
+      // Show offline message if needed
+    }
+  });
+});
+
+
+  // Tambahkan event listener untuk mencegah carousel berhenti
+  window.addEventListener('blur', function() {
+    // Pastikan carousel tetap berjalan bahkan ketika tab tidak aktif
+    if (carouselInstance) {
+      carouselInstance.cycle();
+    }
+  });
+
+  // Tambahkan event listener untuk mendeteksi perubahan slide
+  document.getElementById('promotionFullscreen').addEventListener('slide.bs.carousel', function (e) {
+    console.log(`Sliding to slide ${e.to + 1}`);
+    
+    // Refresh AOS animations pada slide yang akan ditampilkan
+    const nextSlide = e.relatedTarget;
+    if (nextSlide) {
+      const animations = nextSlide.querySelectorAll('[data-aos]');
+      animations.forEach(element => {
+        element.classList.remove('aos-animate');
+        setTimeout(() => {
+          element.classList.add('aos-animate');
+        }, 10);
+      });
+    }
+  });
+
+  // Tambahkan event listener untuk mendeteksi ketika slide telah berubah
+  document.getElementById('promotionFullscreen').addEventListener('slid.bs.carousel', function (e) {
+    console.log(`Slid to slide ${e.to + 1}`);
+  });
+
+  // Tambahkan fungsi untuk memastikan carousel tetap berjalan
+  function ensureCarouselRunning() {
+    if (carouselInstance) {
+      carouselInstance.cycle();
+      console.log("Ensuring carousel is running");
+    }
+  }
+
+  // Jalankan fungsi ini secara berkala untuk memastikan carousel tetap berjalan
+  setInterval(ensureCarouselRunning, 60000); // Setiap 1 menit
+</script>
+ 
+  </body>
+</html>
