@@ -21,6 +21,38 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <!-- Favicon sederhana -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <!-- Tambahkan style ini di bagian head, sebelum </head> -->
+<style>
+  /* Animasi untuk feedback popup */
+  @keyframes feedbackPulse {
+    0% { transform: scale(0.98); opacity: 0.8; }
+    50% { transform: scale(1.02); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  @keyframes feedbackFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  /* Style untuk feedback popup */
+  .feedback-popup {
+    position: sticky !important;
+    top: 20px !important;
+    z-index: 1050 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 20px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Pastikan feedback terlihat di atas konten lain */
+  #formFeedback {
+    position: relative;
+  }
+</style>
+
     <title>Pengajuan Izin - Melati Gold Shop</title>
   </head>
   <body>

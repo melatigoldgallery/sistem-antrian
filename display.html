@@ -6,7 +6,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <!-- jQuery first -->
@@ -17,20 +17,622 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="css/pages/display.css">
-     <!-- Favicon sederhana -->
-     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <!-- AOS Animation Library -->
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <!-- Favicon sederhana -->
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
     <title>Display Antrian - Melati Gold Shop</title>
+    <style>
+      :root {
+        --gold-primary: #d4af37;
+        --gold-secondary: #f9d776;
+        --gold-light: #f8f0d7;
+        --gold-dark: #9d7e2d;
+        --dark-brown: #3a2c1c;
+        --cream: #f9f5eb;
+        --white: #ffffff;
+        --black: #1a1a1a;
+        --gray-light: #f5f5f5;
+        --gray-medium: #e0e0e0;
+        --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.1);
+        --shadow-gold: 0 5px 15px rgba(212, 175, 55, 0.2);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Poppins', sans-serif;
+        background-color: var(--cream);
+        color: var(--dark-brown);
+        overflow-x: hidden;
+      }
+
+      /* Header Styles */
+      .header {
+        background: linear-gradient(135deg, var(--gold-dark), var(--dark-brown));
+        padding: 1rem 0;
+        box-shadow: var(--shadow-soft);
+        position: relative;
+        z-index: 10;
+      }
+
+      .header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
+      }
+
+      .logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--gold-primary);
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+      }
+
+      .brand-name {
+        margin-left: 1rem;
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 2rem;
+        color: var(--white);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .brand-name a {
+        color: var(--white);
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      .brand-name a:hover {
+        color: var(--gold-secondary);
+      }
+
+      .date-time {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        color: var(--white);
+      }
+
+      .current-date {
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+
+      .current-time {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gold-secondary);
+      }
+
+      /* Main Content Styles */
+      main {
+        padding: 1rem 0;
+        min-height: calc(100vh - 200px);
+      }
+
+      .page-title {
+        text-align: center;
+        margin-bottom: 2.5rem;
+        position: relative;
+        padding-bottom: 1rem;
+      }
+
+      .page-title h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-brown);
+        margin-bottom: 0.5rem;
+      }
+
+      .page-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 150px;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+      }
+
+      /* Queue Cards */
+      .queue-card {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--shadow-soft);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        border: none;
+        position: relative;
+      }
+
+      .queue-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+      }
+
+      .queue-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+      }
+
+      .card-delayed::before {
+        background: linear-gradient(90deg, #e67e22, #f39c12);
+      }
+
+      .card-current::before {
+        background: linear-gradient(90deg, #27ae60, #2ecc71);
+      }
+
+      .card-next::before {
+        background: linear-gradient(90deg, #3498db, #2980b9);
+      }
+
+      .queue-card-header {
+        background-color: var(--white);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-medium);
+      }
+
+      .queue-card-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--dark-brown);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .queue-card-header h2 i {
+        margin-right: 0.5rem;
+        color: var(--gold-primary);
+      }
+
+      .queue-card-body {
+        padding: 2rem;
+        background-color: var(--white);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        position: relative;
+        overflow: hidden; /* Mencegah overflow teks */
+      }
+      
+  /* Khusus untuk delayed queue container */
+  .delayed-queue-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+ /* Styling dasar untuk nomor antrian */
+.queue-number, .delayed-queue {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--dark-brown);
+  margin-bottom: 1.5rem; /* Tambahkan margin yang cukup untuk elemen after */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: inline-block;
+  text-align: center;
+  width: 100%;
+  transition: font-size 0.3s ease;
+  /* Ukuran font default */
+  font-size: 4.5rem;
+  line-height: 1.2;
+}
+
+/* Styling untuk elemen after yang konsisten */
+.queue-number::after, .delayed-queue::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem; /* Gunakan unit relatif (rem) alih-alih pixel tetap */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: var(--gold-primary);
+  border-radius: 3px;
+}
+
+/* Ukuran font untuk berbagai panjang teks pada delayed-queue */
+.delayed-queue.text-xs {
+  font-size: 1.8rem;
+}
+
+.delayed-queue.text-sm {
+  font-size: 2.5rem;
+}
+
+.delayed-queue.text-md {
+  font-size: 3rem;
+}
+
+.delayed-queue.text-lg {
+  font-size: 3.5rem;
+}
+
+.delayed-queue.text-xl {
+  font-size: 4.5rem;
+}
+
+/* Penyesuaian untuk elemen after pada ukuran font yang berbeda */
+.delayed-queue.text-xs::after,
+.delayed-queue.text-sm::after,
+.delayed-queue.text-md::after,
+.delayed-queue.text-lg::after,
+.delayed-queue.text-xl::after {
+  bottom: -0.5rem; /* Konsisten dengan queue-number */
+  width: 40px; /* Sedikit lebih kecil untuk ukuran font yang lebih kecil */
+}
+
+@media (max-width: 992px) {
+  .queue-number, .delayed-queue.text-xl {
+    font-size: 3.5rem;
+  }
+  
+  .delayed-queue.text-lg {
+    font-size: 3rem;
+  }
+  
+  .delayed-queue.text-md {
+    font-size: 2.5rem;
+  }
+  
+  .delayed-queue.text-sm {
+    font-size: 2rem;
+  }
+  
+  .delayed-queue.text-xs {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .queue-number, .delayed-queue.text-xl {
+    font-size: 3rem;
+  }
+  
+  .delayed-queue.text-lg {
+    font-size: 2.5rem;
+  }
+  
+  .delayed-queue.text-md {
+    font-size: 2rem;
+  }
+  
+  .delayed-queue.text-sm {
+    font-size: 1.8rem;
+  }
+  
+  .delayed-queue.text-xs {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .queue-number, .delayed-queue.text-xl {
+    font-size: 2.5rem;
+  }
+  
+  .delayed-queue.text-lg {
+    font-size: 2.2rem;
+  }
+  
+  .delayed-queue.text-md {
+    font-size: 1.8rem;
+  }
+  
+  .delayed-queue.text-sm {
+    font-size: 1.5rem;
+  }
+  
+  .delayed-queue.text-xs {
+    font-size: 1.2rem;
+  }
+}
+
+      .queue-label {
+        font-size: 1rem;
+        color: #666;
+        text-align: center;
+        margin: 0;
+      }
+
+      /* Gold Decorative Elements */
+      .gold-decoration {
+        position: absolute;
+        opacity: 0.1;
+        z-index: -1;
+      }
+
+      .gold-decoration.top-left {
+        top: 10%;
+        left: 5%;
+        width: 200px;
+        height: 200px;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="%23d4af37" d="M50,0 L100,50 L50,100 L0,50 Z"/></svg>');
+        background-repeat: no-repeat;
+        transform: rotate(15deg);
+      }
+
+      .gold-decoration.bottom-right {
+        bottom: 10%;
+        right: 5%;
+        width: 250px;
+        height: 250px;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="%23d4af37" cx="50" cy="50" r="50"/></svg>');
+        background-repeat: no-repeat;
+        transform: rotate(-10deg);
+      }
+
+      /* Promo Carousel */
+      .promo-carousel {
+        margin-top: 3rem;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .carousel-item {
+        height: 200px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+      }
+
+      .carousel-caption {
+        background: rgba(0, 0, 0, 0.6);
+        border-left: 4px solid var(--gold-primary);
+        padding: 1rem;
+        border-radius: 5px;
+        max-width: 80%;
+        margin: 0 auto;
+      }
+
+      .carousel-caption h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        color: var(--gold-secondary);
+      }
+
+      /* Footer Styles */
+      .footer {
+        background: linear-gradient(135deg, var(--dark-brown), var(--gold-dark));
+        color: var(--white);
+        padding: 1.5rem 0;
+        text-align: center;
+        position: relative;
+      }
+
+      .footer::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+      }
+
+      .footer p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+
+      .social-links {
+        margin-top: 1rem;
+      }
+
+      .social-links a {
+        color: var(--white);
+        margin: 0 10px;
+        font-size: 1.2rem;
+        transition: color 0.3s ease;
+      }
+
+      .social-links a:hover {
+        color: var(--gold-secondary);
+      }
+
+      /* Animation for Queue Numbers */
+      @keyframes numberPulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .queue-number.active, .delayed-queue.active {
+        animation: numberPulse 2s infinite;
+        color: var(--gold-dark);
+      }
+
+      /* Responsive Adjustments */
+      @media (max-width: 992px) {
+        .brand-name {
+          font-size: 1.5rem;
+        }
+        
+        .queue-number, .delayed-queue {
+          font-size: 3.5rem;
+        }
+        
+        .page-title h1 {
+          font-size: 1.5rem;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          padding: 1rem 0;
+        }
+        
+        .logo {
+          width: 50px;
+          height: 50px;
+        }
+        
+        .brand-name {
+          font-size: 1.2rem;
+        }
+        
+        .current-date {
+          font-size: 0.9rem;
+        }
+        
+        .current-time {
+          font-size: 1.2rem;
+        }
+        
+        .queue-card-header h2 {
+          font-size: 1.1rem;
+        }
+        
+        .queue-number, .delayed-queue {
+          font-size: 3rem;
+        }
+        
+        .page-title h1 {
+          font-size: 1.3rem;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .brand-name {
+          font-size: 1rem;
+        }
+        
+        .date-time {
+          margin-top: 0.5rem;
+          align-items: flex-start;
+        }
+        
+        .queue-number, .delayed-queue {
+          font-size: 2.5rem;
+        }
+        
+        .queue-card-body {
+          padding: 1.5rem;
+          min-height: 150px;
+        }
+        
+        .page-title h1 {
+          font-size: 1.1rem;
+        }
+      }
+
+      /* Shimmer Effect for Gold Elements */
+      .gold-shimmer {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .gold-shimmer::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.3) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: rotate(30deg);
+        animation: shimmer 4s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%) rotate(30deg);
+        }
+        100% {
+          transform: translateX(100%) rotate(30deg);
+        }
+      }
+
+      /* Elegant Divider */
+      .elegant-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+        margin: 2rem 0;
+        position: relative;
+      }
+
+      .elegant-divider::before {
+        content: '❖';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: var(--cream);
+        padding: 0 1rem;
+        color: var(--gold-primary);
+        font-size: 1rem;
+      }
+
+      /* Gold Border Effect */
+      .gold-border {
+        border: 1px solid var(--gold-primary);
+        border-radius: 10px;
+        padding: 1px;
+        background: linear-gradient(var(--white), var(--white)) padding-box,
+                    linear-gradient(45deg, var(--gold-primary), var(--gold-secondary), var(--gold-primary)) border-box;
+        border: 1px solid transparent;
+      }
+    </style>
   </head>
   <body>
+    <!-- Decorative Elements -->
+    <div class="gold-decoration top-left"></div>
+    <div class="gold-decoration bottom-right"></div>
+
     <!-- Header -->
     <header class="header">
       <div class="container">
-        <div class="row align-items-center">
+        <div class="row align-items-center justify-content-beetween">
           <div class="col-md-6">
             <div class="logo-container">
-              <img src="img/Melati.jfif" alt="Logo" class="logo" />
-              <h1 class="brand-name">Melati Gold Shop</h1>
+              <img src="img/Melati.jfif" alt="Logo" class="logo gold-shimmer" />
+              <h1 class="brand-name"><a href="admin.html" class="text-decoration-none">Melati Gold Shop</a></h1>
             </div>
           </div>
           <div class="col-md-6">
@@ -45,73 +647,106 @@
 
     <!-- Main Content -->
     <main class="container">
+
       <!-- Page Title -->
-      <div class="page-title">
-        <h1>TERIMA KASIH TELAH BERBELANJA DI MELATI GOLD SHOP, HAPPY SHOPPING</h1>
+      <div class="page-title" data-aos="fade-up" data-aos-delay="100">
+        <h1>SISTEM ANTRIAN PELAYANAN</h1>
       </div>
 
       <!-- Queue Cards -->
       <div class="row g-4">
-        <!-- Delayed Queue Card -->
-        <div class="col-md-4">
-          <div class="queue-card card-delayed">
+        <!-- Ubah struktur HTML untuk Delayed Queue Card -->
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="queue-card card-delayed gold-border">
             <div class="queue-card-header">
-              <h2><i class="fas fa-pause-circle me-2"></i>NOMOR ANTRIAN TERTUNDA</h2>
+              <h2><i class="fas fa-pause-circle"></i> ANTRIAN TERTUNDA</h2>
             </div>
             <div class="queue-card-body">
-              <div class="delayed-queue" id="delayQueueNumber">-</div>
-              <p class="queue-label">Silahkan langsung menyerahkan nomor antrian kepada staff</p>
+              <div class="delayed-queue-container">
+                <div class="delayed-queue text-xl" id="delayQueueNumber">-</div>
+                <p class="queue-label">Silahkan langsung menyerahkan nomor antrian kepada staff</p>
+              </div>
             </div>
           </div>
         </div>
 
+
         <!-- Current Queue Card -->
-        <div class="col-md-4">
-          <div class="queue-card card-current">
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+          <div class="queue-card card-current gold-border">
             <div class="queue-card-header">
-              <h2><i class="fas fa-user-clock me-2"></i>NOMOR ANTRIAN SAAT INI</h2>
+              <h2><i class="fas fa-user-clock"></i>AKAN DIPANGGIL</h2>
             </div>
             <div class="queue-card-body">
-              <div class="queue-number" id="queueNumber">-</div>
-              <p class="queue-label">Akan dipanggil</p>
+              <div class="queue-number active" id="queueNumber">-</div>
+              <p class="queue-label">Bersiap Dipanggil</p>
             </div>
           </div>
         </div>
 
         <!-- Next Queue Card -->
-        <div class="col-md-4">
-          <div class="queue-card card-next">
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="400">
+          <div class="queue-card card-next gold-border">
             <div class="queue-card-header">
-              <h2><i class="fas fa-arrow-right me-2"></i>NOMOR ANTRIAN BERIKUTNYA</h2>
+              <h2><i class="fas fa-arrow-right"></i>ANTRIAN BERIKUTNYA</h2>
             </div>
             <div class="queue-card-body">
               <div class="queue-number" id="nextQueueNumber">-</div>
-              <p class="queue-label">Bersiap untuk dipanggil</p>
+              <p class="queue-label">Antrian Selanjutnya</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Customer Count Card (Hidden by default) -->
-        <div class="col-md-4 d-none">
-          <div class="queue-card card-count">
-            <div class="queue-card-header">
-              <h2><i class="fas fa-users me-2"></i>JUMLAH PELANGGAN</h2>
+      <div class="elegant-divider" data-aos="fade-up" data-aos-delay="500"></div>
+
+      <!-- Promo Carousel -->
+      <div id="promoCarousel" class="carousel slide promo-carousel" data-bs-ride="carousel" data-aos="fade-up" data-aos-delay="600">
+        <div class="carousel-inner">
+          <div class="carousel-item active" style="background-image: url('https://images.unsplash.com/photo-1584307833174-a3bbb76ab367?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+            <div class="carousel-caption">
+              <h3>Koleksi Terbaru</h3>
+              <p>Temukan koleksi perhiasan terbaru kami dengan desain eksklusif</p>
             </div>
-            <div class="queue-card-body">
-              <div class="queue-number" id="customerCount">0</div>
-              <p class="queue-label">Belum dilayani</p>
+          </div>
+          <div class="carousel-item" style="background-image: url('https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+            <div class="carousel-caption">
+              <h3>Promo Spesial</h3>
+              <h5>Dapatkan diskon hingga 10% untuk pembelian perhiasan berlian</h5>
+            </div>
+          </div>
+          <div class="carousel-item" style="background-image: url('https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+            <div class="carousel-caption">
+              <h3>Layanan Buyback</h3>
+              <p>Kami menerima tukar tambah perhiasan lama Anda dengan nilai terbaik</p>
             </div>
           </div>
         </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#promoCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#promoCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
       </div>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
       <div class="container">
+        <div class="social-links">
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-facebook"></i></a>
+          <a href="#"><i class="fab fa-whatsapp"></i></a>
+        </div>
         <p>&copy; 2025 Melati Gold Shop. All rights reserved.</p>
       </div>
     </footer>
+
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>     
     <script type="module" src="js/melati.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
@@ -138,7 +773,80 @@
   }
   updateDateTime();
   setInterval(updateDateTime, 1000);
+   
+  // Fungsi untuk menyesuaikan ukuran font berdasarkan panjang teks
+  function adjustDelayedQueueFontSize(text) {
+    const element = document.getElementById('delayQueueNumber');
+    if (!element) return;
+    
+    // Reset class
+    element.classList.remove('text-xs', 'text-sm', 'text-md', 'text-lg', 'text-xl');
+    
+    // Tentukan class berdasarkan panjang teks
+    const length = String(text).length;
+    
+    if (length <= 3) element.classList.add('text-xl');
+    else if (length <= 5) element.classList.add('text-lg');
+    else if (length <= 10) element.classList.add('text-md');
+    else if (length <= 15) element.classList.add('text-sm');
+    else element.classList.add('text-xs');
+  }
+
+  // Animasi saat nomor antrian berubah
+  function animateQueueChange(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.classList.add('active');
+      setTimeout(() => element.classList.remove('active'), 2000);
+    }
+  }
+
+  // Firebase integration
+  document.addEventListener('DOMContentLoaded', function() {
+    import("https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js").then((firebaseApp) => {
+      import("https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js").then((firebaseDB) => {
+        import("./js/configFirebase.js").then((config) => {
+          const { getDatabase, ref, onValue } = firebaseDB;
+          const database = getDatabase(config.app);
+
+          // Listen for queue updates
+          onValue(ref(database, 'queue'), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            // Update current queue
+            updateQueueElement('queueNumber', data.currentQueue);
+            
+            // Update next queue
+            updateQueueElement('nextQueueNumber', data.nextQueue);
+            
+            // Update delayed queue with font size adjustment
+            if (data.delayedQueue) {
+              const element = document.getElementById('delayQueueNumber');
+              if (element && element.textContent !== String(data.delayedQueue)) {
+                element.textContent = data.delayedQueue;
+                adjustDelayedQueueFontSize(data.delayedQueue);
+                animateQueueChange('delayQueueNumber');
+              }
+            }
+          });
+          
+          // Helper function to update queue elements
+          function updateQueueElement(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element && value && element.textContent !== String(value)) {
+              element.textContent = value;
+              animateQueueChange(elementId);
+            }
+          }
+        }).catch(error => console.error("Error loading Firebase:", error));
+      });
+    });
+  });
+
+  // Initialize AOS animation
+  AOS.init({ duration: 800, once: false });
+      
     </script>
   </body>
 </html>
-      

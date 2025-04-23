@@ -717,7 +717,7 @@ async function loadMoreData() {
      }
    }
    
-   // Populate leave table with data
+ // Populate leave table with data
 function populateLeaveTable() {
   try {
     const tableBody = document.getElementById("leaveReportList");
@@ -745,11 +745,13 @@ function populateLeaveTable() {
       const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
 
       // Cek apakah izin sakit dengan surat dokter
-      const hasMedicalCert =
-        leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate;
+      const hasMedicalCert = leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate;
+      
+      // Cek apakah izin cuti (tidak perlu diganti)
+      const isLeave = leave.leaveType === "cuti";
 
-      // Jika izin sakit dengan surat dokter, set status penggantian ke "Sudah Diganti"
-      if (hasMedicalCert && (!leave.replacementStatus || leave.replacementStatus === "Belum Diganti")) {
+      // Jika izin sakit dengan surat dokter atau cuti, set status penggantian ke "Tidak Perlu Diganti"
+      if ((hasMedicalCert || isLeave) && (!leave.replacementStatus || leave.replacementStatus === "Belum Diganti")) {
         leave.replacementStatus = "Tidak Perlu Diganti";
       }
 
@@ -770,10 +772,14 @@ function populateLeaveTable() {
         let replacementType = "-";
         let replacementInfo = "-";
 
-        // Cek apakah izin sakit dengan surat keterangan
+        // Cek apakah izin sakit dengan surat keterangan atau cuti
         if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
+          replacementInfo = "Tidak perlu diganti";
+        } else if (isLeave) {
+          // Jika cuti
+          replacementType = "Cuti";
           replacementInfo = "Tidak perlu diganti";
         } else {
           // Untuk jenis izin lainnya
@@ -817,42 +823,86 @@ function populateLeaveTable() {
         tableBody.appendChild(row);
         rowNumber++;
       } else {
-        // Untuk izin multi-hari, buat baris untuk setiap hari
-        const startDate = new Date(
-          leave.leaveStartDate instanceof Date
-            ? leave.leaveStartDate
-            : leave.leaveStartDate.seconds
-            ? new Date(leave.leaveStartDate.seconds * 1000)
-            : leave.leaveStartDate
-        );
-        const endDate = new Date(
-          leave.leaveEndDate instanceof Date
-            ? leave.leaveEndDate
-            : leave.leaveEndDate.seconds
-            ? new Date(leave.leaveEndDate.seconds * 1000)
-            : leave.leaveEndDate
-        );
-        const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
-        // Pastikan replacementStatusArray ada
-        let replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
-
-        // Jika izin sakit dengan surat dokter, set semua hari ke "Sudah Diganti"
-        if (hasMedicalCert) {
-          replacementStatusArray = Array(dayDiff).fill("Tidak Perlu Diganti");
-          leave.replacementStatusArray = replacementStatusArray;
-        }
-
-        // Format replacement type
-        let replacementType = "-";
-        let baseReplacementInfo = "-";
-
-        // Cek apakah izin sakit dengan surat keterangan
-        if (hasMedicalCert) {
-          // Jika ada surat keterangan sakit
-          replacementType = "Ada Surat DC";
-          baseReplacementInfo = "Tidak perlu diganti";
+        // Untuk izin multi-hari (cuti atau sakit dengan surat dokter), tampilkan dalam satu baris
+        if (hasMedicalCert || isLeave) {
+          const row = document.createElement("tr");
+          
+          // Format tanggal awal dan akhir
+          const startDate = new Date(
+            leave.leaveStartDate instanceof Date
+              ? leave.leaveStartDate
+              : leave.leaveStartDate.seconds
+              ? new Date(leave.leaveStartDate.seconds * 1000)
+              : leave.leaveStartDate
+          );
+          
+          const endDate = new Date(
+            leave.leaveEndDate instanceof Date
+              ? leave.leaveEndDate
+              : leave.leaveEndDate.seconds
+              ? new Date(leave.leaveEndDate.seconds * 1000)
+              : leave.leaveEndDate
+          );
+          
+          // Format tanggal dalam format Indonesia
+          const formatDateID = (date) => {
+            return date.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+            });
+          };
+          
+          const dateRange = `${formatDateID(startDate)} - ${formatDateID(endDate)}`;
+          const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          
+          // Format replacement info
+          let replacementType = hasMedicalCert ? "Ada Surat DC" : "Cuti";
+          let replacementInfo = "Tidak perlu diganti";
+          
+          // Determine status classes
+          const statusClass = getStatusClass(leave.status);
+          const replacementStatusClass = getReplacementStatusClass("Tidak Perlu Diganti");
+          
+          row.innerHTML = `
+            <td>${rowNumber}</td>
+            <td>${leave.employeeId || "-"}</td>
+            <td>${leave.name || "-"}</td>
+            <td>${dateRange} (${dayDiff} hari)</td>
+            <td>${leave.reason || "-"}</td>
+            <td>${replacementType}</td>
+            <td>${replacementInfo}</td>
+            <td><span class="badge ${statusClass}">${leave.status || "Pending"}</span></td>
+            <td><span class="badge ${replacementStatusClass}">Tidak Perlu Diganti</span></td>
+          `;
+          
+          tableBody.appendChild(row);
+          rowNumber++;
         } else {
+          // Untuk izin multi-hari lainnya, tampilkan seperti sebelumnya (per hari)
+          const startDate = new Date(
+            leave.leaveStartDate instanceof Date
+              ? leave.leaveStartDate
+              : leave.leaveStartDate.seconds
+              ? new Date(leave.leaveStartDate.seconds * 1000)
+              : leave.leaveStartDate
+          );
+          const endDate = new Date(
+            leave.leaveEndDate instanceof Date
+              ? leave.leaveEndDate
+              : leave.leaveEndDate.seconds
+              ? new Date(leave.leaveEndDate.seconds * 1000)
+              : leave.leaveEndDate
+          );
+          const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+          // Pastikan replacementStatusArray ada
+          let replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+
+          // Format replacement type
+          let replacementType = "-";
+          let baseReplacementInfo = "-";
+
           // Untuk jenis izin lainnya
           if (leave.replacementType === "libur") {
             replacementType = "Ganti Libur";
@@ -861,39 +911,36 @@ function populateLeaveTable() {
           } else if (leave.replacementType === "tidak") {
             replacementType = "Tidak Perlu Diganti";
           }
-        }
 
-        // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
-        const currentRowNumber = rowNumber;
+          // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
+          const currentRowNumber = rowNumber;
 
-        // Buat baris untuk setiap hari
-        for (let i = 0; i < dayDiff; i++) {
-          const currentDate = new Date(startDate);
-          currentDate.setDate(startDate.getDate() + i);
+          // Buat baris untuk setiap hari
+          for (let i = 0; i < dayDiff; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
 
-          const formattedDate = currentDate.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
+            const formattedDate = currentDate.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
 
-          const row = document.createElement("tr");
+            const row = document.createElement("tr");
 
-          // Jika ini hari pertama, tambahkan kelas untuk styling
-          if (i === 0) {
-            row.classList.add("first-day-row");
-          }
+            // Jika ini hari pertama, tambahkan kelas untuk styling
+            if (i === 0) {
+              row.classList.add("first-day-row");
+            }
 
-          // Tentukan status ganti untuk hari ini
-          const dayStatus = replacementStatusArray[i] || "Belum Diganti";
-          const replacementStatusClass = getReplacementStatusClass(dayStatus);
-          const statusClass = getStatusClass(leave.status);
+            // Tentukan status ganti untuk hari ini
+            const dayStatus = replacementStatusArray[i] || "Belum Diganti";
+            const replacementStatusClass = getReplacementStatusClass(dayStatus);
+            const statusClass = getStatusClass(leave.status);
 
-          // Tampilkan informasi penggantian untuk hari ini
-          let replacementInfo = baseReplacementInfo;
+            // Tampilkan informasi penggantian untuk hari ini
+            let replacementInfo = baseReplacementInfo;
 
-          // Jika bukan izin sakit dengan surat DC, cek detail pengganti
-          if (!hasMedicalCert) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
               // Jika ada tanggal pengganti spesifik untuk hari ini
               if (leave.replacementDetails.dates[i]) {
@@ -902,25 +949,25 @@ function populateLeaveTable() {
             } else if (leave.replacementType === "jam" && leave.replacementDetails) {
               replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
             }
+
+            row.innerHTML = `
+              <td>${currentRowNumber} (${i + 1}/${dayDiff})</td>
+              <td>${leave.employeeId || "-"}</td>
+              <td>${leave.name || "-"}</td>
+              <td>${formattedDate}</td>
+              <td>${leave.reason || "-"}</td>
+              <td>${replacementType}</td>
+              <td>${replacementInfo}</td>
+              <td><span class="badge ${statusClass}">${leave.status || "Pending"}</span></td>
+              <td><span class="badge ${replacementStatusClass}">${dayStatus}</span></td>
+            `;
+
+            tableBody.appendChild(row);
           }
 
-          row.innerHTML = `
-            <td>${currentRowNumber} (${i + 1}/${dayDiff})</td>
-            <td>${leave.employeeId || "-"}</td>
-            <td>${leave.name || "-"}</td>
-            <td>${formattedDate}</td>
-            <td>${leave.reason || "-"}</td>
-            <td>${replacementType}</td>
-            <td>${replacementInfo}</td>
-            <td><span class="badge ${statusClass}">${leave.status || "Pending"}</span></td>
-            <td><span class="badge ${replacementStatusClass}">${dayStatus}</span></td>
-          `;
-
-          tableBody.appendChild(row);
+          // Increment row number only once after all days of multi-day leave
+          rowNumber++;
         }
-
-        // Increment row number only once after all days of multi-day leave
-        rowNumber++;
       }
     });
   } catch (error) {
@@ -928,6 +975,7 @@ function populateLeaveTable() {
     showAlert("danger", "Terjadi kesalahan saat menampilkan data: " + error.message);
   }
 }
+
 
 // Get CSS class for status badge
 function getStatusClass(status) {
@@ -1169,16 +1217,16 @@ if (loadMoreContainer) {
       }
     }
     
-    // Export to Excel - update untuk mendukung format baru
+ // Export to Excel - update untuk mendukung format baru
 function exportToExcel() {
   try {
-       // Gunakan allCachedData jika tersedia, jika tidak gunakan currentLeaveData
-       const dataToExport = allCachedData.length > 0 ? allCachedData : currentLeaveData;
+    // Gunakan allCachedData jika tersedia, jika tidak gunakan currentLeaveData
+    const dataToExport = allCachedData.length > 0 ? allCachedData : currentLeaveData;
     
-       if (!dataToExport || dataToExport.length === 0) {
-         showAlert("warning", "Tidak ada data untuk diekspor");
-         return;
-       }
+    if (!dataToExport || dataToExport.length === 0) {
+      showAlert("warning", "Tidak ada data untuk diekspor");
+      return;
+    }
 
     const month = parseInt(document.getElementById("monthSelector").value);
     const year = parseInt(document.getElementById("yearSelector").value);
@@ -1192,9 +1240,13 @@ function exportToExcel() {
     let rowNumber = 1;
 
     // Process each leave request
-    currentLeaveData.forEach((leave) => {
+    dataToExport.forEach((leave) => {
       // Periksa apakah izin multi-hari
       const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
+
+      // Cek apakah izin sakit dengan surat dokter atau cuti
+      const hasMedicalCert = leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate;
+      const isLeave = leave.leaveType === "cuti";
 
       if (!isMultiDay) {
         // Format dates
@@ -1209,12 +1261,19 @@ function exportToExcel() {
         // Format replacement info
         let replacementType = "-";
         let replacementInfo = "-";
+        let replacementStatus = leave.replacementStatus || "Belum Diganti";
 
-        // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
+        // Cek apakah izin sakit dengan surat keterangan atau cuti
+        if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
           replacementInfo = "Tidak perlu diganti";
+          replacementStatus = "Tidak Perlu Diganti";
+        } else if (isLeave) {
+          // Jika cuti
+          replacementType = "Cuti";
+          replacementInfo = "Tidak perlu diganti";
+          replacementStatus = "Tidak Perlu Diganti";
         } else {
           // Untuk jenis izin lainnya
           if (leave.replacementType === "libur") {
@@ -1238,50 +1297,95 @@ function exportToExcel() {
           }
         }
 
+        // Add to export data
         exportData.push({
-          No: rowNumber,
+          "No": rowNumber,
           "ID Karyawan": leave.employeeId || "-",
-          Nama: leave.name || "-",
+          "Nama": leave.name || "-",
           "Tanggal Izin": leaveDate,
-          Alasan: leave.reason || "-",
+          "Alasan": leave.reason || "-",
           "Jenis Pengganti": replacementType,
-          "Detail Pengganti": replacementInfo,
-          Status: leave.status || "Pending",
-          "Status Pengganti": leave.replacementStatus || "Belum Diganti",
+          "Informasi Pengganti": replacementInfo,
+          "Status Izin": leave.status || "Pending",
+          "Status Penggantian": replacementStatus
         });
 
         rowNumber++;
       } else {
-        // Untuk izin multi-hari
-        const startDate = new Date(
-          leave.leaveStartDate instanceof Date
-            ? leave.leaveStartDate
-            : leave.leaveStartDate.seconds
-            ? new Date(leave.leaveStartDate.seconds * 1000)
-            : leave.leaveStartDate
-        );
-        const endDate = new Date(
-          leave.leaveEndDate instanceof Date
-            ? leave.leaveEndDate
-            : leave.leaveEndDate.seconds
-            ? new Date(leave.leaveEndDate.seconds * 1000)
-            : leave.leaveEndDate
-        );
-        const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
-        // Pastikan replacementStatusArray ada
-        const replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
-
-        // Format replacement type
-        let replacementType = "-";
-        let baseReplacementInfo = "-";
-
-        // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
-          // Jika ada surat keterangan sakit
-          replacementType = "Ada Surat DC";
-          baseReplacementInfo = "Tidak perlu diganti";
+        // Untuk izin multi-hari (cuti atau sakit dengan surat dokter), tampilkan dalam satu baris
+        if (hasMedicalCert || isLeave) {
+          // Format tanggal awal dan akhir
+          const startDate = new Date(
+            leave.leaveStartDate instanceof Date
+              ? leave.leaveStartDate
+              : leave.leaveStartDate.seconds
+              ? new Date(leave.leaveStartDate.seconds * 1000)
+              : leave.leaveStartDate
+          );
+          
+          const endDate = new Date(
+            leave.leaveEndDate instanceof Date
+              ? leave.leaveEndDate
+              : leave.leaveEndDate.seconds
+              ? new Date(leave.leaveEndDate.seconds * 1000)
+              : leave.leaveEndDate
+          );
+          
+          // Format tanggal dalam format Indonesia
+          const formatDateID = (date) => {
+            return date.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+            });
+          };
+          
+          const dateRange = `${formatDateID(startDate)} - ${formatDateID(endDate)}`;
+          const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          
+          // Format replacement info
+          let replacementType = hasMedicalCert ? "Ada Surat DC" : "Cuti";
+          let replacementInfo = "Tidak perlu diganti";
+          
+          // Add to export data
+          exportData.push({
+            "No": rowNumber,
+            "ID Karyawan": leave.employeeId || "-",
+            "Nama": leave.name || "-",
+            "Tanggal Izin": `${dateRange} (${dayDiff} hari)`,
+            "Alasan": leave.reason || "-",
+            "Jenis Pengganti": replacementType,
+            "Informasi Pengganti": replacementInfo,
+            "Status Izin": leave.status || "Pending",
+            "Status Penggantian": "Tidak Perlu Diganti"
+          });
+          
+          rowNumber++;
         } else {
+          // Untuk izin multi-hari lainnya, tampilkan seperti sebelumnya (per hari)
+          const startDate = new Date(
+            leave.leaveStartDate instanceof Date
+              ? leave.leaveStartDate
+              : leave.leaveStartDate.seconds
+              ? new Date(leave.leaveStartDate.seconds * 1000)
+              : leave.leaveStartDate
+          );
+          const endDate = new Date(
+            leave.leaveEndDate instanceof Date
+              ? leave.leaveEndDate
+              : leave.leaveEndDate.seconds
+              ? new Date(leave.leaveEndDate.seconds * 1000)
+              : leave.leaveEndDate
+          );
+          const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+          // Pastikan replacementStatusArray ada
+          let replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+
+          // Format replacement type
+          let replacementType = "-";
+          let baseReplacementInfo = "-";
+
           // Untuk jenis izin lainnya
           if (leave.replacementType === "libur") {
             replacementType = "Ganti Libur";
@@ -1290,32 +1394,27 @@ function exportToExcel() {
           } else if (leave.replacementType === "tidak") {
             replacementType = "Tidak Perlu Diganti";
           }
-        }
 
-        // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
-        const currentRowNumber = rowNumber;
+          // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
+          const currentRowNumber = rowNumber;
 
-        // Buat baris untuk setiap hari
-        for (let i = 0; i < dayDiff; i++) {
-          const currentDate = new Date(startDate);
-          currentDate.setDate(startDate.getDate() + i);
+          // Buat baris untuk setiap hari
+          for (let i = 0; i < dayDiff; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
 
-          const formattedDate = currentDate.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
+            const formattedDate = currentDate.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
 
-          // Tentukan status ganti untuk hari ini
-          const dayStatus = replacementStatusArray[i] || "Belum Diganti";
+            // Tentukan status ganti untuk hari ini
+            const dayStatus = replacementStatusArray[i] || "Belum Diganti";
 
-          // Tampilkan informasi penggantian untuk hari ini
-          let replacementInfo = baseReplacementInfo;
+            // Tampilkan informasi penggantian untuk hari ini
+            let replacementInfo = baseReplacementInfo;
 
-          // Jika bukan izin sakit dengan surat DC, cek detail pengganti
-          if (
-            !(leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate)
-          ) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
               // Jika ada tanggal pengganti spesifik untuk hari ini
               if (leave.replacementDetails.dates[i]) {
@@ -1324,64 +1423,89 @@ function exportToExcel() {
             } else if (leave.replacementType === "jam" && leave.replacementDetails) {
               replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
             }
+
+            // Add to export data
+            exportData.push({
+              "No": `${currentRowNumber} (${i + 1}/${dayDiff})`,
+              "ID Karyawan": leave.employeeId || "-",
+              "Nama": leave.name || "-",
+              "Tanggal Izin": formattedDate,
+              "Alasan": leave.reason || "-",
+              "Jenis Pengganti": replacementType,
+              "Informasi Pengganti": replacementInfo,
+              "Status Izin": leave.status || "Pending",
+              "Status Penggantian": dayStatus
+            });
           }
 
-          exportData.push({
-            No: `${currentRowNumber} (${i + 1}/${dayDiff})`,
-            "ID Karyawan": leave.employeeId || "-",
-            Nama: leave.name || "-",
-            "Tanggal Izin": formattedDate,
-            Alasan: leave.reason || "-",
-            "Jenis Pengganti": replacementType,
-            "Detail Pengganti": replacementInfo,
-            Status: leave.status || "Pending",
-            "Status Pengganti": dayStatus,
-          });
+          // Increment row number only once after all days of multi-day leave
+          rowNumber++;
         }
-
-        // Increment row number only once after all days of multi-day leave
-        rowNumber++;
       }
     });
 
     // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(exportData);
+    const ws = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' }); // Mulai dari baris ke-4 untuk memberi ruang judul
 
-    // Add title to the worksheet (merge cells A1:I1)
-    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
+    // Tambahkan judul laporan
+    XLSX.utils.sheet_add_aoa(ws, [
+      [`LAPORAN IZIN KARYAWAN`],
+      [`MELATI GOLD SHOP`],
+      [`BULAN ${monthName.toUpperCase()} ${year}`]
+    ], { origin: 'A1' });
 
-    // Insert title row at the top
-    XLSX.utils.sheet_add_aoa(ws, [[`Laporan Izin Staff Melati Gold Shop Periode ${monthName} ${year}`]], {
-      origin: "A1",
-    });
+    // Set column widths
+    const colWidths = [
+      { wch: 5 }, // No
+      { wch: 10 }, // ID Karyawan
+      { wch: 10 }, // Nama
+      { wch: 25 }, // Tanggal Izin
+      { wch: 30 }, // Alasan
+      { wch: 20 }, // Jenis Pengganti
+      { wch: 30 }, // Informasi Pengganti
+      { wch: 10 }, // Status Izin
+      { wch: 20 }, // Status Penggantian
+    ];
+    ws["!cols"] = colWidths;
 
-    // Style the title (bold and centered)
-    if (!ws["!cols"]) ws["!cols"] = [];
-    ws["!cols"][0] = { wch: 10 }; // No column
-    ws["!cols"][1] = { wch: 15 }; // ID Karyawan
-    ws["!cols"][2] = { wch: 25 }; // Nama
-    ws["!cols"][3] = { wch: 25 }; // Tanggal Izin
-    ws["!cols"][4] = { wch: 30 }; // Alasan
-    ws["!cols"][5] = { wch: 20 }; // Jenis Pengganti
-    ws["!cols"][6] = { wch: 30 }; // Detail Pengganti
-    ws["!cols"][7] = { wch: 15 }; // Status
-    ws["!cols"][8] = { wch: 15 }; // Status Pengganti
+    // Styling untuk judul
+    // Merge cells untuk judul
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, // Merge first row (LAPORAN IZIN KARYAWAN)
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }, // Merge second row (MELATI GOLD SHOP)
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }  // Merge third row (BULAN ... TAHUN ...)
+    ];
+
+    // Tambahkan style untuk judul (harus menggunakan cell object)
+    const titleStyle = {
+      font: { bold: true, sz: 16 },
+      alignment: { horizontal: "center", vertical: "center" }
+    };
+
+    // Mengatur style untuk sel judul
+    for (let i = 0; i < 3; i++) {
+      const cellRef = XLSX.utils.encode_cell({ r: i, c: 0 });
+      if (!ws[cellRef]) ws[cellRef] = {};
+      ws[cellRef].s = titleStyle;
+    }
 
     // Add worksheet to workbook
     XLSX.utils.book_append_sheet(wb, ws, "Laporan Izin");
 
-    // Generate Excel file
+    // Generate filename
     const fileName = `Laporan_Izin_${monthName}_${year}.xlsx`;
+
+    // Export to file
     XLSX.writeFile(wb, fileName);
 
     showAlert("success", `Berhasil mengekspor data ke ${fileName}`);
   } catch (error) {
     console.error("Error exporting to Excel:", error);
-    showAlert("danger", "Terjadi kesalahan saat mengekspor ke Excel: " + error.message);
+    showAlert("danger", "Terjadi kesalahan saat mengekspor data: " + error.message);
   }
 }
 
-// Export to PDF - update untuk mendukung format baru
+
 function exportToPDF() {
   try {
     // Gunakan allCachedData jika tersedia, jika tidak gunakan currentLeaveData
@@ -1396,40 +1520,101 @@ function exportToPDF() {
     const year = parseInt(document.getElementById("yearSelector").value);
     const monthName = monthNames[month - 1];
 
-    // Create a new jsPDF instance
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF("l", "mm", "a4"); // Landscape orientation for more space
+    // Prepare document definition
+    const docDefinition = {
+      pageSize: 'A4',
+      pageOrientation: 'landscape',
+      pageMargins: [20, 80, 20, 20], // Tambahkan margin atas lebih besar untuk header
+      
+      // Perbaikan header menggunakan array teks
+      header: {
+        stack: [
+          { text: 'LAPORAN IZIN KARYAWAN', alignment: 'center', fontSize: 14, bold: true, margin: [0, 20, 0, 0] },
+          { text: 'MELATI GOLD SHOP', alignment: 'center', fontSize: 12, bold: true, margin: [0, 5, 0, 0] },
+          { text: `BULAN ${monthName.toUpperCase()} ${year}`, alignment: 'center', fontSize: 12, bold: true, margin: [0, 5, 0, 10] }
+        ]
+      },
+      
+      footer: function(currentPage, pageCount) {
+        return {
+          text: `Halaman ${currentPage} dari ${pageCount}`,
+          alignment: 'center',
+          margin: [0, 10, 0, 0]
+        };
+      },
+      content: [
+        {
+          table: {
+            headerRows: 1,
+            widths: ['auto', 'auto', 'auto', '*', '*', 'auto', '*', 'auto', 'auto'],
+            body: [
+              [
+                { text: 'No', style: 'tableHeader' },
+                { text: 'ID Karyawan', style: 'tableHeader' },
+                { text: 'Nama', style: 'tableHeader' },
+                { text: 'Tanggal Izin', style: 'tableHeader' },
+                { text: 'Alasan', style: 'tableHeader' },
+                { text: 'Jenis Pengganti', style: 'tableHeader' },
+                { text: 'Informasi Pengganti', style: 'tableHeader' },
+                { text: 'Status Izin', style: 'tableHeader' },
+                { text: 'Status Penggantian', style: 'tableHeader' }
+              ]
+            ]
+          }
+        }
+      ],
+      styles: {
+        tableHeader: {
+          bold: true,
+          fontSize: 10,
+          fillColor: '#eeeeee',
+          alignment: 'center'
+        },
+        tableCell: {
+          fontSize: 9
+        },
+        statusPending: {
+          color: '#ffc107',
+          bold: true
+        },
+        statusRejected: {
+          color: '#dc3545',
+          bold: true
+        },
+        replacementDone: {
+          color: '#198754',
+          bold: true
+        },
+        replacementPending: {
+          color: '#dc3545',
+          bold: true
+        },
+        replacementNotNeeded: {
+          color: '#6c757d',
+          bold: true
+        }
+      }
+    };
 
-    // Add title
-    doc.setFontSize(16);
-    doc.setFont(undefined, "bold");
-    doc.text(`Laporan Izin Staff Melati Gold Shop`, doc.internal.pageSize.getWidth() / 2, 15, { align: "center" });
-    doc.text(`Periode ${monthName} ${year}`, doc.internal.pageSize.getWidth() / 2, 22, { align: "center" });
-    doc.setFont(undefined, "normal");
-
-    // Prepare table data
-    const tableColumn = [
-      "No",
-      "ID Karyawan",
-      "Nama",
-      "Tanggal Izin",
-      "Alasan",
-      "Jenis Pengganti",
-      "Detail Pengganti",
-      "Status",
-      "Status Pengganti",
-    ];
-    const tableRows = [];
-
-    // Counter untuk nomor urut
+    // Add rows for each leave request
     let rowNumber = 1;
-
-    // Process each leave request
+    
+    // Proses data untuk PDF
     dataToExport.forEach((leave) => {
       // Periksa apakah izin multi-hari
       const isMultiDay = leave.leaveStartDate && leave.leaveEndDate && leave.leaveStartDate !== leave.leaveEndDate;
 
+      // Cek apakah izin sakit dengan surat dokter atau cuti
+      const hasMedicalCert = leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate;
+      const isLeave = leave.leaveType === "cuti";
+
+      // Jika izin sakit dengan surat dokter atau cuti, set status penggantian ke "Tidak Perlu Diganti"
+      if ((hasMedicalCert || isLeave) && (!leave.replacementStatus || leave.replacementStatus === "Belum Diganti")) {
+        leave.replacementStatus = "Tidak Perlu Diganti";
+      }
+
       if (!isMultiDay) {
+        // Untuk izin satu hari, tampilkan seperti biasa
         // Format dates
         let leaveDate = leave.leaveDate || leave.date || "-";
         if (leaveDate instanceof Date) {
@@ -1443,10 +1628,14 @@ function exportToPDF() {
         let replacementType = "-";
         let replacementInfo = "-";
 
-        // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
+        // Cek apakah izin sakit dengan surat keterangan atau cuti
+        if (hasMedicalCert) {
           // Jika ada surat keterangan sakit
           replacementType = "Ada Surat DC";
+          replacementInfo = "Tidak perlu diganti";
+        } else if (isLeave) {
+          // Jika cuti
+          replacementType = "Cuti";
           replacementInfo = "Tidak perlu diganti";
         } else {
           // Untuk jenis izin lainnya
@@ -1471,50 +1660,107 @@ function exportToPDF() {
           }
         }
 
-        tableRows.push([
-          rowNumber.toString(),
-          leave.employeeId || "-",
-          leave.name || "-",
-          leaveDate,
-          leave.reason || "-",
-          replacementType,
-          replacementInfo,
-          leave.status || "Pending",
-          leave.replacementStatus || "Belum Diganti",
+        // Determine status style
+        const statusStyle = leave.status === "Disetujui" ? "statusApproved" : 
+                           leave.status === "Ditolak" ? "statusRejected" : "statusPending";
+        
+        // Determine replacement status style
+        const replacementStatusStyle = leave.replacementStatus === "Sudah Diganti" ? "replacementDone" : 
+                                      leave.replacementStatus === "Tidak Perlu Diganti" ? "replacementNotNeeded" : "replacementPending";
+
+        // Add row to table
+        docDefinition.content[0].table.body.push([
+          { text: rowNumber, style: 'tableCell', alignment: 'center' },
+          { text: leave.employeeId || "-", style: 'tableCell' },
+          { text: leave.name || "-", style: 'tableCell' },
+          { text: leaveDate, style: 'tableCell' },
+          { text: leave.reason || "-", style: 'tableCell' },
+          { text: replacementType, style: 'tableCell' },
+          { text: replacementInfo, style: 'tableCell' },
+          { text: leave.status || "Pending", style: ['tableCell', statusStyle] },
+          { text: leave.replacementStatus || "Belum Diganti", style: ['tableCell', replacementStatusStyle] }
         ]);
 
         rowNumber++;
       } else {
-        // Untuk izin multi-hari
-        const startDate = new Date(
-          leave.leaveStartDate instanceof Date
-            ? leave.leaveStartDate
-            : leave.leaveStartDate.seconds
-            ? new Date(leave.leaveStartDate.seconds * 1000)
-            : leave.leaveStartDate
-        );
-        const endDate = new Date(
-          leave.leaveEndDate instanceof Date
-            ? leave.leaveEndDate
-            : leave.leaveEndDate.seconds
-            ? new Date(leave.leaveEndDate.seconds * 1000)
-            : leave.leaveEndDate
-        );
-        const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
-        // Pastikan replacementStatusArray ada
-        const replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
-
-        // Format replacement type
-        let replacementType = "-";
-        let baseReplacementInfo = "-";
-
-        // Cek apakah izin sakit dengan surat keterangan
-        if (leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate) {
-          // Jika ada surat keterangan sakit
-          replacementType = "Ada Surat DC";
-          baseReplacementInfo = "Tidak perlu diganti";
+        // Untuk izin multi-hari (cuti atau sakit dengan surat dokter), tampilkan dalam satu baris
+        if (hasMedicalCert || isLeave) {
+          // Format tanggal awal dan akhir
+          const startDate = new Date(
+            leave.leaveStartDate instanceof Date
+              ? leave.leaveStartDate
+              : leave.leaveStartDate.seconds
+              ? new Date(leave.leaveStartDate.seconds * 1000)
+              : leave.leaveStartDate
+          );
+          
+          const endDate = new Date(
+            leave.leaveEndDate instanceof Date
+              ? leave.leaveEndDate
+              : leave.leaveEndDate.seconds
+              ? new Date(leave.leaveEndDate.seconds * 1000)
+              : leave.leaveEndDate
+          );
+          
+          // Format tanggal dalam format Indonesia
+          const formatDateID = (date) => {
+            return date.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+            });
+          };
+          
+          const dateRange = `${formatDateID(startDate)} - ${formatDateID(endDate)}`;
+          const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          
+          // Format replacement info
+          let replacementType = hasMedicalCert ? "Ada Surat DC" : "Cuti";
+          let replacementInfo = "Tidak perlu diganti";
+          
+          // Determine status style
+          const statusStyle = leave.status === "Disetujui" ? "statusApproved" : 
+                             leave.status === "Ditolak" ? "statusRejected" : "statusPending";
+          
+          // Add row to table
+          docDefinition.content[0].table.body.push([
+            { text: rowNumber, style: 'tableCell', alignment: 'center' },
+            { text: leave.employeeId || "-", style: 'tableCell' },
+            { text: leave.name || "-", style: 'tableCell' },
+            { text: `${dateRange} (${dayDiff} hari)`, style: 'tableCell' },
+            { text: leave.reason || "-", style: 'tableCell' },
+            { text: replacementType, style: 'tableCell' },
+            { text: replacementInfo, style: 'tableCell' },
+            { text: leave.status || "Pending", style: ['tableCell', statusStyle] },
+            { text: "Tidak Perlu Diganti", style: ['tableCell', 'replacementNotNeeded'] }
+          ]);
+          
+          rowNumber++;
         } else {
+          // Untuk izin multi-hari lainnya, tampilkan seperti sebelumnya (per hari)
+          const startDate = new Date(
+            leave.leaveStartDate instanceof Date
+              ? leave.leaveStartDate
+              : leave.leaveStartDate.seconds
+              ? new Date(leave.leaveStartDate.seconds * 1000)
+              : leave.leaveStartDate
+          );
+          const endDate = new Date(
+            leave.leaveEndDate instanceof Date
+              ? leave.leaveEndDate
+              : leave.leaveEndDate.seconds
+              ? new Date(leave.leaveEndDate.seconds * 1000)
+              : leave.leaveEndDate
+          );
+          const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+          // Pastikan replacementStatusArray ada
+          let replacementStatusArray = leave.replacementStatusArray || Array(dayDiff).fill("Belum Diganti");
+
+          // Format replacement type
+          let replacementType = "-";
+          let baseReplacementInfo = "-";
+
           // Untuk jenis izin lainnya
           if (leave.replacementType === "libur") {
             replacementType = "Ganti Libur";
@@ -1523,32 +1769,34 @@ function exportToPDF() {
           } else if (leave.replacementType === "tidak") {
             replacementType = "Tidak Perlu Diganti";
           }
-        }
 
-        // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
-        const currentRowNumber = rowNumber;
+          // Gunakan nomor yang sama untuk semua hari dalam izin multi-hari
+          const currentRowNumber = rowNumber;
 
-        // Buat baris untuk setiap hari
-        for (let i = 0; i < dayDiff; i++) {
-          const currentDate = new Date(startDate);
-          currentDate.setDate(startDate.getDate() + i);
+          // Buat baris untuk setiap hari
+          for (let i = 0; i < dayDiff; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
 
-          const formattedDate = currentDate.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
+            const formattedDate = currentDate.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
 
-          // Tentukan status ganti untuk hari ini
-          const dayStatus = replacementStatusArray[i] || "Belum Diganti";
+            // Tentukan status ganti untuk hari ini
+            const dayStatus = replacementStatusArray[i] || "Belum Diganti";
+            
+            // Determine status styles
+            const statusStyle = leave.status === "Disetujui" ? "statusApproved" : 
+                               leave.status === "Ditolak" ? "statusRejected" : "statusPending";
+            
+            const replacementStatusStyle = dayStatus === "Sudah Diganti" ? "replacementDone" : 
+                                          dayStatus === "Tidak Perlu Diganti" ? "replacementNotNeeded" : "replacementPending";
 
-          // Tampilkan informasi penggantian untuk hari ini
-          let replacementInfo = baseReplacementInfo;
+            // Tampilkan informasi penggantian untuk hari ini
+            let replacementInfo = baseReplacementInfo;
 
-          // Jika bukan izin sakit dengan surat DC, cek detail pengganti
-          if (
-            !(leave.leaveType === "sakit" && leave.replacementDetails && leave.replacementDetails.hasMedicalCertificate)
-          ) {
             if (leave.replacementType === "libur" && leave.replacementDetails && leave.replacementDetails.dates) {
               // Jika ada tanggal pengganti spesifik untuk hari ini
               if (leave.replacementDetails.dates[i]) {
@@ -1557,83 +1805,40 @@ function exportToPDF() {
             } else if (leave.replacementType === "jam" && leave.replacementDetails) {
               replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
             }
+
+            // Add row to table
+            docDefinition.content[0].table.body.push([
+              { text: `${currentRowNumber} (${i + 1}/${dayDiff})`, style: 'tableCell', alignment: 'center' },
+              { text: leave.employeeId || "-", style: 'tableCell' },
+              { text: leave.name || "-", style: 'tableCell' },
+              { text: formattedDate, style: 'tableCell' },
+              { text: leave.reason || "-", style: 'tableCell' },
+              { text: replacementType, style: 'tableCell' },
+              { text: replacementInfo, style: 'tableCell' },
+              { text: leave.status || "Pending", style: ['tableCell', statusStyle] },
+              { text: dayStatus, style: ['tableCell', replacementStatusStyle] }
+            ]);
           }
 
-          tableRows.push([
-            `${currentRowNumber} (${i + 1}/${dayDiff})`,
-            leave.employeeId || "-",
-            leave.name || "-",
-            formattedDate,
-            leave.reason || "-",
-            replacementType,
-            replacementInfo,
-            leave.status || "Pending",
-            dayStatus,
-          ]);
+          // Increment row number only once after all days of multi-day leave
+          rowNumber++;
         }
-
-        // Increment row number only once after all days of multi-day leave
-        rowNumber++;
       }
     });
 
-    // Create table
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 35,
-      theme: "grid",
-      styles: {
-        fontSize: 8,
-        cellPadding: 1,
-        overflow: "linebreak",
-        halign: "left",
-        valign: "middle",
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: "bold",
-        halign: "center",
-      },
-      columnStyles: {
-        0: { cellWidth: 13 }, // No
-        1: { cellWidth: 17 }, // ID Karyawan
-        2: { cellWidth: 20 }, // Nama
-        3: { cellWidth: 25 }, // Tanggal Izin
-        4: { cellWidth: 70 }, // Alasan
-        5: { cellWidth: 25 }, // Jenis Pengganti
-        6: { cellWidth: 35 }, // Detail Pengganti
-        7: { cellWidth: 20 }, // Status
-        8: { cellWidth: 35 }, // Status Pengganti
-      },
-      didDrawPage: function (data) {
-        // Footer with page number
-        const pageSize = doc.internal.pageSize;
-        const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-        doc.setFontSize(8);
-        doc.text(`Halaman ${doc.internal.getNumberOfPages()}`, pageSize.width - 20, pageHeight - 10);
+       // Generate filename
+       const fileName = `Laporan_Izin_${monthName}_${year}.pdf`;
 
-        // Add date printed
-        const today = new Date().toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        });
-        doc.text(`Dicetak pada: ${today}`, 14, pageHeight - 10);
-      },
-    });
-
-    // Generate PDF file
-    const fileName = `Laporan_Izin_${monthName}_${year}.pdf`;
-    doc.save(fileName);
-
-    showAlert("success", `Berhasil mengekspor data ke ${fileName}`);
-  } catch (error) {
-    console.error("Error exporting to PDF:", error);
-    showAlert("danger", "Terjadi kesalahan saat mengekspor ke PDF: " + error.message);
-  }
-}
+       // Create PDF
+       pdfMake.createPdf(docDefinition).download(fileName);
+   
+       showAlert("success", `Berhasil mengekspor data ke ${fileName}`);
+     } catch (error) {
+       console.error("Error exporting to PDF:", error);
+       showAlert("danger", "Terjadi kesalahan saat mengekspor data: " + error.message);
+     }
+   }
+   
 
 // Tambahkan fungsi untuk memastikan allCachedData selalu berisi data lengkap
 function ensureCompleteDataForExport() {
