@@ -613,6 +613,11 @@
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/supervisor.js"></script>
+<!-- Proteksi halaman admin -->
+<script type="module">
+  import { protectAdminPage } from './js/protectPage.js';
+  document.addEventListener('DOMContentLoaded', protectAdminPage);
+</script>
   </body>
 </html>
 

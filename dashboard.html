@@ -348,5 +348,41 @@
     <!-- Scripts -->
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
+    <!-- Kontrol akses menu -->
+<script type="module" src="js/menuControl.js"></script>
+<!-- Script untuk menyembunyikan menu supervisor -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Cek role user
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+    const isAdmin = currentUser.username === 'adminmelati' || currentUser.role === 'admin';
+    
+    if (!isAdmin) {
+      console.log("Non-admin user detected, hiding supervisor menu");
+      
+      // Tambahkan style untuk menyembunyikan menu supervisor
+      const style = document.createElement('style');
+      style.textContent = `
+        .supervisor-toggle, .supervisor-menu, #supervisorSubmenu {
+          display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Hapus elemen dari DOM
+      setTimeout(function() {
+        const supervisorElements = document.querySelectorAll('.supervisor-toggle, .supervisor-menu, #supervisorSubmenu');
+        supervisorElements.forEach(element => {
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        });
+      }, 100);
+    }
+  });
+</script>
   </body>
 </html>

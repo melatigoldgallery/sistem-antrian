@@ -28,24 +28,24 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       let result = { success: false };
       
       // Hardcoded login untuk admin
-      if (username === 'adminmelati' && password === 'admin') {
+      if (username === 'supervisor' && password === 'svmlt116') {
         console.log("Using hardcoded admin credentials");
         const auth = getAuth();
         try {
-          await signInWithEmailAndPassword(auth, 'melatigoldshopid@gmail.com', 'admin');
-          result = { success: true, role: 'admin', username: 'adminmelati' };
+          await signInWithEmailAndPassword(auth, 'melatigoldshopid@gmail.com', 'svmlt116');
+          result = { success: true, role: 'admin', username: 'supervisor' };
           console.log("Hardcoded admin login successful");
         } catch (authError) {
           console.error("Direct admin auth failed:", authError);
         }
       } 
       // Hardcoded login untuk operator
-      else if (username === 'operator' && password === 'operator123') {
+      else if (username === 'stafmelati' && password === 'staf116') {
         console.log("Using hardcoded operator credentials");
         const auth = getAuth();
         try {
-          await signInWithEmailAndPassword(auth, 'operator@melatigold.com', 'operator123');
-          result = { success: true, role: 'operator', username: 'operator' };
+          await signInWithEmailAndPassword(auth, 'fattahula43@gmail.com', 'staf116');
+          result = { success: true, role: 'staf', username: 'staf' };
           console.log("Hardcoded operator login successful");
         } catch (authError) {
           console.error("Direct operator auth failed:", authError);
@@ -81,14 +81,22 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
           role: result.role
         }));
         
+        // Simpan juga di userRole untuk kompatibilitas
+  sessionStorage.setItem('userRole', result.role);
+
+        // Redirect semua user ke dashboard.html
+        window.location.href = 'dashboard.html';
+        
+        // Atau jika Anda ingin membedakan berdasarkan role:
+        /*
         if (result.role === 'admin') {
           window.location.href = 'dashboard.html';
+        } else if (result.role === 'staf') {
+          window.location.href = 'dashboard.html'; // Ganti dengan halaman yang sesuai untuk staf
         } else {
-          window.location.href = 'operator.html';
+          window.location.href = 'dashboard.html'; // Default redirect
         }
-      } else {
-        console.warn("Login failed:", result.message);
-        alert(result.message || 'Username atau password salah');
+        */
       }
     } catch (error) {
       console.error('Login error:', error);
