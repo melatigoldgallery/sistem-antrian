@@ -16,7 +16,7 @@ let leaveRequests = [];
 // Tambahkan cache untuk employees
 const employeeCache = new Map(); // Cache untuk karyawan berdasarkan barcode
 const attendanceCache = new Map(); // Cache untuk data kehadiran berdasarkan tanggal
-
+const cacheMeta = new Map(); // Cache metadata for timestamps
 // Variabel global untuk menyimpan suara Indonesia
 let indonesianVoice = null;
 // Variabel global untuk status suara
@@ -30,6 +30,95 @@ let isBarcodeScanner = false;
 const SCANNER_CHARACTER_DELAY_THRESHOLD = 50; // Maksimum delay antar karakter (ms) untuk scanner
 const SCANNER_COMPLETE_DELAY = 500; // Waktu tunggu setelah input selesai (ms)
 let scannerTimeoutId = null;
+// Tambahkan variabel global untuk mencegah pemrosesan barcode duplikat
+let lastProcessedBarcode = '';
+let lastProcessedTime = 0;
+const BARCODE_COOLDOWN_MS = 3000; // Waktu tunggu 3 detik sebelum barcode yang sama bisa diproses lagi
+
+// Tambahkan konstanta untuk TTL
+const CACHE_TTL_STANDARD = 60 * 60 * 1000; // 1 jam
+const CACHE_TTL_TODAY = 5 * 60 * 1000;     // 5 menit untuk data hari ini
+
+// Modifikasi fungsi shouldUpdateCache
+function shouldUpdateCache(cacheKey) {
+  if (!cacheMeta.has(cacheKey)) return true;
+  
+  const lastUpdate = cacheMeta.get(cacheKey);
+  const now = Date.now();
+  
+  // Jika cache key adalah tanggal hari ini, gunakan TTL yang lebih pendek
+  const today = getLocalDateString();
+  if (cacheKey === today) {
+    return (now - lastUpdate) > CACHE_TTL_TODAY;
+  }
+  
+  // Untuk data lain, gunakan TTL standar
+  return (now - lastUpdate) > CACHE_TTL_STANDARD;
+}
+
+// Tambahkan timestamp untuk cache karyawan
+let employeeCacheTimestamp = 0;
+const EMPLOYEE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 jam
+
+// Fungsi untuk memeriksa apakah cache karyawan masih valid
+function shouldUpdateEmployeeCache() {
+  const now = Date.now();
+  return (now - employeeCacheTimestamp) > EMPLOYEE_CACHE_TTL;
+}
+
+// Fungsi untuk memperbarui timestamp cache
+function updateCacheTimestamp(cacheKey, timestamp = Date.now()) {
+  try {
+    // Use the imported function if available
+    if (typeof serviceUpdateCacheTimestamp === 'function') {
+      serviceUpdateCacheTimestamp(cacheKey, timestamp);
+    } else {
+      // Fallback to local implementation
+      cacheMeta.set(cacheKey, timestamp);
+    }
+  } catch (error) {
+    console.error("Error updating cache timestamp:", error);
+  }
+}
+
+// Fungsi untuk mengatur radio button berdasarkan waktu
+function setRadioButtonsByTime() {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const currentTime = hours * 60 + minutes; // Konversi ke menit untuk perbandingan yang lebih mudah
+  
+  // Definisikan rentang waktu dalam menit (dari 00:00)
+  const ranges = [
+    { start: 7 * 60, end: 13 * 60, scanType: "in", shift: "morning" },     // 07:00-13:00: Scan masuk + Shift pagi
+    { start: 13 * 60 + 30, end: 16 * 60, scanType: "in", shift: "afternoon" }, // 13:30-16:00: Scan masuk + Shift sore
+    { start: 16 * 60 + 20, end: 17 * 60 + 30, scanType: "out", shift: "morning" }, // 16:20-17:30: Scan pulang + Shift pagi
+    { start: 21 * 60, end: 23 * 60, scanType: "out", shift: "afternoon" }  // 21:00-23:00: Scan pulang + Shift sore
+  ];
+  
+  // Cari rentang waktu yang sesuai
+  const currentRange = ranges.find(range => currentTime >= range.start && currentTime <= range.end);
+  
+  // Jika waktu saat ini berada dalam salah satu rentang yang ditentukan
+  if (currentRange) {
+    // Set scan type (in/out)
+    const scanTypeIn = document.getElementById("scanTypeIn");
+    const scanTypeOut = document.getElementById("scanTypeOut");
+    if (scanTypeIn && scanTypeOut) {
+      scanTypeIn.checked = currentRange.scanType === "in";
+      scanTypeOut.checked = currentRange.scanType === "out";
+    }
+    
+    // Set shift (morning/afternoon)
+    const shiftMorning = document.getElementById("shiftMorning");
+    const shiftAfternoon = document.getElementById("shiftAfternoon");
+    if (shiftMorning && shiftAfternoon) {
+      shiftMorning.checked = currentRange.shift === "morning";
+      shiftAfternoon.checked = currentRange.shift === "afternoon";
+    }
+  }
+}
+
 // Perbaiki fungsi setupBarcodeScanner
 function setupBarcodeScanner() {
   const barcodeInput = document.getElementById("barcodeInput");
@@ -88,10 +177,22 @@ function setupBarcodeScanner() {
     }, SCANNER_COMPLETE_DELAY);
   });
   
-  // Tambahkan event listener untuk keypress
+  // Tambahkan event listener untuk keypress dengan debounce untuk Enter
+  let lastEnterTime = 0;
+  const ENTER_DEBOUNCE_MS = 1000; // Debounce 1 detik untuk tombol Enter
+  
   barcodeInput.addEventListener("keypress", async function(e) {
     if (e.key === "Enter") {
       e.preventDefault();
+      
+      // Cek apakah tombol Enter sudah ditekan dalam waktu debounce
+      const currentTime = new Date().getTime();
+      if (currentTime - lastEnterTime < ENTER_DEBOUNCE_MS) {
+        console.log("Enter key debounced - ignoring");
+        return; // Abaikan Enter yang terlalu cepat
+      }
+      
+      lastEnterTime = currentTime;
       
       // Cek apakah input berasal dari scanner
       if (this.dataset.isScanner === "true") {
@@ -117,18 +218,31 @@ function setupBarcodeScanner() {
   });
 }
 
-
 // Fungsi untuk memproses barcode yang di-scan
 async function processScannedBarcode(barcode) {
   if (!barcode) {
     showScanResult("error", "Barcode tidak boleh kosong!");
-    playNotificationSound('error');
+    playNotificationSound('error', '');
     return;
   }
   
   console.log("Processing scanned barcode:", barcode);
   
   try {
+    // PERBAIKAN: Definisikan today di awal fungsi
+    // Current time
+    const now = new Date();
+    const timeString = now.toTimeString().split(" ")[0];
+    
+    // PERBAIKAN: Definisikan today di sini
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    console.log("Today's date for attendance (from timestamp):", today);
+    console.log("Current time:", now);
+
     // Check if employee exists in cache first to reduce Firestore reads
     let employee = employeeCache.get(barcode);
     
@@ -144,7 +258,7 @@ async function processScannedBarcode(barcode) {
 
     if (!employee) {
       showScanResult("error", "Barcode tidak valid!");
-      playNotificationSound('not-found');
+      playNotificationSound('not-found', '');
       return;
     }
 
@@ -154,19 +268,6 @@ async function processScannedBarcode(barcode) {
     // Get selected shift
     const selectedShift = document.querySelector('input[name="shiftOption"]:checked').value;
 
-    // Current time
-    const now = new Date();
-    const timeString = now.toTimeString().split(" ")[0];
-    
-    // PERBAIKAN: Gunakan tanggal dari timestamp untuk konsistensi
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
-    
-    console.log("Today's date for attendance (from timestamp):", today);
-    console.log("Current time:", now);
-
     if (scanType === "in") {
       // Check if already checked in
       const existingRecord = attendanceRecords.find(
@@ -175,7 +276,7 @@ async function processScannedBarcode(barcode) {
 
       if (existingRecord && existingRecord.timeIn) {
         showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
-        playNotificationSound('already-in');
+        playNotificationSound('already-in', employee.name);
         return;
       }
 
@@ -209,6 +310,13 @@ async function processScannedBarcode(barcode) {
       console.log("Saving attendance record:", attendance);
       await recordAttendance(attendance);
 
+      // PERBAIKAN: Invalidate cache untuk laporan kehadiran
+      localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
+      localStorage.setItem("lastAttendanceScanDate", today);
+      
+      // Hapus cache laporan yang mungkin mencakup hari ini
+      clearTodayAttendanceCache();
+
       showScanResult(
         "success",
         `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
@@ -218,9 +326,9 @@ async function processScannedBarcode(barcode) {
       
       // Play notification sound based on status
       if (isLate) {
-        playNotificationSound('late');
+        playNotificationSound('late', employee.name);
       } else {
-        playNotificationSound('success-in');
+        playNotificationSound('success-in', employee.name);
       }
 
       // Reload attendance data
@@ -233,31 +341,66 @@ async function processScannedBarcode(barcode) {
 
       if (!existingRecord) {
         showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
-        playNotificationSound('error');
+        playNotificationSound('error', '');
         return;
       }
 
       if (existingRecord.timeOut) {
         showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
-        playNotificationSound('already-out');
+        playNotificationSound('already-out', employee.name);
         return;
       }
 
       // Update attendance with checkout time
       await updateAttendanceOut(existingRecord.id, now);
 
+      // Tandai bahwa ada perubahan data
+      localStorage.setItem("lastAttendanceUpdate", Date.now().toString());
+      
+      // Perbarui cache untuk hari ini
+      const todayStr = getLocalDateString();
+      updateCacheTimestamp(todayStr, 0); // Set timestamp ke 0 untuk memaksa refresh berikutnya
+      
+      // PERBAIKAN: Tambahkan pesan sukses dan notifikasi suara untuk scan pulang
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
-      playNotificationSound('success-out');
-
+      playNotificationSound('success-out', employee.name);
+            
       // Reload attendance data
-      await loadTodayAttendance();
+      await loadTodayAttendance(true); // Force refresh untuk data terbaru
     }
   } catch (error) {
     console.error("Error scanning barcode:", error);
     showScanResult("error", "Terjadi kesalahan saat memproses barcode");
-    playNotificationSound('error');
+    playNotificationSound('error', '');
   }
 }
+
+
+// Add this function to clear today's attendance cache
+function clearTodayAttendanceCache() {
+  try {
+    const today = getLocalDateString();
+    
+    // Clear specific cache for today
+    attendanceCache.delete(today);
+    
+    // Also clear any range caches that might include today
+    for (const key of attendanceCache.keys()) {
+      if (key.includes(today) || key.includes('_')) {
+        // If it's a range cache (contains underscore) or includes today, clear it
+        attendanceCache.delete(key);
+      }
+    }
+    
+    // Update localStorage to indicate cache was cleared
+    localStorage.setItem("attendanceCacheCleared", Date.now().toString());
+    console.log("Today's attendance cache cleared");
+  } catch (error) {
+    console.error("Error clearing today's attendance cache:", error);
+  }
+}
+
+
 // Fungsi untuk memeriksa ketersediaan file audio
 function checkAudioAvailability(audioPath) {
   return new Promise((resolve, reject) => {
@@ -284,14 +427,15 @@ function checkAudioAvailability(audioPath) {
 // Fungsi untuk memeriksa ketersediaan audio pembuka
 async function checkOpeningAudio() {
   try {
-    isOpeningAudioAvailable = await checkAudioAvailability("audio/antrian.mp3");
+    isOpeningAudioAvailable = await checkAudioAvailability("audio/notifOn.mp3");
   } catch (error) {
     console.error("Error checking audio availability:", error);
     isOpeningAudioAvailable = false;
   }
 }
+
 // Fungsi untuk memutar notifikasi suara dengan audio pembuka
-function playNotificationSound(type) {
+function playNotificationSound(type, staffName = '') {
   // Jika suara dinonaktifkan, keluar dari fungsi
   if (!soundEnabled) return;
 
@@ -300,7 +444,7 @@ function playNotificationSound(type) {
     window.speechSynthesis.cancel();
 
     // Putar audio pembuka terlebih dahulu
-    const openingAudio = new Audio("audio/antrian.mp3");
+    const openingAudio = new Audio("audio/notifOn.mp3");
 
     // Set volume audio pembuka
     openingAudio.volume = 0.7;
@@ -313,7 +457,7 @@ function playNotificationSound(type) {
 
     // Set volume dan kecepatan untuk kejelasan yang lebih baik
     utterance.volume = 1; // 0 to 1
-    utterance.rate = 1.1; // Sedikit lebih lambat untuk kejelasan
+    utterance.rate = 1; // Sedikit lebih lambat untuk kejelasan
     utterance.pitch = 1.1; // Sedikit lebih tinggi untuk kejelasan
 
     // Gunakan suara Indonesia yang telah dimuat
@@ -324,28 +468,22 @@ function playNotificationSound(type) {
     // Set teks berdasarkan tipe notifikasi
     switch (type) {
       case "success-in":
-        utterance.text = "Absensi berhasil";
+        utterance.text = staffName ? `Oke ${staffName}` : "Oke";
         break;
       case "success-out":
-        utterance.text = "Berhasil absen pulang";
+        utterance.text = staffName ? `${staffName} pulang` : "pulang";
         break;
       case "already-in":
-        utterance.text = "Kamu sudah absen";
+        utterance.text = staffName ? `${staffName} sudah absen` : "sudah absen";
         break;
       case "already-out":
-        utterance.text = "Kamu sudah absen pulang";
+        utterance.text = staffName ? `${staffName} sudah absen` : "sudah absen pulang";
         break;
       case "late":
-        utterance.text = "Kamu terlambat";
+        utterance.text = staffName ? `${staffName} terlambat` : "terlambat";
         break;
       case "not-found":
         utterance.text = "Barcode tidak terdaftar";
-        break;
-      case "error":
-        utterance.text = "Terjadi kesalahan";
-        break;
-      default:
-        utterance.text = "Operasi berhasil";
     }
 
     // Tambahkan event untuk debugging
@@ -374,7 +512,7 @@ function playNotificationSound(type) {
             window.speechSynthesis.resume();
           }
         }, 100);
-      }, 300); // Jeda 300ms setelah audio pembuka
+      }, 100); // Jeda 100ms setelah audio pembuka
     };
 
     // Tangani error pada audio pembuka
@@ -394,6 +532,7 @@ function playNotificationSound(type) {
     console.error("Error playing notification sound:", error);
   }
 }
+
 
 // Fungsi untuk menginisialisasi dan memuat suara Indonesia
 function initSpeechSynthesis() {
@@ -489,14 +628,14 @@ async function processBarcode() {
   const barcode = document.getElementById("barcodeInput").value.trim();
  // Tampilkan pesan error untuk input manual
  showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
- playNotificationSound('error');
+ playNotificationSound('error', '');
  
  // Clear input
  document.getElementById("barcodeInput").value = "";
  document.getElementById("barcodeInput").focus();
   if (!barcode) {
     showScanResult("error", "Barcode tidak boleh kosong!");
-    playNotificationSound('error');
+    playNotificationSound('error', '');
     return;
   }
 
@@ -516,7 +655,7 @@ async function processBarcode() {
 
     if (!employee) {
       showScanResult("error", "Barcode tidak valid!");
-      playNotificationSound('not-found');
+      playNotificationSound('not-found', '');
       return;
     }
 
@@ -545,7 +684,7 @@ async function processBarcode() {
 
       if (existingRecord && existingRecord.timeIn) {
         showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
-        playNotificationSound('already-in');
+        playNotificationSound('already-in', employee.name);
         return;
       }
 
@@ -586,9 +725,9 @@ async function processBarcode() {
       
       // Play notification sound based on status
       if (isLate) {
-        playNotificationSound('late');
+        playNotificationSound('late', employee.name);
       } else {
-        playNotificationSound('success-in');
+        playNotificationSound('success-in', employee.name);
       }
 
       // Reload attendance data
@@ -601,13 +740,13 @@ async function processBarcode() {
 
       if (!existingRecord) {
         showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
-        playNotificationSound('error');
+        playNotificationSound('error', '');
         return;
       }
 
       if (existingRecord.timeOut) {
         showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
-        playNotificationSound('already-out');
+        playNotificationSound('already-out', employee.name);
         return;
       }
 
@@ -615,7 +754,7 @@ async function processBarcode() {
       await updateAttendanceOut(existingRecord.id, now);
 
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
-      playNotificationSound('success-out');
+      playNotificationSound('success-out', employee.name);
 
       // Reload attendance data
       await loadTodayAttendance();
@@ -623,7 +762,7 @@ async function processBarcode() {
   } catch (error) {
     console.error("Error scanning barcode:", error);
     showScanResult("error", "Terjadi kesalahan saat memproses barcode");
-    playNotificationSound('error');
+    playNotificationSound('error', '');
   }
 
   // Clear input
@@ -632,6 +771,48 @@ async function processBarcode() {
   
   // Log tanggal absensi yang disimpan untuk debugging
   const attendanceDate = today;
+}
+
+// Add this function to your file
+function showAlert(type, message, autoHide = true) {
+  // Create alert element if it doesn't exist
+  let alertContainer = document.getElementById("alertContainer");
+  if (!alertContainer) {
+    alertContainer = document.createElement("div");
+    alertContainer.id = "alertContainer";
+    alertContainer.className = "alert-container";
+    document.body.appendChild(alertContainer);
+  }
+
+  // Create the alert
+  const alertEl = document.createElement("div");
+  alertEl.className = `alert alert-${type} alert-dismissible fade show`;
+  alertEl.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  
+  // Add to container
+  alertContainer.appendChild(alertEl);
+  
+  // Auto hide after 5 seconds if autoHide is true
+  if (autoHide) {
+    setTimeout(() => {
+      alertEl.classList.remove("show");
+      setTimeout(() => alertEl.remove(), 300);
+    }, 5000);
+  }
+  
+  return alertEl;
+}
+
+// Add a function to hide alerts
+function hideAlert() {
+  const alerts = document.querySelectorAll(".alert");
+  alerts.forEach(alert => {
+    alert.classList.remove("show");
+    setTimeout(() => alert.remove(), 300);
+  });
 }
 
 
@@ -671,13 +852,25 @@ async function loadTodayAttendance(forceRefresh = false) {
     
     // Tampilkan pesan jika refresh dipaksa
     if (forceRefresh) {
-      showAlert("success", "Data berhasil diperbarui dari server", 3000);
+      // Use showScanResult instead of showAlert if showAlert is not available
+      if (typeof showAlert === 'function') {
+        showAlert("success", "Data berhasil diperbarui dari server", 3000);
+      } else {
+        showScanResult("success", "Data berhasil diperbarui dari server");
+      }
     }
   } catch (error) {
     console.error("Error loading today's attendance:", error);
-    showAlert("danger", "Gagal memuat data kehadiran: " + error.message, 5000);
+    
+    // Use showScanResult instead of showAlert if showAlert is not available
+    if (typeof showAlert === 'function') {
+      showAlert("danger", "Gagal memuat data kehadiran: " + error.message, 5000);
+    } else {
+      showScanResult("error", "Gagal memuat data kehadiran");
+    }
   }
 }
+
 
 
 
@@ -790,10 +983,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Preload audio untuk mengurangi delay
     if (isOpeningAudioAvailable) {
-      const preloadAudio = new Audio("audio/antrian.mp3");
+      const preloadAudio = new Audio("audio/notifOn.mp3");
       preloadAudio.preload = "auto";
       preloadAudio.load();
     }
+
+        // Atur radio button berdasarkan waktu saat ini
+        setRadioButtonsByTime();
+    
+        // Atur timer untuk memperbarui radio button setiap menit
+        setInterval(setRadioButtonsByTime, 60000);
     
     // Setup barcode scanner detection - ini adalah satu-satunya setup yang diperlukan
     setupBarcodeScanner();
@@ -894,7 +1093,7 @@ function getThresholdTime(employeeType, shift) {
       afternoon: new Date("1970-01-01T14:20:00"),
     },
     ob: {
-      morning: new Date("1970-01-01T07:20:00"),
+      morning: new Date("1970-01-01T07:30:00"),
       afternoon: new Date("1970-01-01T13:45:00"),
     },
   };

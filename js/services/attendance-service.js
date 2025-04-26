@@ -11,6 +11,11 @@ import {
   Timestamp,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+// Tambahkan konstanta untuk TTL cache
+const CACHE_TTL_STANDARD = 60 * 60 * 1000; // 1 jam
+const CACHE_TTL_TODAY = 5 * 60 * 1000;     // 5 menit untuk data hari ini
+
 // Tambahkan fungsi untuk koordinasi cache dengan report-service
 export function syncCacheWithReport(dateKey, data) {
   try {
@@ -100,6 +105,45 @@ export function validateCacheIntegrity() {
   }
 }
 
+// Tambahkan fungsi untuk notifikasi scan baru
+export function notifyNewAttendanceScan(date) {
+  try {
+    // Simpan timestamp scan terakhir
+    localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
+    
+    // Simpan tanggal scan terakhir
+    if (date) {
+      localStorage.setItem("lastAttendanceScanDate", typeof date === 'string' ? date : getLocalDateString());
+    }
+    
+    // Broadcast event untuk komponen lain yang mungkin perlu tahu
+    const event = new CustomEvent('attendanceScanUpdated', { 
+      detail: { 
+        timestamp: Date.now(),
+        date: date || getLocalDateString()
+      } 
+    });
+    window.dispatchEvent(event);
+    
+    return true;
+  } catch (error) {
+    console.error("Error notifying new attendance scan:", error);
+    return false;
+  }
+}
+
+// Tambahkan fungsi untuk memeriksa apakah ada scan baru sejak timestamp tertentu
+export function hasNewAttendanceSince(timestamp) {
+  try {
+    const lastScanTime = localStorage.getItem("lastAttendanceScanTime");
+    if (!lastScanTime) return false;
+    
+    return parseInt(lastScanTime) > timestamp;
+  } catch (error) {
+    console.error("Error checking for new attendance:", error);
+    return false;
+  }
+}
 // Tambahkan event listener untuk validasi cache saat halaman dimuat
 document.addEventListener('DOMContentLoaded', function() {
   // Validasi integritas cache
@@ -256,6 +300,38 @@ export function updateCacheTimestamp(cacheKey) {
   cacheMeta.set(cacheKey, Date.now());
   saveAttendanceCacheToStorage();
 }
+
+// Tambahkan fungsi untuk menghapus cache berdasarkan tanggal
+export function clearCacheForDate(dateStr) {
+  try {
+    // Hapus cache harian
+    if (attendanceCache.has(dateStr)) {
+      attendanceCache.delete(dateStr);
+      if (cacheMeta.has(dateStr)) {
+        cacheMeta.delete(dateStr);
+      }
+    }
+    
+    // Hapus cache rentang tanggal yang mencakup tanggal ini
+    for (const [key, value] of attendanceCache.entries()) {
+      if (key.includes('_') && key.includes(dateStr)) {
+        attendanceCache.delete(key);
+        if (cacheMeta.has(key)) {
+          cacheMeta.delete(key);
+        }
+      }
+    }
+    
+    // Simpan perubahan ke localStorage
+    saveAttendanceCacheToStorage();
+    
+    return true;
+  } catch (error) {
+    console.error("Error clearing cache for date:", error);
+    return false;
+  }
+}
+
 export async function recordAttendance(attendance) {
   try {
     // Add timestamps
@@ -298,6 +374,13 @@ export async function recordAttendance(attendance) {
     attendanceCache.get(dateKey).push(cachedAttendance);
     updateCacheTimestamp(dateKey); // Perbarui timestamp cache
     
+    // PERBAIKAN: Hapus semua cache laporan yang mungkin mencakup tanggal ini
+    clearCacheForDate(dateKey);
+    
+    // PERBAIKAN: Tandai bahwa ada scan baru
+    localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
+    localStorage.setItem("lastAttendanceScanDate", dateKey);
+    
     return cachedAttendance;
   } catch (error) {
     console.error("Error recording attendance:", error);
@@ -306,15 +389,22 @@ export async function recordAttendance(attendance) {
 }
 
 
+
 // Fungsi untuk memeriksa apakah cache perlu diperbarui (lebih dari 1 jam)
 export function shouldUpdateCache(cacheKey) {
   if (!cacheMeta.has(cacheKey)) return true;
   
   const lastUpdate = cacheMeta.get(cacheKey);
   const now = Date.now();
-  const oneHour = 60 * 60 * 1000; // 1 jam dalam milidetik
   
-  return (now - lastUpdate) > oneHour;
+  // Jika cache key adalah tanggal hari ini, gunakan TTL yang lebih pendek
+  const today = getLocalDateString();
+  if (cacheKey === today || cacheKey.includes(today)) {
+    return (now - lastUpdate) > CACHE_TTL_TODAY;
+  }
+  
+  // Untuk data lain, gunakan TTL standar
+  return (now - lastUpdate) > CACHE_TTL_STANDARD;
 }
 
 // Update attendance with check-out time
@@ -330,13 +420,25 @@ export async function updateAttendanceOut(id, timeOut) {
     });
     
     // Update cache
+    let updatedDateKey = null;
+    
     for (const [dateKey, records] of attendanceCache.entries()) {
       const recordIndex = records.findIndex(record => record.id === id);
       if (recordIndex !== -1) {
         records[recordIndex].timeOut = timeOut instanceof Date ? timeOut : new Date();
         updateCacheTimestamp(dateKey); // Perbarui timestamp cache
+        updatedDateKey = dateKey;
         break;
       }
+    }
+
+    // PERBAIKAN: Hapus semua cache laporan yang mungkin mencakup tanggal ini
+    if (updatedDateKey) {
+      clearCacheForDate(updatedDateKey);
+      
+      // PERBAIKAN: Tandai bahwa ada scan baru
+      localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
+      localStorage.setItem("lastAttendanceScanDate", updatedDateKey);
     }
 
     return true;
@@ -349,7 +451,6 @@ export async function updateAttendanceOut(id, timeOut) {
 // Get today's attendance
 export async function getTodayAttendance() {
   try {
-    // Gunakan tanggal lokal untuk konsistensi
     const today = getLocalDateString();
     
     // Check if data is in cache and still valid
@@ -358,6 +459,7 @@ export async function getTodayAttendance() {
       return attendanceCache.get(today);
     }
     
+    console.log("Fetching today's attendance from Firestore");
     const attendanceCollection = collection(db, "attendance");
     const q = query(attendanceCollection, where("date", "==", today), orderBy("timeIn", "desc"));
 
@@ -374,31 +476,43 @@ export async function getTodayAttendance() {
       };
     });
     
-    
     // Store in cache with timestamp
     attendanceCache.set(today, attendanceData);
     updateCacheTimestamp(today);
+    saveAttendanceCacheToStorage();
     
     return attendanceData;
   } catch (error) {
     console.error("Error getting today's attendance:", error);
+    
+    // Fallback to cache if available
+    const today = getLocalDateString();
+    if (attendanceCache.has(today)) {
+      console.log("Using cached data as fallback due to error");
+      return attendanceCache.get(today);
+    }
+    
     throw error;
   }
 }
+
 
 // Get attendance by date range
 export async function getAttendanceByDateRange(startDate, endDate) {
   try {
     const cacheKey = `${startDate}_${endDate}`;
     
-    // Check if all dates in range are in cache and still valid
-    const allDatesInCache = checkAllDatesInCache(startDate, endDate);
+    // Cek apakah rentang tanggal mencakup hari ini
+    const today = getLocalDateString();
+    const includesCurrentDay = (startDate <= today && today <= endDate);
     
-    if (allDatesInCache && !shouldUpdateCache(cacheKey)) {
-      console.log("Using cached attendance data for date range");
+    // Jika tidak mencakup hari ini dan cache masih valid, gunakan cache
+    if (!includesCurrentDay && cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
+      console.log(`Using cached attendance data for range ${startDate} to ${endDate}`);
       return getCachedAttendanceByDateRange(startDate, endDate);
     }
     
+    console.log(`Fetching attendance data for range ${startDate} to ${endDate}`);
     const attendanceCollection = collection(db, "attendance");
     const q = query(
       attendanceCollection,
@@ -418,28 +532,34 @@ export async function getAttendanceByDateRange(startDate, endDate) {
     }));
     
     // Update cache for each date
+    const dateMap = {};
     attendanceData.forEach(record => {
       const dateKey = record.date;
-      if (!attendanceCache.has(dateKey)) {
-        attendanceCache.set(dateKey, []);
-        updateCacheTimestamp(dateKey);
-      }
-      
-      // Check if record already exists in cache
-      const existingIndex = attendanceCache.get(dateKey).findIndex(item => item.id === record.id);
-      if (existingIndex === -1) {
-        attendanceCache.get(dateKey).push(record);
-      } else {
-        attendanceCache.get(dateKey)[existingIndex] = record;
-      }
+      if (!dateMap[dateKey]) dateMap[dateKey] = [];
+      dateMap[dateKey].push(record);
     });
     
-    // Update timestamp for the date range
+    // Update individual date caches
+    for (const [dateKey, records] of Object.entries(dateMap)) {
+      attendanceCache.set(dateKey, records);
+      updateCacheTimestamp(dateKey);
+    }
+    
+    // Update range cache
     updateCacheTimestamp(cacheKey);
+    saveAttendanceCacheToStorage();
     
     return attendanceData;
   } catch (error) {
     console.error("Error getting attendance by date range:", error);
+    
+    // Try to use cache as fallback
+    const cacheKey = `${startDate}_${endDate}`;
+    if (cacheMeta.has(cacheKey)) {
+      console.log(`Using cached data as fallback for range ${startDate} to ${endDate}`);
+      return getCachedAttendanceByDateRange(startDate, endDate);
+    }
+    
     throw error;
   }
 }

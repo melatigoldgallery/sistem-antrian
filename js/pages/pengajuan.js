@@ -531,6 +531,12 @@ function checkPendingUploads() {
 document.getElementById("leaveForm")?.addEventListener("submit", async function (e) {
   e.preventDefault();
 
+   // Scroll ke atas halaman terlebih dahulu
+   window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
   // Show loading state
   const submitBtn = this.querySelector('button[type="submit"]');
   const originalBtnText = submitBtn.innerHTML;
@@ -772,33 +778,34 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     // Submit the leave request
     await submitLeaveRequest(leaveRequest);
 
-    showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
-    this.reset();
+   // Setelah berhasil submit
+   showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
+   this.reset();
+   
+   // Perbaikan: Periksa apakah elemen ada sebelum mengakses propertinya
+   const elementsToHide = [
+     "replacementLibur",
+     "replacementJam",
+     "sickLeaveSection",
+     "leaveSection",
+     "multiDateWarning",
+     "filePreviewContainer",
+   ];
 
-    // Perbaikan: Periksa apakah elemen ada sebelum mengakses propertinya
-    const elementsToHide = [
-      "replacementLibur",
-      "replacementJam",
-      "sickLeaveSection",
-      "leaveSection",
-      "multiDateWarning",
-      "filePreviewContainer",
-    ];
-
-    elementsToHide.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) element.style.display = "none";
-    });
-    // Reload leave history
-    await loadLeaveHistory(employeeId);
-  } catch (error) {
-    console.error("Error submitting leave request:", error);
-    showFeedback("error", "Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.");
-  } finally {
-    // Restore button state
-    submitBtn.innerHTML = originalBtnText;
-    submitBtn.disabled = false;
-  }
+   elementsToHide.forEach((id) => {
+     const element = document.getElementById(id);
+     if (element) element.style.display = "none";
+   });
+   // Reload leave history
+   await loadLeaveHistory(employeeId);
+ } catch (error) {
+   console.error("Error submitting leave request:", error);
+   showFeedback("error", "Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.");
+ } finally {
+   // Restore button state
+   submitBtn.innerHTML = originalBtnText;
+   submitBtn.disabled = false;
+ }
 });
 
 
@@ -807,22 +814,49 @@ function showFeedback(type, message, autoHide = true, duration = 5000) {
   const feedbackElement = document.getElementById("formFeedback");
   if (!feedbackElement) return;
 
+  // Tambahkan class untuk styling dan animasi
   feedbackElement.className = `alert alert-${
     type === "error" ? "danger" : type === "warning" ? "warning" : type === "info" ? "info" : "success"
-  } mb-4`;
+  } mb-4 feedback-popup`;
+  
   feedbackElement.innerHTML = message;
   feedbackElement.style.display = "block";
-
+  
+  // Tambahkan style untuk membuat feedback lebih menonjol
+  feedbackElement.style.position = "sticky";
+  feedbackElement.style.top = "20px";
+  feedbackElement.style.zIndex = "1050";
+  feedbackElement.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+  feedbackElement.style.borderLeft = type === "error" ? "5px solid #dc3545" : 
+                                     type === "warning" ? "5px solid #ffc107" : 
+                                     type === "info" ? "5px solid #0dcaf0" : 
+                                     "5px solid #198754";
+  
+  // Tambahkan animasi untuk menarik perhatian
+  feedbackElement.style.animation = "feedbackPulse 0.5s ease-in-out";
+  
+  // Scroll ke elemen dengan posisi di atas viewport
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+  
   // Auto-hide after specified duration if autoHide is true
   if (autoHide) {
     setTimeout(() => {
-      feedbackElement.style.display = "none";
+      // Tambahkan animasi fade out
+      feedbackElement.style.animation = "feedbackFadeOut 0.5s ease-in-out";
+      feedbackElement.style.opacity = "0";
+      
+      setTimeout(() => {
+        feedbackElement.style.display = "none";
+        // Reset opacity untuk penggunaan berikutnya
+        feedbackElement.style.opacity = "1";
+      }, 500);
     }, duration);
   }
-
-  // Scroll to feedback element
-  feedbackElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
+
 
 // Update leave history table
 function updateLeaveHistoryTable() {
