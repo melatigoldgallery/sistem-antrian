@@ -458,7 +458,7 @@ function playNotificationSound(type, staffName = '') {
     // Set volume dan kecepatan untuk kejelasan yang lebih baik
     utterance.volume = 1; // 0 to 1
     utterance.rate = 1; // Sedikit lebih lambat untuk kejelasan
-    utterance.pitch = 1.1; // Sedikit lebih tinggi untuk kejelasan
+    utterance.pitch = 1.2; // Sedikit lebih tinggi untuk kejelasan
 
     // Gunakan suara Indonesia yang telah dimuat
     if (indonesianVoice) {

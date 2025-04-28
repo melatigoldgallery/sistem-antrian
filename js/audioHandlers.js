@@ -73,7 +73,7 @@ export async function playWaitMessageSequence() {
     await playAudio(AUDIO_PATHS.informasi);
     
     // Putar pesan
-    const message = "Kepada Pelanggan Melati yang belum dilayani, kami mohon kesabarannya untuk menunggu giliran pelayanan. Terima kasih atas perhatiannya";
+    const message = "Kepada Pelanggan Melati yang belum dilayani, kami mohon kesabarannya untuk menunggu pelayanan. Terima kasih atas perhatiannya";
     await speak(message);
     
     // Putar nada penutup
