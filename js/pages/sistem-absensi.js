@@ -30,6 +30,7 @@ let isBarcodeScanner = false;
 const SCANNER_CHARACTER_DELAY_THRESHOLD = 50; // Maksimum delay antar karakter (ms) untuk scanner
 const SCANNER_COMPLETE_DELAY = 500; // Waktu tunggu setelah input selesai (ms)
 let scannerTimeoutId = null;
+
 // Tambahkan variabel global untuk mencegah pemrosesan barcode duplikat
 let lastProcessedBarcode = '';
 let lastProcessedTime = 0;
@@ -38,6 +39,10 @@ const BARCODE_COOLDOWN_MS = 3000; // Waktu tunggu 3 detik sebelum barcode yang s
 // Tambahkan konstanta untuk TTL
 const CACHE_TTL_STANDARD = 60 * 60 * 1000; // 1 jam
 const CACHE_TTL_TODAY = 5 * 60 * 1000;     // 5 menit untuk data hari ini
+
+// Tambahkan variabel untuk menyimpan timestamp cache stats
+let statsLastUpdated = 0;
+const STATS_CACHE_TTL = 60000; // 1 menit
 
 // Modifikasi fungsi shouldUpdateCache
 function shouldUpdateCache(cacheKey) {
@@ -60,6 +65,84 @@ function shouldUpdateCache(cacheKey) {
 let employeeCacheTimestamp = 0;
 const EMPLOYEE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 jam
 
+// Tambahkan fungsi ini di bagian atas file, setelah deklarasi variabel cache
+function saveAttendanceCacheToStorage() {
+  try {
+    // Konversi Map ke objek untuk localStorage
+    const cacheObj = {};
+    for (const [key, value] of attendanceCache.entries()) {
+      cacheObj[key] = value;
+    }
+
+    // Simpan cache ke localStorage
+    // Gunakan kompresi data untuk mengurangi ukuran penyimpanan
+    const compressedData = JSON.stringify(cacheObj).replace(/\s+/g, "");
+    localStorage.setItem("attendanceCache", compressedData);
+
+    // Simpan metadata cache
+    const metaObj = {};
+    for (const [key, value] of cacheMeta.entries()) {
+      metaObj[key] = value;
+    }
+    localStorage.setItem("attendanceCacheMeta", JSON.stringify(metaObj));
+
+    console.log("Attendance cache saved to localStorage");
+    return true;
+  } catch (error) {
+    console.error("Error saving attendance cache to localStorage:", error);
+    
+    // Jika localStorage penuh, coba bersihkan cache lama terlebih dahulu
+    if (error.name === 'QuotaExceededError') {
+      console.log("localStorage quota exceeded, cleaning old cache entries");
+      cleanOldCacheEntries();
+      // Coba lagi setelah membersihkan
+      try {
+        const reducedCacheObj = {};
+        // Simpan hanya 10 entri terbaru
+        const recentKeys = [...attendanceCache.keys()].slice(-10);
+        for (const key of recentKeys) {
+          reducedCacheObj[key] = attendanceCache.get(key);
+        }
+        localStorage.setItem("attendanceCache", JSON.stringify(reducedCacheObj));
+        console.log("Saved reduced attendance cache to localStorage");
+      } catch (retryError) {
+        console.error("Still failed to save cache after cleanup:", retryError);
+      }
+    }
+    return false;
+  }
+}
+
+// Tambahkan fungsi helper untuk membersihkan cache lama
+function cleanOldCacheEntries() {
+  try {
+    // Hapus entri cache yang lebih lama dari 3 hari
+    const now = Date.now();
+    const threeDaysAgo = now - (3 * 24 * 60 * 60 * 1000);
+    
+    // Hapus dari cacheMeta dan attendanceCache
+    for (const [key, timestamp] of cacheMeta.entries()) {
+      if (timestamp < threeDaysAgo) {
+        cacheMeta.delete(key);
+        attendanceCache.delete(key);
+      }
+    }
+    
+    // Hapus juga item localStorage lain yang mungkin tidak diperlukan
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      // Hapus cache laporan lama atau data sementara
+      if (key.startsWith('report_') || key.startsWith('temp_')) {
+        localStorage.removeItem(key);
+      }
+    }
+    
+    console.log("Old cache entries cleaned up");
+  } catch (error) {
+    console.error("Error cleaning old cache entries:", error);
+  }
+}
+
 // Fungsi untuk memeriksa apakah cache karyawan masih valid
 function shouldUpdateEmployeeCache() {
   const now = Date.now();
@@ -69,17 +152,12 @@ function shouldUpdateEmployeeCache() {
 // Fungsi untuk memperbarui timestamp cache
 function updateCacheTimestamp(cacheKey, timestamp = Date.now()) {
   try {
-    // Use the imported function if available
-    if (typeof serviceUpdateCacheTimestamp === 'function') {
-      serviceUpdateCacheTimestamp(cacheKey, timestamp);
-    } else {
-      // Fallback to local implementation
-      cacheMeta.set(cacheKey, timestamp);
-    }
+    cacheMeta.set(cacheKey, timestamp);
   } catch (error) {
     console.error("Error updating cache timestamp:", error);
   }
 }
+
 
 // Fungsi untuk mengatur radio button berdasarkan waktu
 function setRadioButtonsByTime() {
@@ -218,29 +296,40 @@ function setupBarcodeScanner() {
   });
 }
 
-// Fungsi untuk memproses barcode yang di-scan
+// Hapus seluruh fungsi processBarcode() yang lama
+
+// Perbaiki fungsi processScannedBarcode() untuk mencakup semua logika yang diperlukan
 async function processScannedBarcode(barcode) {
+  // Validasi input barcode
   if (!barcode) {
     showScanResult("error", "Barcode tidak boleh kosong!");
     playNotificationSound('error', '');
     return;
   }
   
+  // Cek apakah barcode ini baru saja diproses (dalam 3 detik terakhir)
+  const currentTime = Date.now();
+  if (barcode === lastProcessedBarcode && (currentTime - lastProcessedTime) < BARCODE_COOLDOWN_MS) {
+    console.log(`Barcode ${barcode} diabaikan - sudah diproses dalam ${BARCODE_COOLDOWN_MS}ms terakhir`);
+    showScanResult("warning", "Scan terlalu cepat, harap tunggu beberapa detik");
+    return;
+  }
+  
+  // Update variabel tracking barcode
+  lastProcessedBarcode = barcode;
+  lastProcessedTime = currentTime;
+  
   console.log("Processing scanned barcode:", barcode);
   
   try {
-    // PERBAIKAN: Definisikan today di awal fungsi
     // Current time
     const now = new Date();
     const timeString = now.toTimeString().split(" ")[0];
     
-    // PERBAIKAN: Definisikan today di sini
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
+    // Gunakan fungsi helper untuk mendapatkan tanggal hari ini
+    const today = getLocalDateString();
     
-    console.log("Today's date for attendance (from timestamp):", today);
+    console.log("Today's date for attendance:", today);
     console.log("Current time:", now);
 
     // Check if employee exists in cache first to reduce Firestore reads
@@ -263,17 +352,23 @@ async function processScannedBarcode(barcode) {
     }
 
     // Get scan type (in/out)
-    const scanType = document.querySelector('input[name="scanType"]:checked').value;
+    const scanType = document.querySelector('input[name="scanType"]:checked')?.value || "in";
     
     // Get selected shift
-    const selectedShift = document.querySelector('input[name="shiftOption"]:checked').value;
+    const selectedShift = document.querySelector('input[name="shiftOption"]:checked')?.value || "morning";
+
+    // Cek apakah data kehadiran hari ini sudah di-cache
+    let todayRecords = attendanceCache.get(today) || [];
+    
+    // Cari record kehadiran karyawan ini
+    const existingRecord = todayRecords.find(
+      (record) => record.employeeId === employee.employeeId && 
+                  (record.date === today || 
+                   (record.date instanceof Date && getLocalDateStringFromDate(record.date) === today))
+    );
 
     if (scanType === "in") {
       // Check if already checked in
-      const existingRecord = attendanceRecords.find(
-        (record) => record.employeeId === employee.employeeId && record.date === today
-      );
-
       if (existingRecord && existingRecord.timeIn) {
         showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
         playNotificationSound('already-in', employee.name);
@@ -308,15 +403,33 @@ async function processScannedBarcode(barcode) {
       };
 
       console.log("Saving attendance record:", attendance);
-      await recordAttendance(attendance);
+      const savedRecord = await recordAttendance(attendance);
 
-      // PERBAIKAN: Invalidate cache untuk laporan kehadiran
+      // Update local cache dengan record baru
+      if (savedRecord && savedRecord.id) {
+        // Tambahkan record baru ke cache
+        const newRecord = {
+          ...attendance,
+          id: savedRecord.id
+        };
+        
+        // Update cache
+        const updatedRecords = [...todayRecords];
+        updatedRecords.push(newRecord);
+        attendanceCache.set(today, updatedRecords);
+        
+        // Update variabel global
+        attendanceRecords = updatedRecords;
+      }
+
+      // Invalidate cache untuk laporan kehadiran
       localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
       localStorage.setItem("lastAttendanceScanDate", today);
       
       // Hapus cache laporan yang mungkin mencakup hari ini
       clearTodayAttendanceCache();
 
+      // Tampilkan pesan sukses
       showScanResult(
         "success",
         `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
@@ -331,14 +444,13 @@ async function processScannedBarcode(barcode) {
         playNotificationSound('success-in', employee.name);
       }
 
-      // Reload attendance data
-      await loadTodayAttendance();
+      // Trigger event untuk update UI
+      notifyAttendanceUpdate(today);
+      
+      // Update UI stats tanpa query baru
+      updateStats();
     } else {
       // Scan out logic
-      const existingRecord = attendanceRecords.find(
-        (record) => record.employeeId === employee.employeeId && record.date === today
-      );
-
       if (!existingRecord) {
         showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
         playNotificationSound('error', '');
@@ -354,87 +466,132 @@ async function processScannedBarcode(barcode) {
       // Update attendance with checkout time
       await updateAttendanceOut(existingRecord.id, now);
 
+      // Update local cache
+      const updatedRecords = todayRecords.map(record => {
+        if (record.id === existingRecord.id) {
+          return {
+            ...record,
+            timeOut: now
+          };
+        }
+        return record;
+      });
+      
+      // Update cache
+      attendanceCache.set(today, updatedRecords);
+      
+      // Update variabel global
+      attendanceRecords = updatedRecords;
+
       // Tandai bahwa ada perubahan data
       localStorage.setItem("lastAttendanceUpdate", Date.now().toString());
       
       // Perbarui cache untuk hari ini
-      const todayStr = getLocalDateString();
-      updateCacheTimestamp(todayStr, 0); // Set timestamp ke 0 untuk memaksa refresh berikutnya
+      updateCacheTimestamp(today, 0); // Set timestamp ke 0 untuk memaksa refresh berikutnya
       
-      // PERBAIKAN: Tambahkan pesan sukses dan notifikasi suara untuk scan pulang
+      // Tampilkan pesan sukses
       showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
       playNotificationSound('success-out', employee.name);
-            
-      // Reload attendance data
-      await loadTodayAttendance(true); // Force refresh untuk data terbaru
+      
+      // Trigger event untuk update UI
+      notifyAttendanceUpdate(today);
+      
+      // Update UI stats tanpa query baru
+      updateStats();
     }
   } catch (error) {
     console.error("Error scanning barcode:", error);
     showScanResult("error", "Terjadi kesalahan saat memproses barcode");
     playNotificationSound('error', '');
   }
+  
+  // Clear input dan fokus kembali ke input barcode
+  const barcodeInput = document.getElementById("barcodeInput");
+  if (barcodeInput) {
+    barcodeInput.value = "";
+    barcodeInput.focus();
+  }
 }
 
-
-// Add this function to clear today's attendance cache
+/**
+ * Fungsi untuk membersihkan cache kehadiran hari ini secara selektif
+ * Hanya menghapus cache yang relevan dengan hari ini
+ */
 function clearTodayAttendanceCache() {
   try {
     const today = getLocalDateString();
+    console.log(`Clearing attendance cache for today (${today})`);
     
-    // Clear specific cache for today
+    // 1. Hapus cache spesifik untuk hari ini
     attendanceCache.delete(today);
     
-    // Also clear any range caches that might include today
+    // 2. Hapus cache range yang secara eksplisit mencakup hari ini
+    // Cari cache dengan format range_startDate_endDate_shift
     for (const key of attendanceCache.keys()) {
-      if (key.includes(today) || key.includes('_')) {
-        // If it's a range cache (contains underscore) or includes today, clear it
-        attendanceCache.delete(key);
+      if (key.startsWith('range_')) {
+        const parts = key.split('_');
+        if (parts.length >= 3) {
+          const rangeStartDate = parts[1];
+          const rangeEndDate = parts[2];
+          
+          // Cek apakah range mencakup hari ini
+          if (rangeStartDate <= today && today <= rangeEndDate) {
+            console.log(`Clearing range cache that includes today: ${key}`);
+            attendanceCache.delete(key);
+          }
+        }
       }
     }
     
-    // Update localStorage to indicate cache was cleared
+    // 3. Hapus timestamp cache untuk memaksa refresh pada query berikutnya
+    if (typeof cacheMeta !== 'undefined' && cacheMeta instanceof Map) {
+      cacheMeta.delete(today);
+      
+      // Hapus juga timestamp untuk range yang mencakup hari ini
+      for (const key of cacheMeta.keys()) {
+        if (key.startsWith('range_')) {
+          const parts = key.split('_');
+          if (parts.length >= 3) {
+            const rangeStartDate = parts[1];
+            const rangeEndDate = parts[2];
+            
+            if (rangeStartDate <= today && today <= rangeEndDate) {
+              console.log(`Clearing timestamp for range cache: ${key}`);
+              cacheMeta.delete(key);
+            }
+          }
+        }
+      }
+    }
+    
+    // 4. Simpan perubahan ke localStorage
+    if (typeof saveAttendanceCacheToStorage === 'function') {
+      saveAttendanceCacheToStorage();
+    } else {
+      // Fallback jika fungsi saveAttendanceCacheToStorage tidak tersedia
+      try {
+        localStorage.setItem("attendanceCache", JSON.stringify(Object.fromEntries(attendanceCache)));
+        if (typeof cacheMeta !== 'undefined' && cacheMeta instanceof Map) {
+          localStorage.setItem("attendanceCacheMeta", JSON.stringify(Object.fromEntries(cacheMeta)));
+        }
+      } catch (storageError) {
+        console.error("Error saving cache to localStorage:", storageError);
+      }
+    }
+    
+    // 5. Tandai bahwa cache telah dibersihkan
     localStorage.setItem("attendanceCacheCleared", Date.now().toString());
-    console.log("Today's attendance cache cleared");
+    localStorage.setItem("attendanceCacheClearedDate", today);
+    
+    console.log("Today's attendance cache cleared successfully");
+    return true;
   } catch (error) {
     console.error("Error clearing today's attendance cache:", error);
+    return false;
   }
 }
 
-
-// Fungsi untuk memeriksa ketersediaan file audio
-function checkAudioAvailability(audioPath) {
-  return new Promise((resolve, reject) => {
-    const audio = new Audio(audioPath);
-
-    audio.oncanplaythrough = () => {
-      resolve(true);
-    };
-
-    audio.onerror = () => {
-      resolve(false);
-    };
-
-    // Set timeout untuk menghindari hanging
-    setTimeout(() => {
-      resolve(false);
-    }, 2000);
-
-    // Coba load audio
-    audio.load();
-  });
-}
-
-// Fungsi untuk memeriksa ketersediaan audio pembuka
-async function checkOpeningAudio() {
-  try {
-    isOpeningAudioAvailable = await checkAudioAvailability("audio/notifOn.mp3");
-  } catch (error) {
-    console.error("Error checking audio availability:", error);
-    isOpeningAudioAvailable = false;
-  }
-}
-
-// Fungsi untuk memutar notifikasi suara dengan audio pembuka
+// Fungsi untuk memutar notifikasi suara dengan audio pembuka yang sesuai
 function playNotificationSound(type, staffName = '') {
   // Jika suara dinonaktifkan, keluar dari fungsi
   if (!soundEnabled) return;
@@ -443,8 +600,16 @@ function playNotificationSound(type, staffName = '') {
     // Hentikan semua suara yang sedang diputar
     window.speechSynthesis.cancel();
 
-    // Putar audio pembuka terlebih dahulu
-    const openingAudio = new Audio("audio/notifOn.mp3");
+    // Tentukan file audio pembuka berdasarkan tipe notifikasi
+    let audioFile = "audio/notifOn.mp3"; // Default audio untuk notifikasi sukses
+    
+    // Gunakan audio berbeda untuk notifikasi error
+    if (type === 'error' || type === 'not-found') {
+      audioFile = "audio/failed.mp3"; // Audio khusus untuk error
+    }
+
+    // Putar audio pembuka yang sesuai
+    const openingAudio = new Audio(audioFile);
 
     // Set volume audio pembuka
     openingAudio.volume = 0.7;
@@ -484,6 +649,12 @@ function playNotificationSound(type, staffName = '') {
         break;
       case "not-found":
         utterance.text = "Barcode tidak terdaftar";
+        break;
+      case "error":
+        utterance.text = "Terjadi kesalahan";
+        break;
+      default:
+        utterance.text = type; // Gunakan tipe sebagai fallback
     }
 
     // Tambahkan event untuk debugging
@@ -534,6 +705,7 @@ function playNotificationSound(type, staffName = '') {
 }
 
 
+
 // Fungsi untuk menginisialisasi dan memuat suara Indonesia
 function initSpeechSynthesis() {
   if ("speechSynthesis" in window) {
@@ -575,284 +747,126 @@ function initSpeechSynthesis() {
   }
 }
 
-// Fungsi untuk mengatasi bug umum pada Web Speech API
+/**
+ * Fungsi yang dioptimalkan untuk menangani bug umum pada Web Speech API
+ * Hanya menerapkan perbaikan untuk bug yang benar-benar relevan
+ */
 function fixSpeechSynthesisBugs() {
+  // Deteksi browser untuk penanganan bug yang spesifik
+  const isChrome = navigator.userAgent.indexOf("Chrome") !== -1;
+  const isSafari = navigator.userAgent.indexOf("Safari") !== -1 && navigator.userAgent.indexOf("Chrome") === -1;
+  
   // Bug di Chrome: speechSynthesis berhenti setelah sekitar 15 detik
-  // Solusi: resume secara periodik
-  setInterval(() => {
-    if (window.speechSynthesis && window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-    }
-  }, 5000);
-
+  // Hanya terapkan di Chrome untuk menghindari interval yang tidak perlu di browser lain
+  if (isChrome && window.speechSynthesis) {
+    console.log("Applying Chrome-specific speech synthesis fix");
+    
+    // Gunakan variabel untuk menyimpan interval agar bisa dihapus jika perlu
+    let resumeInterval = null;
+    
+    // Fungsi untuk memeriksa dan melanjutkan speechSynthesis
+    const checkAndResumeSpeech = () => {
+      if (window.speechSynthesis.paused) {
+        console.log("Resuming paused speech synthesis");
+        window.speechSynthesis.resume();
+      }
+    };
+    
+    // Hanya aktifkan interval ketika ada utterance yang sedang diproses
+    window.speechSynthesis.addEventListener('start', () => {
+      if (!resumeInterval) {
+        resumeInterval = setInterval(checkAndResumeSpeech, 5000);
+      }
+    });
+    
+    // Hentikan interval ketika tidak ada utterance yang diproses
+    window.speechSynthesis.addEventListener('end', () => {
+      if (resumeInterval && !window.speechSynthesis.pending && !window.speechSynthesis.speaking) {
+        clearInterval(resumeInterval);
+        resumeInterval = null;
+      }
+    });
+  }
+  
   // Bug di beberapa browser: speechSynthesis tidak berfungsi setelah tab tidak aktif
-  // Solusi: reset saat tab menjadi aktif
+  // Ini adalah masalah umum di banyak browser, jadi tetap terapkan
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      // Hanya reset jika ada utterance yang tertunda atau sedang berbicara
+      if (window.speechSynthesis.pending || window.speechSynthesis.speaking) {
+        console.log("Tab became visible, resetting speech synthesis");
+        window.speechSynthesis.cancel();
+      }
     }
   });
-}
-
-// Fungsi untuk mengaktifkan/menonaktifkan suara
-function toggleSound() {
-  soundEnabled = !soundEnabled;
-
-  // Update icon
-  const soundIcon = document.querySelector("#toggleSound + label i");
-  if (soundIcon) {
-    soundIcon.className = soundEnabled ? "fas fa-volume-up" : "fas fa-volume-mute";
-  }
-
-  // Simpan preferensi di localStorage
-  localStorage.setItem("soundEnabled", soundEnabled);
-
-  // Notifikasi
-  showScanResult("info", `Suara notifikasi ${soundEnabled ? "diaktifkan" : "dinonaktifkan"}`);
-
-  // Jika diaktifkan, putar suara konfirmasi
-  if (soundEnabled) {
-    const confirmUtterance = new SpeechSynthesisUtterance("Suara notifikasi diaktifkan");
-    confirmUtterance.lang = "id-ID";
-    confirmUtterance.volume = 0.8;
-
-    if (indonesianVoice) {
-      confirmUtterance.voice = indonesianVoice;
-    }
-
-    window.speechSynthesis.speak(confirmUtterance);
-  }
-}
-
-async function processBarcode() {
-  const barcode = document.getElementById("barcodeInput").value.trim();
- // Tampilkan pesan error untuk input manual
- showScanResult("error", "Gunakan scanner barcode! Input manual tidak diizinkan.");
- playNotificationSound('error', '');
- 
- // Clear input
- document.getElementById("barcodeInput").value = "";
- document.getElementById("barcodeInput").focus();
-  if (!barcode) {
-    showScanResult("error", "Barcode tidak boleh kosong!");
-    playNotificationSound('error', '');
-    return;
-  }
-
-  try {
-    // Check if employee exists in cache first to reduce Firestore reads
-    let employee = employeeCache.get(barcode);
+  
+  // Bug di Safari: speechSynthesis memerlukan interaksi pengguna
+  if (isSafari && window.speechSynthesis) {
+    console.log("Applying Safari-specific speech synthesis fix");
     
-    // If not in cache, fetch from Firestore
-    if (!employee) {
-      employee = await findEmployeeByBarcode(barcode);
+    // Tambahkan event listener untuk interaksi pengguna pertama
+    const initSafariSpeech = () => {
+      // Buat utterance kosong untuk "mengaktifkan" speechSynthesis
+      const utterance = new SpeechSynthesisUtterance("");
+      utterance.volume = 0; // Tidak terdengar
+      window.speechSynthesis.speak(utterance);
       
-      // Add to cache if found
-      if (employee && employee.barcode) {
-        employeeCache.set(employee.barcode, employee);
-      }
-    }
-
-    if (!employee) {
-      showScanResult("error", "Barcode tidak valid!");
-      playNotificationSound('not-found', '');
-      return;
-    }
-
-    // Get scan type (in/out)
-    const scanType = document.querySelector('input[name="scanType"]:checked').value;
+      // Hapus event listener setelah digunakan
+      document.removeEventListener('click', initSafariSpeech);
+    };
     
-    // Get selected shift
-    const selectedShift = document.querySelector('input[name="shiftOption"]:checked').value;
-
-    // Current time
-    const now = new Date();
-    const timeString = now.toTimeString().split(" ")[0];
-    
-    // PERBAIKAN: Gunakan tanggal dari timestamp untuk konsistensi
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
-
-
-    if (scanType === "in") {
-      // Check if already checked in
-      const existingRecord = attendanceRecords.find(
-        (record) => record.employeeId === employee.employeeId && record.date === today
-      );
-
-      if (existingRecord && existingRecord.timeIn) {
-        showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
-        playNotificationSound('already-in', employee.name);
-        return;
-      }
-
-      // Use employee's default type and shift from their profile
-      const employeeType = employee.type || "staff";
-      const shift = selectedShift;
-
-      // Check if late based on employee type and shift
-      const isLate = checkIfLate(timeString, employeeType, shift);
-
-      // Calculate late minutes if employee is late
-      let lateMinutes = 0;
-      if (isLate) {
-        const currentTime = new Date(`1970-01-01T${timeString}`);
-        const thresholdTime = getThresholdTime(employeeType, shift);
-        lateMinutes = Math.floor((currentTime - thresholdTime) / (1000 * 60));
-      }
-
-      // Record attendance
-      const attendance = {
-        employeeId: employee.employeeId,
-        name: employee.name,
-        type: employeeType,
-        shift: shift,
-        timeIn: now,
-        status: isLate ? "Terlambat" : "Tepat Waktu",
-        lateMinutes: isLate ? lateMinutes : 0,
-        date: today,
-      };
-      await recordAttendance(attendance);
-
-      showScanResult(
-        "success",
-        `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
-          isLate ? `Terlambat ${lateMinutes} menit` : "Tepat Waktu"
-        }`
-      );
-      
-      // Play notification sound based on status
-      if (isLate) {
-        playNotificationSound('late', employee.name);
-      } else {
-        playNotificationSound('success-in', employee.name);
-      }
-
-      // Reload attendance data
-      await loadTodayAttendance();
-    } else {
-      // Scan out logic
-      const existingRecord = attendanceRecords.find(
-        (record) => record.employeeId === employee.employeeId && record.date === today
-      );
-
-      if (!existingRecord) {
-        showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
-        playNotificationSound('error', '');
-        return;
-      }
-
-      if (existingRecord.timeOut) {
-        showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
-        playNotificationSound('already-out', employee.name);
-        return;
-      }
-
-      // Update attendance with checkout time
-      await updateAttendanceOut(existingRecord.id, now);
-
-      showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
-      playNotificationSound('success-out', employee.name);
-
-      // Reload attendance data
-      await loadTodayAttendance();
-    }
-  } catch (error) {
-    console.error("Error scanning barcode:", error);
-    showScanResult("error", "Terjadi kesalahan saat memproses barcode");
-    playNotificationSound('error', '');
+    document.addEventListener('click', initSafariSpeech, { once: true });
   }
-
-  // Clear input
-  document.getElementById("barcodeInput").value = "";
-  document.getElementById("barcodeInput").focus();
-  
-  // Log tanggal absensi yang disimpan untuk debugging
-  const attendanceDate = today;
-}
-
-// Add this function to your file
-function showAlert(type, message, autoHide = true) {
-  // Create alert element if it doesn't exist
-  let alertContainer = document.getElementById("alertContainer");
-  if (!alertContainer) {
-    alertContainer = document.createElement("div");
-    alertContainer.id = "alertContainer";
-    alertContainer.className = "alert-container";
-    document.body.appendChild(alertContainer);
-  }
-
-  // Create the alert
-  const alertEl = document.createElement("div");
-  alertEl.className = `alert alert-${type} alert-dismissible fade show`;
-  alertEl.innerHTML = `
-    ${message}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  `;
-  
-  // Add to container
-  alertContainer.appendChild(alertEl);
-  
-  // Auto hide after 5 seconds if autoHide is true
-  if (autoHide) {
-    setTimeout(() => {
-      alertEl.classList.remove("show");
-      setTimeout(() => alertEl.remove(), 300);
-    }, 5000);
-  }
-  
-  return alertEl;
-}
-
-// Add a function to hide alerts
-function hideAlert() {
-  const alerts = document.querySelectorAll(".alert");
-  alerts.forEach(alert => {
-    alert.classList.remove("show");
-    setTimeout(() => alert.remove(), 300);
-  });
 }
 
 
 // Fungsi untuk memuat data kehadiran dan izin hari ini
 async function loadTodayAttendance(forceRefresh = false) {
   try {
-    // Gunakan format tanggal yang konsisten
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`; // Format YYYY-MM-DD
-
-    // Tampilkan loading indicator
-    const leaveCountEl = document.getElementById("leaveCount");
-    if (leaveCountEl) {
-      leaveCountEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    const today = getLocalDateString();
+    
+    // Cek apakah perlu refresh stats berdasarkan TTL atau forceRefresh
+    const needStatsRefresh = forceRefresh || (Date.now() - statsLastUpdated > STATS_CACHE_TTL);
+    
+    // Jika tidak perlu refresh dan data sudah ada di cache, gunakan data cache
+    if (!needStatsRefresh && attendanceCache.has(today) && leaveRequests.length > 0) {
+      console.log("Using cached attendance and leave data");
+      attendanceRecords = attendanceCache.get(today);
+      // Update UI dengan data cache
+      updateStats();
+      return;
     }
-
-    // Load attendance data
-    attendanceRecords = await getTodayAttendance();
-
-    // PENTING: Gunakan fungsi baru yang mengambil SEMUA izin untuk hari ini
-    try {
-      leaveRequests = await getAllLeaveRequestsForDate(today, forceRefresh);    
+    
+    // Tampilkan loading indicator hanya jika akan refresh data
+    if (needStatsRefresh) {
+      const leaveCountEl = document.getElementById("leaveCount");
+      if (leaveCountEl) {
+        leaveCountEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      }
       
-    } catch (leaveError) {
-      console.error("Error loading leave requests:", leaveError);
-      leaveRequests = [];
+      // Load attendance data
+      attendanceRecords = await getTodayAttendance();
+
+      // Load leave requests
+      try {
+        leaveRequests = await getAllLeaveRequestsForDate(today, forceRefresh);    
+      } catch (leaveError) {
+        console.error("Error loading leave requests:", leaveError);
+        leaveRequests = [];
+      }
+
+      // Update UI
+      updateStats();
+
+      // Cache attendance data
+      attendanceCache.set(today, [...attendanceRecords]);
+      
+      // Update timestamp cache
+      statsLastUpdated = Date.now();
     }
-
-    // Update UI
-    updateStats();
-
-    // Cache attendance data
-    attendanceCache.set(today, [...attendanceRecords]);
     
     // Tampilkan pesan jika refresh dipaksa
-    if (forceRefresh) {
-      // Use showScanResult instead of showAlert if showAlert is not available
+    if (forceRefresh && needStatsRefresh) {
       if (typeof showAlert === 'function') {
         showAlert("success", "Data berhasil diperbarui dari server", 3000);
       } else {
@@ -871,8 +885,13 @@ async function loadTodayAttendance(forceRefresh = false) {
   }
 }
 
-
-
+// Tambahkan fungsi untuk memicu event saat ada scan baru
+function notifyAttendanceUpdate(date) {
+  const event = new CustomEvent('attendanceScanUpdated', {
+    detail: { date: date, timestamp: Date.now() }
+  });
+  window.dispatchEvent(event);
+}
 
 
 // Tambahkan fungsi untuk menampilkan informasi tanggal
@@ -895,60 +914,68 @@ function updateDateInfo() {
 }
 
 function updateStats() {
-  // Gunakan format tanggal yang konsisten
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const today = `${year}-${month}-${day}`; // Format YYYY-MM-DD
+  // Gunakan fungsi helper untuk mendapatkan tanggal hari ini
+  const today = getLocalDateString();
   
-  // Filter dengan pendekatan yang lebih fleksibel
-  const todayRecords = attendanceRecords.filter(record => {
-    // Jika record.date adalah string, bandingkan langsung
-    if (typeof record.date === 'string') {
-      const result = record.date === today;
-      return result;
-    }
+  // PERBAIKAN: Gunakan data dari cache jika tersedia
+  let todayRecords;
+  
+  // Cek apakah data hari ini tersedia di cache
+  if (attendanceCache.has(today)) {
+    console.log("Using cached attendance data for stats");
+    todayRecords = attendanceCache.get(today);
+  } else {
+    // Jika tidak ada di cache, gunakan data dari variabel global
+    // dan filter berdasarkan tanggal
+    todayRecords = attendanceRecords.filter(record => {
+      // Jika record.date adalah string, bandingkan langsung
+      if (typeof record.date === 'string') {
+        return record.date === today;
+      }
+      
+      // Jika record.date adalah Date, konversi ke string format YYYY-MM-DD
+      if (record.date instanceof Date) {
+        const recordDateStr = getLocalDateStringFromDate(record.date);
+        return recordDateStr === today;
+      }
+      
+      // Fallback: coba konversi ke string dan bandingkan
+      return String(record.date) === today;
+    });
     
-    // Jika record.date adalah Date, konversi ke string format YYYY-MM-DD
-    if (record.date instanceof Date) {
-      const recordDateStr = `${record.date.getFullYear()}-${String(record.date.getMonth() + 1).padStart(2, '0')}-${String(record.date.getDate()).padStart(2, '0')}`;
-      const result = recordDateStr === today;
-      return result;
-    }
-    
-    // Fallback: coba konversi ke string dan bandingkan
-    const recordDateStr = String(record.date);
-    const result = recordDateStr === today;
-    return result;
-  });
+    // Simpan hasil filter ke cache untuk penggunaan berikutnya
+    attendanceCache.set(today, todayRecords);
+  }
 
+  // Hitung statistik dari data yang sudah difilter
   const presentCount = todayRecords.length;
   const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
   
-   // PENTING: Hitung semua izin, termasuk yang pending
-   const leaveCount = Array.isArray(leaveRequests) ? leaveRequests.length : 0;
+  // PERBAIKAN: Gunakan data izin yang sudah di-cache
+  // Tidak perlu query baru ke Firestore
+  const leaveCount = Array.isArray(leaveRequests) ? leaveRequests.length : 0;
+  
+  // Hitung berdasarkan status (untuk informasi tambahan)
+  // Ini tidak memerlukan query baru ke Firestore
+  const approvedLeaves = Array.isArray(leaveRequests) 
+    ? leaveRequests.filter(leave => 
+        leave.status === "Approved" || 
+        leave.status === "Disetujui"
+      ).length 
+    : 0;
+  
+  const pendingLeaves = Array.isArray(leaveRequests)
+    ? leaveRequests.filter(leave => 
+        !leave.status || 
+        leave.status === "Pending"
+      ).length
+    : 0;
      
-   // Hitung berdasarkan status (untuk informasi tambahan)
-   const approvedLeaves = Array.isArray(leaveRequests) 
-     ? leaveRequests.filter(leave => 
-         leave.status === "Approved" || 
-         leave.status === "Disetujui"
-       ).length 
-     : 0;
-   
-   const pendingLeaves = Array.isArray(leaveRequests)
-     ? leaveRequests.filter(leave => 
-         !leave.status || 
-         leave.status === "Pending"
-       ).length
-     : 0;
-      
-   // Update UI
-   const leaveCountEl = document.getElementById("leaveCount");
-   if (leaveCountEl) {
-     leaveCountEl.textContent = leaveCount;
-   }
+  // Update UI
+  const leaveCountEl = document.getElementById("leaveCount");
+  if (leaveCountEl) {
+    leaveCountEl.textContent = leaveCount;
+  }
 
   // Update UI elements if they exist
   const presentCountEl = document.getElementById("presentCount");
@@ -962,19 +989,22 @@ function updateStats() {
   if (lateCountEl) {
     lateCountEl.textContent = lateCount;
   }
+  
   // Update tanggal absensi
   updateDateInfo();
 }
 
-
-
+// Helper function untuk mendapatkan string tanggal dari objek Date
+function getLocalDateStringFromDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // Inisialisasi event listeners saat DOM sudah siap
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    // Periksa ketersediaan audio pembuka
-    await checkOpeningAudio();
-
     // Inisialisasi Web Speech API
     initSpeechSynthesis();
 
@@ -988,11 +1018,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       preloadAudio.load();
     }
 
-        // Atur radio button berdasarkan waktu saat ini
-        setRadioButtonsByTime();
+    // Atur radio button berdasarkan waktu saat ini
+    setRadioButtonsByTime();
     
-        // Atur timer untuk memperbarui radio button setiap menit
-        setInterval(setRadioButtonsByTime, 60000);
+    // Atur timer untuk memperbarui radio button setiap menit
+    setInterval(setRadioButtonsByTime, 60000);
     
     // Setup barcode scanner detection - ini adalah satu-satunya setup yang diperlukan
     setupBarcodeScanner();
@@ -1030,8 +1060,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
+    // PERBAIKAN: Tambahkan event listener untuk memperbarui data saat ada perubahan
+    window.addEventListener('attendanceScanUpdated', function(event) {
+      // Perbarui stats tanpa melakukan query baru ke Firestore
+      if (event.detail && event.detail.date === getLocalDateString()) {
+        console.log('Attendance scan updated, refreshing stats');
+        // Hanya perbarui UI tanpa query baru
+        updateStats();
+      }
+    });
+    
     // Load data
     await Promise.all([loadEmployees(), loadTodayAttendance()]);
+
+    // PERBAIKAN: Bersihkan cache yang sudah tidak relevan
+    cleanupAttendanceCache();
 
     // Fokus pada input barcode setelah semua inisialisasi
     const barcodeInput = document.getElementById("barcodeInput");
@@ -1041,6 +1084,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
+  
   // Tambahkan event listener untuk tombol refresh
   const refreshBtn = document.getElementById("refreshLeaveData");
   if (refreshBtn) {
@@ -1059,6 +1103,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+// PERBAIKAN: Tambahkan fungsi untuk membersihkan cache yang sudah tidak relevan
+function cleanupAttendanceCache() {
+  try {
+    const now = Date.now();
+    const today = getLocalDateString();
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoStr = getLocalDateStringFromDate(oneWeekAgo);
+    
+    // Hapus cache untuk tanggal yang lebih lama dari seminggu yang lalu
+    for (const [key, value] of cacheMeta.entries()) {
+      // Jika key adalah tanggal (format YYYY-MM-DD) dan lebih lama dari seminggu
+      if (key.match(/^\d{4}-\d{2}-\d{2}$/) && key < oneWeekAgoStr && key !== today) {
+        console.log(`Removing old cache for date: ${key}`);
+        cacheMeta.delete(key);
+        attendanceCache.delete(key);
+      }
+    }
+    
+    // Simpan perubahan ke localStorage
+    saveAttendanceCacheToStorage();
+    
+    console.log("Attendance cache cleanup completed");
+    return true;
+  } catch (error) {
+    console.error("Error cleaning up attendance cache:", error);
+    return false;
+  }
+}
+
 
 // Helper function to format employee type
 function formatEmployeeType(type) {
@@ -1070,20 +1144,103 @@ function formatShift(shift) {
   return shift === "morning" ? "Pagi" : "Sore";
 }
 
-// Show scan result message
-function showScanResult(type, message) {
-  const scanResult = document.getElementById("scanResult");
-  if (!scanResult) return;
-
-  scanResult.className = "scan-result " + type;
-  scanResult.innerHTML = message;
-  scanResult.style.display = "block";
-
-  // Hide result after 3 seconds
-  setTimeout(() => {
-    scanResult.style.display = "none";
-  }, 3000);
+/**
+ * Fungsi terpadu untuk menampilkan pesan hasil scan atau alert
+ * @param {string} type - Tipe pesan: "success", "error", "warning", "info"
+ * @param {string} message - Pesan yang akan ditampilkan
+ * @param {boolean} isAlert - Apakah pesan ditampilkan sebagai alert (true) atau scan result (false)
+ * @param {boolean} autoHide - Apakah pesan otomatis disembunyikan setelah beberapa detik
+ * @param {number} duration - Durasi tampilan dalam milidetik
+ */
+function showScanResult(type, message, isAlert = false, autoHide = true, duration = 3000) {
+  try {
+    if (!isAlert) {
+      // Tampilkan pesan di area scan result
+      const scanResult = document.getElementById("scanResult");
+      if (!scanResult) return;
+      
+      // Set class dan pesan
+      scanResult.className = "scan-result " + type;
+      scanResult.innerHTML = message;
+      scanResult.style.display = "block";
+      
+      // Auto hide jika diperlukan
+      if (autoHide) {
+        setTimeout(() => {
+          scanResult.style.display = "none";
+        }, duration);
+      }
+    } else {
+      // Tampilkan sebagai alert umum
+      let alertContainer = document.getElementById("alertContainer");
+      
+      // Buat container jika belum ada
+      if (!alertContainer) {
+        alertContainer = document.createElement("div");
+        alertContainer.id = "alertContainer";
+        alertContainer.className = "alert-container";
+        document.body.appendChild(alertContainer);
+      }
+      
+      // Buat alert element
+      const alertEl = document.createElement("div");
+      alertEl.className = `alert alert-${type} alert-dismissible fade show`;
+      alertEl.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      
+      // Tambahkan ke container
+      alertContainer.appendChild(alertEl);
+      
+      // Auto hide jika diperlukan
+      if (autoHide) {
+        setTimeout(() => {
+          alertEl.classList.remove("show");
+          setTimeout(() => alertEl.remove(), 300);
+        }, duration);
+      }
+      
+      return alertEl;
+    }
+  } catch (error) {
+    console.error("Error showing message:", error);
+  }
 }
+
+/**
+ * Fungsi untuk menyembunyikan pesan
+ * @param {boolean} isAlert - Apakah yang disembunyikan adalah alert (true) atau scan result (false)
+ */
+function hideScanResult(isAlert = false) {
+  try {
+    if (!isAlert) {
+      const scanResult = document.getElementById("scanResult");
+      if (scanResult) {
+        scanResult.style.display = "none";
+      }
+    } else {
+      const alerts = document.querySelectorAll(".alert");
+      alerts.forEach(alert => {
+        alert.classList.remove("show");
+        setTimeout(() => alert.remove(), 300);
+      });
+    }
+  } catch (error) {
+    console.error("Error hiding messages:", error);
+  }
+}
+
+// Alias untuk showAlert untuk kompatibilitas dengan kode yang sudah ada
+function showAlert(type, message, autoHide = true, duration = 5000) {
+  return showScanResult(type, message, true, autoHide, duration);
+}
+
+// Alias untuk hideAlert untuk kompatibilitas dengan kode yang sudah ada
+function hideAlert() {
+  hideScanResult(true);
+}
+
 
 // Get threshold time for lateness calculation
 function getThresholdTime(employeeType, shift) {
@@ -1120,7 +1277,8 @@ function checkIfLate(timeString, employeeType, shift) {
 // Load employees and cache them
 async function loadEmployees() {
   try {
-    if (employeeCache.size === 0) {
+    // Periksa apakah cache perlu diperbarui berdasarkan TTL
+    if (employeeCache.size === 0 || shouldUpdateEmployeeCache()) {
       employees = await getEmployees();
 
       // Cache employees by barcode for faster lookup
@@ -1129,11 +1287,15 @@ async function loadEmployees() {
           employeeCache.set(employee.barcode, employee);
         }
       });
+      
+      // Update timestamp
+      employeeCacheTimestamp = Date.now();
     }
   } catch (error) {
     console.error("Error loading employees:", error);
   }
 }
 
+
 // Export fungsi dan cache yang diperlukan
-export { loadTodayAttendance, processBarcode, attendanceCache, employeeCache };
+export { loadTodayAttendance,attendanceCache, employeeCache };

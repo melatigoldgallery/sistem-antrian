@@ -172,7 +172,8 @@ export function getLocalDateString() {
   
   return formattedDate;
 }
-// Modifikasi saveAttendanceCacheToStorage
+
+// Fungsi untuk menyimpan cache ke localStorage dengan kompresi
 export function saveAttendanceCacheToStorage() {
   try {
     // Konversi Map ke objek untuk localStorage
@@ -187,45 +188,64 @@ export function saveAttendanceCacheToStorage() {
     }
     
     // Kompresi data sebelum disimpan
-    localStorage.setItem('attendanceCache', compressData(cacheObj));
-    localStorage.setItem('attendanceCacheMeta', compressData(metaObj));
+    const compressedCache = compressData(cacheObj);
+    const compressedMeta = compressData(metaObj);
+    
+    // Simpan data terkompresi ke localStorage
+    localStorage.setItem("attendanceCache", compressedCache);
+    localStorage.setItem("attendanceCacheMeta", compressedMeta);
+    
+    // Simpan timestamp terakhir update
+    localStorage.setItem("attendanceCacheLastSaved", Date.now().toString());
+    
+    console.log("Attendance cache saved to localStorage with compression");
   } catch (error) {
-    console.error("Error saving cache to localStorage:", error);
+    console.error("Error saving attendance cache to localStorage:", error);
+    
+    // Fallback: simpan tanpa kompresi jika terjadi error
+    try {
+      localStorage.setItem("attendanceCache", JSON.stringify(Object.fromEntries(attendanceCache)));
+      localStorage.setItem("attendanceCacheMeta", JSON.stringify(Object.fromEntries(cacheMeta)));
+      console.log("Attendance cache saved to localStorage without compression");
+    } catch (fallbackError) {
+      console.error("Failed to save cache even without compression:", fallbackError);
+    }
   }
 }
 
-// Modifikasi loadAttendanceCacheFromStorage
+// Fungsi untuk memuat cache dari localStorage dengan dekompresi
 export function loadAttendanceCacheFromStorage() {
   try {
-    const compressedCache = localStorage.getItem('attendanceCache');
-    const compressedMeta = localStorage.getItem('attendanceCacheMeta');
+    const compressedCache = localStorage.getItem("attendanceCache");
+    const compressedMeta = localStorage.getItem("attendanceCacheMeta");
     
     if (compressedCache && compressedMeta) {
       // Dekompresi data
       const cacheObj = decompressData(compressedCache);
       const metaObj = decompressData(compressedMeta);
       
-      if (!cacheObj || !metaObj) {
-        console.error("Failed to decompress cache data");
-        return;
+      if (cacheObj && metaObj) {
+        // Reset cache sebelum memuat data baru
+        attendanceCache.clear();
+        cacheMeta.clear();
+        
+        // Muat data ke Map
+        for (const [key, value] of Object.entries(cacheObj)) {
+          attendanceCache.set(key, value);
+        }
+        
+        for (const [key, value] of Object.entries(metaObj)) {
+          cacheMeta.set(key, value);
+        }
+        
+        console.log("Attendance cache loaded from localStorage with decompression");
+        return true;
       }
-      
-      // Konversi objek kembali ke Map
-      attendanceCache.clear();
-      cacheMeta.clear();
-      
-      for (const [key, value] of Object.entries(cacheObj)) {
-        attendanceCache.set(key, value);
-      }
-      
-      for (const [key, value] of Object.entries(metaObj)) {
-        cacheMeta.set(key, value);
-      }
-      
-      console.log("Attendance cache loaded from localStorage (decompressed)");
     }
+    return false;
   } catch (error) {
-    console.error("Error loading cache from localStorage:", error);
+    console.error("Error loading attendance cache from localStorage:", error);
+    return false;
   }
 }
 
@@ -235,24 +255,95 @@ function compressData(data) {
     // Konversi data ke string JSON
     const jsonString = JSON.stringify(data);
     
-    // Kompresi sederhana dengan menghapus spasi berlebih
-    return jsonString.replace(/\s+/g, '');
+    // Gunakan algoritma kompresi sederhana: LZW-like
+    let compressed = '';
+    let dictionary = {};
+    let phrase = '';
+    let code = 256;
+    
+    // Inisialisasi dictionary dengan karakter ASCII
+    for (let i = 0; i < 256; i++) {
+      dictionary[String.fromCharCode(i)] = i;
+    }
+    
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString.charAt(i);
+      const phraseChar = phrase + char;
+      
+      if (dictionary[phraseChar] !== undefined) {
+        phrase = phraseChar;
+      } else {
+        compressed += String.fromCharCode(dictionary[phrase]);
+        dictionary[phraseChar] = code++;
+        phrase = char;
+      }
+    }
+    
+    // Output the last phrase
+    if (phrase !== '') {
+      compressed += String.fromCharCode(dictionary[phrase]);
+    }
+    
+    return compressed;
   } catch (error) {
     console.error("Error compressing data:", error);
-    return JSON.stringify(data);
+    // Fallback to simple compression if advanced compression fails
+    return JSON.stringify(data).replace(/\s+/g, "");
   }
 }
 
 // Fungsi untuk mendekompresi data dari localStorage
 function decompressData(compressedData) {
   try {
-    // Parse string JSON yang telah dikompresi
-    return JSON.parse(compressedData);
+    // Cek apakah data menggunakan kompresi lanjutan atau sederhana
+    if (compressedData.startsWith('{') || compressedData.startsWith('[')) {
+      // Data menggunakan kompresi sederhana atau tidak dikompresi
+      return JSON.parse(compressedData);
+    }
+    
+    // Dekompresi untuk algoritma LZW-like
+    let dictionary = {};
+    let phrase = compressedData.charAt(0);
+    let result = phrase;
+    let code = 256;
+    let currChar = '';
+    
+    // Inisialisasi dictionary dengan karakter ASCII
+    for (let i = 0; i < 256; i++) {
+      dictionary[i] = String.fromCharCode(i);
+    }
+    
+    for (let i = 1; i < compressedData.length; i++) {
+      const currCode = compressedData.charCodeAt(i);
+      
+      if (currCode < 256) {
+        currChar = String.fromCharCode(currCode);
+      } else if (dictionary[currCode] !== undefined) {
+        currChar = dictionary[currCode];
+      } else {
+        currChar = phrase + phrase.charAt(0);
+      }
+      
+      result += currChar;
+      dictionary[code++] = phrase + currChar.charAt(0);
+      phrase = currChar;
+    }
+    
+    // Parse the decompressed JSON string
+    return JSON.parse(result);
   } catch (error) {
     console.error("Error decompressing data:", error);
-    return null;
+    
+    // Fallback: try to parse as regular JSON
+    try {
+      return JSON.parse(compressedData);
+    } catch (parseError) {
+      console.error("Failed to parse decompressed data:", parseError);
+      return null;
+    }
   }
 }
+
 // Tambahkan fungsi untuk membersihkan cache lama
 export function cleanupOldCache() {
   const now = Date.now();
@@ -448,45 +539,62 @@ export async function updateAttendanceOut(id, timeOut) {
   }
 }
 
-// Get today's attendance
+// Modifikasi getTodayAttendance untuk mencegah duplikasi
 export async function getTodayAttendance() {
   try {
     const today = getLocalDateString();
     
-    // Check if data is in cache and still valid
+    // Cek apakah data sudah ada di cache dan masih valid
     if (attendanceCache.has(today) && !shouldUpdateCache(today)) {
       console.log("Using cached attendance data for today");
       return attendanceCache.get(today);
     }
     
     console.log("Fetching today's attendance from Firestore");
+    
+    // Query Firestore untuk data hari ini
     const attendanceCollection = collection(db, "attendance");
-    const q = query(attendanceCollection, where("date", "==", today), orderBy("timeIn", "desc"));
-
+    const q = query(
+      attendanceCollection, 
+      where("date", "==", today), 
+      orderBy("timeIn", "desc")
+    );
+    
     const snapshot = await getDocs(q);
     
-    const attendanceData = snapshot.docs.map((doc) => {
+    // Konversi snapshot ke array dengan pencegahan duplikasi
+    const records = [];
+    const employeeIds = new Set(); // Untuk mencegah duplikasi
+    
+    snapshot.forEach(doc => {
       const data = doc.data();
-      return {
+      const record = {
         id: doc.id,
         ...data,
         // Convert Firestore Timestamp to JS Date
         timeIn: data.timeIn ? data.timeIn.toDate() : null,
         timeOut: data.timeOut ? data.timeOut.toDate() : null,
       };
+      
+      // Cek duplikasi berdasarkan employeeId
+      if (!employeeIds.has(data.employeeId)) {
+        employeeIds.add(data.employeeId);
+        records.push(record);
+      } else {
+        console.warn(`Duplicate attendance record found for employee ${data.employeeId} on ${today}`);
+      }
     });
     
     // Store in cache with timestamp
-    attendanceCache.set(today, attendanceData);
+    attendanceCache.set(today, records);
     updateCacheTimestamp(today);
     saveAttendanceCacheToStorage();
     
-    return attendanceData;
+    return records;
   } catch (error) {
     console.error("Error getting today's attendance:", error);
     
     // Fallback to cache if available
-    const today = getLocalDateString();
     if (attendanceCache.has(today)) {
       console.log("Using cached data as fallback due to error");
       return attendanceCache.get(today);
@@ -496,42 +604,144 @@ export async function getTodayAttendance() {
   }
 }
 
-
-// Get attendance by date range
-export async function getAttendanceByDateRange(startDate, endDate) {
+/**
+ * Mendapatkan data kehadiran berdasarkan rentang tanggal dengan optimasi cache dan batching
+ * @param {string} startDate - Tanggal awal dalam format YYYY-MM-DD
+ * @param {string} endDate - Tanggal akhir dalam format YYYY-MM-DD
+ * @param {number} page - Halaman untuk pagination
+ * @param {number} limit - Jumlah data per halaman
+ * @param {string|null} shift - Filter berdasarkan shift (morning/afternoon/all/null)
+ * @returns {Promise<Object>} - Object berisi data kehadiran dan info pagination
+ */
+export async function getAttendanceByDateRange(startDate, endDate, page = 1, limit = 100, shift = null) {
   try {
-    const cacheKey = `${startDate}_${endDate}`;
+    // Buat cache key berdasarkan parameter
+    const cacheKey = shift ? `range_${startDate}_${endDate}_${shift}` : `range_${startDate}_${endDate}`;
     
     // Cek apakah rentang tanggal mencakup hari ini
     const today = getLocalDateString();
     const includesCurrentDay = (startDate <= today && today <= endDate);
     
-    // Jika tidak mencakup hari ini dan cache masih valid, gunakan cache
-    if (!includesCurrentDay && cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
+    // Cek apakah rentang tanggal terlalu besar (lebih dari 30 hari)
+    const daysDiff = calculateDateDifference(startDate, endDate);
+    const isLargeRange = daysDiff > 30;
+    
+    // Jika tidak mencakup hari ini, tidak terlalu besar, dan cache masih valid, gunakan cache
+    if (!includesCurrentDay && !isLargeRange && cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
       console.log(`Using cached attendance data for range ${startDate} to ${endDate}`);
-      return getCachedAttendanceByDateRange(startDate, endDate);
+      
+      // Ambil data dari cache dan terapkan pagination di memory
+      const cachedData = getCachedAttendanceByDateRange(startDate, endDate, shift);
+      const startIndex = (page - 1) * limit;
+      const paginatedData = cachedData.slice(startIndex, startIndex + limit);
+      
+      return {
+        attendanceRecords: paginatedData,
+        totalPages: Math.ceil(cachedData.length / limit),
+        currentPage: page,
+        totalRecords: cachedData.length,
+        fromCache: true
+      };
     }
     
-    console.log(`Fetching attendance data for range ${startDate} to ${endDate}`);
+    // Jika rentang tanggal terlalu besar, gunakan batching
+    if (isLargeRange) {
+      console.log(`Large date range detected (${daysDiff} days), using batch operations`);
+      return await getAttendanceByDateRangeBatched(startDate, endDate, page, limit, shift);
+    }
+    
+    console.log(`Fetching attendance data for range ${startDate} to ${endDate}, limit: ${limit}, page: ${page}`);
+    
+    // Cek apakah ada data parsial di cache yang bisa digunakan
+    const partialCacheData = getPartialCachedData(startDate, endDate, shift);
+    
+    // Jika semua tanggal dalam rentang sudah ada di cache dan valid, gunakan cache
+    if (partialCacheData.complete && !includesCurrentDay) {
+      console.log(`Using complete partial cache for range ${startDate} to ${endDate}`);
+      
+      // Gabungkan dan urutkan data
+      const combinedData = partialCacheData.data;
+      combinedData.sort((a, b) => {
+        // Sort by date desc, then by timeIn desc
+        const dateCompare = new Date(b.date) - new Date(a.date);
+        if (dateCompare !== 0) return dateCompare;
+        
+        // If dates are equal, compare timeIn
+        const timeA = a.timeIn instanceof Date ? a.timeIn : new Date(a.timeIn);
+        const timeB = b.timeIn instanceof Date ? b.timeIn : new Date(b.timeIn);
+        return timeB - timeA;
+      });
+      
+      // Terapkan pagination
+      const startIndex = (page - 1) * limit;
+      const paginatedData = combinedData.slice(startIndex, startIndex + limit);
+      
+      // Update range cache untuk mempercepat query berikutnya
+      attendanceCache.set(cacheKey, combinedData);
+      updateCacheTimestamp(cacheKey);
+      saveAttendanceCacheToStorage();
+      
+      return {
+        attendanceRecords: paginatedData,
+        totalPages: Math.ceil(combinedData.length / limit),
+        currentPage: page,
+        totalRecords: combinedData.length,
+        fromCache: true
+      };
+    }
+    
+    // Jika ada tanggal yang tidak ada di cache atau tidak valid, ambil dari Firestore
+    // Buat query dasar
     const attendanceCollection = collection(db, "attendance");
-    const q = query(
+    let baseQuery = query(
       attendanceCollection,
       where("date", ">=", startDate),
       where("date", "<=", endDate),
       orderBy("date", "desc"),
       orderBy("timeIn", "desc")
     );
-
-    const snapshot = await getDocs(q);
-    const attendanceData = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamp to JS Date
-      timeIn: doc.data().timeIn.toDate(),
-      timeOut: doc.data().timeOut ? doc.data().timeOut.toDate() : null,
-    }));
     
-    // Update cache for each date
+    // Tambahkan filter shift jika diperlukan
+    if (shift && shift !== "all") {
+      baseQuery = query(
+        baseQuery,
+        where("shift", "==", shift)
+      );
+    }
+    
+    // Tambahkan limit untuk pagination
+    const paginatedQuery = query(baseQuery, limit(limit));
+    
+    // Eksekusi query
+    const snapshot = await getDocs(paginatedQuery);
+    
+    // Konversi snapshot ke array dengan pencegahan duplikasi
+    const attendanceData = [];
+    const employeeIdDateMap = new Map(); // Map untuk mencegah duplikasi (employeeId+date)
+    
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const record = {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to JS Date
+        timeIn: data.timeIn ? data.timeIn.toDate() : null,
+        timeOut: data.timeOut ? data.timeOut.toDate() : null,
+      };
+      
+      // Buat key unik untuk setiap kombinasi employeeId dan date
+      const uniqueKey = `${data.employeeId}_${data.date}`;
+      
+      // Cek apakah sudah ada record dengan employeeId dan date yang sama
+      if (!employeeIdDateMap.has(uniqueKey)) {
+        employeeIdDateMap.set(uniqueKey, record);
+        attendanceData.push(record);
+      } else {
+        console.warn(`Duplicate record found for ${data.employeeId} on ${data.date}`);
+      }
+    });
+    
+    // Update cache untuk setiap tanggal
     const dateMap = {};
     attendanceData.forEach(record => {
       const dateKey = record.date;
@@ -541,89 +751,498 @@ export async function getAttendanceByDateRange(startDate, endDate) {
     
     // Update individual date caches
     for (const [dateKey, records] of Object.entries(dateMap)) {
-      attendanceCache.set(dateKey, records);
+      // Jika sudah ada data di cache untuk tanggal ini, gabungkan
+      if (attendanceCache.has(dateKey)) {
+        const existingRecords = attendanceCache.get(dateKey);
+        const mergedRecords = mergeAttendanceRecords(existingRecords, records);
+        attendanceCache.set(dateKey, mergedRecords);
+      } else {
+        attendanceCache.set(dateKey, records);
+      }
       updateCacheTimestamp(dateKey);
     }
     
-    // Update range cache
+    // Update range cache dengan menggabungkan data baru dan data cache yang valid
+    if (partialCacheData.data.length > 0) {
+      // Gabungkan data baru dengan data cache yang valid
+      const allRecords = mergeAttendanceRecords(partialCacheData.data, attendanceData);
+      attendanceCache.set(cacheKey, allRecords);
+    } else {
+      attendanceCache.set(cacheKey, attendanceData);
+    }
+    
     updateCacheTimestamp(cacheKey);
     saveAttendanceCacheToStorage();
     
-    return attendanceData;
+    return {
+      attendanceRecords: attendanceData,
+      totalPages: Math.ceil(snapshot.size / limit),
+      currentPage: page,
+      totalRecords: snapshot.size,
+      fromCache: false
+    };
   } catch (error) {
     console.error("Error getting attendance by date range:", error);
     
     // Try to use cache as fallback
-    const cacheKey = `${startDate}_${endDate}`;
+    const cacheKey = shift ? `range_${startDate}_${endDate}_${shift}` : `range_${startDate}_${endDate}`;
     if (cacheMeta.has(cacheKey)) {
       console.log(`Using cached data as fallback for range ${startDate} to ${endDate}`);
-      return getCachedAttendanceByDateRange(startDate, endDate);
+      
+      // Ambil data dari cache dan terapkan pagination di memory
+      const cachedData = getCachedAttendanceByDateRange(startDate, endDate, shift);
+      const startIndex = (page - 1) * limit;
+      const paginatedData = cachedData.slice(startIndex, startIndex + limit);
+      
+      return {
+        attendanceRecords: paginatedData,
+        totalPages: Math.ceil(cachedData.length / limit),
+        currentPage: page,
+        totalRecords: cachedData.length,
+        fromCache: true,
+        isErrorFallback: true
+      };
     }
     
     throw error;
   }
 }
 
-// Helper function to check if all dates in range are in cache
-function checkAllDatesInCache(startDate, endDate) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const cacheKey = `${startDate}_${endDate}`;
+/**
+ * Mendapatkan data kehadiran untuk rentang tanggal besar dengan metode batching
+ * @param {string} startDate - Tanggal awal
+ * @param {string} endDate - Tanggal akhir
+ * @param {number} page - Halaman
+ * @param {number} limit - Limit per halaman
+ * @param {string|null} shift - Filter shift
+ * @returns {Promise<Object>} - Data kehadiran dan info pagination
+ */
+async function getAttendanceByDateRangeBatched(startDate, endDate, page = 1, limit = 100, shift = null) {
+  // Bagi rentang tanggal menjadi batch-batch kecil (7 hari per batch)
+  const batches = splitDateRange(startDate, endDate, 7);
+  const cacheKey = shift ? `range_${startDate}_${endDate}_${shift}` : `range_${startDate}_${endDate}`;
   
-  // If we have the combined cache key and it's still valid, use it
-  if (cacheMeta.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
-    return true;
+  // Cek apakah cache range sudah ada dan valid
+  if (attendanceCache.has(cacheKey) && !shouldUpdateCache(cacheKey)) {
+    console.log(`Using cached data for large range ${startDate} to ${endDate}`);
+    
+    const cachedData = attendanceCache.get(cacheKey);
+    const startIndex = (page - 1) * limit;
+    const paginatedData = cachedData.slice(startIndex, startIndex + limit);
+    
+    return {
+      attendanceRecords: paginatedData,
+      totalPages: Math.ceil(cachedData.length / limit),
+      currentPage: page,
+      totalRecords: cachedData.length,
+      fromCache: true
+    };
   }
   
-  // Otherwise check each date
-  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-    // Konversi ke format YYYY-MM-DD dengan zona waktu lokal
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateKey = `${year}-${month}-${day}`;
+  console.log(`Processing ${batches.length} batches for range ${startDate} to ${endDate}`);
+  
+  // Cek cache untuk setiap batch dan buat daftar batch yang perlu diambil dari Firestore
+  const batchesToFetch = [];
+  const cachedBatchData = [];
+  
+  for (const batch of batches) {
+    const batchCacheKey = shift ? `range_${batch.start}_${batch.end}_${shift}` : `range_${batch.start}_${batch.end}`;
     
-    if (!attendanceCache.has(dateKey) || shouldUpdateCache(dateKey)) {
-      return false;
+    if (attendanceCache.has(batchCacheKey) && !shouldUpdateCache(batchCacheKey)) {
+      // Batch ini sudah ada di cache dan masih valid
+      cachedBatchData.push(...attendanceCache.get(batchCacheKey));
+    } else {
+      // Batch ini perlu diambil dari Firestore
+      batchesToFetch.push(batch);
     }
   }
   
-  return true;
+  // Ambil data untuk batch yang tidak ada di cache
+  const fetchedData = [];
+  
+  if (batchesToFetch.length > 0) {
+    console.log(`Fetching ${batchesToFetch.length} batches from Firestore`);
+    
+    // Batasi jumlah batch yang diproses secara paralel untuk menghindari rate limit
+    const PARALLEL_BATCH_LIMIT = 3;
+    
+    for (let i = 0; i < batchesToFetch.length; i += PARALLEL_BATCH_LIMIT) {
+      const currentBatches = batchesToFetch.slice(i, i + PARALLEL_BATCH_LIMIT);
+      
+      // Proses batch secara paralel
+      const batchPromises = currentBatches.map(async (batch) => {
+        try {
+          const batchData = await fetchBatchData(batch.start, batch.end, shift);
+          
+          // Cache batch data
+          const batchCacheKey = shift ? `range_${batch.start}_${batch.end}_${shift}` : `range_${batch.start}_${batch.end}`;
+          attendanceCache.set(batchCacheKey, batchData);
+          updateCacheTimestamp(batchCacheKey);
+          
+          return batchData;
+        } catch (error) {
+          console.error(`Error fetching batch ${batch.start} to ${batch.end}:`, error);
+          return [];
+        }
+      });
+      
+      // Tunggu semua batch dalam grup ini selesai
+      const batchResults = await Promise.all(batchPromises);
+      
+      // Gabungkan hasil
+      for (const batchData of batchResults) {
+        fetchedData.push(...batchData);
+      }
+      
+      // Simpan cache setelah setiap grup batch untuk menghindari kehilangan data jika terjadi error
+      saveAttendanceCacheToStorage();
+    }
+  }
+  
+  // Gabungkan data dari cache dan data yang baru diambil
+  const allData = [...cachedBatchData, ...fetchedData];
+  
+  // Hapus duplikat berdasarkan id
+  const uniqueData = removeDuplicates(allData);
+  
+  // Urutkan data
+  uniqueData.sort((a, b) => {
+    // Sort by date desc, then by timeIn desc
+    const dateCompare = new Date(b.date) - new Date(a.date);
+    if (dateCompare !== 0) return dateCompare;
+    
+    // If dates are equal, compare timeIn
+    const timeA = a.timeIn instanceof Date ? a.timeIn : new Date(a.timeIn);
+    const timeB = b.timeIn instanceof Date ? b.timeIn : new Date(b.timeIn);
+    return timeB - timeA;
+  });
+  
+  // Cache hasil gabungan untuk range penuh
+  attendanceCache.set(cacheKey, uniqueData);
+  updateCacheTimestamp(cacheKey);
+  saveAttendanceCacheToStorage();
+  
+  // Terapkan pagination
+  const startIndex = (page - 1) * limit;
+  const paginatedData = uniqueData.slice(startIndex, startIndex + limit);
+  
+  return {
+    attendanceRecords: paginatedData,
+    totalPages: Math.ceil(uniqueData.length / limit),
+    currentPage: page,
+    totalRecords: uniqueData.length,
+    fromCache: false
+  };
 }
 
-// Helper function to get attendance from cache by date range
-function getCachedAttendanceByDateRange(startDate, endDate) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  let result = [];
-  
-  console.log("Getting cached attendance from", startDate, "to", endDate);
-  
-  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-    // Konversi ke format YYYY-MM-DD dengan zona waktu lokal
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateKey = `${year}-${month}-${day}`;
+/**
+ * Mengambil data untuk satu batch dari Firestore
+ * @param {string} startDate - Tanggal awal batch
+ * @param {string} endDate - Tanggal akhir batch
+ * @param {string|null} shift - Filter shift
+ * @returns {Promise<Array>} - Array data kehadiran
+ */
+async function fetchBatchData(startDate, endDate, shift = null) {
+  try {
+    console.log(`Fetching batch data from ${startDate} to ${endDate}`);
     
-    console.log("Checking cache for date:", dateKey);
+    // Buat query dasar
+    const attendanceCollection = collection(db, "attendance");
+    let batchQuery = query(
+      attendanceCollection,
+      where("date", ">=", startDate),
+      where("date", "<=", endDate),
+      orderBy("date", "desc"),
+      orderBy("timeIn", "desc")
+    );
     
-    if (attendanceCache.has(dateKey)) {
-      const cachedData = attendanceCache.get(dateKey);
-      console.log(`Found ${cachedData.length} records for ${dateKey}`);
-      result = result.concat(cachedData);
+    // Tambahkan filter shift jika diperlukan
+    if (shift && shift !== "all") {
+      batchQuery = query(
+        attendanceCollection,
+        where("date", ">=", startDate),
+        where("date", "<=", endDate),
+        where("shift", "==", shift),
+        orderBy("date", "desc"),
+        orderBy("timeIn", "desc")
+      );
+    }
+    
+    // Eksekusi query
+    const snapshot = await getDocs(batchQuery);
+    
+    // Konversi snapshot ke array dengan pencegahan duplikasi
+    const attendanceData = [];
+    const employeeIdDateMap = new Map(); // Map untuk mencegah duplikasi (employeeId+date)
+    
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const record = {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to JS Date
+        timeIn: data.timeIn ? data.timeIn.toDate() : null,
+        timeOut: data.timeOut ? data.timeOut.toDate() : null,
+      };
+      
+      // Buat key unik untuk setiap kombinasi employeeId dan date
+      const uniqueKey = `${data.employeeId}_${data.date}`;
+      
+      // Cek apakah sudah ada record dengan employeeId dan date yang sama
+      if (!employeeIdDateMap.has(uniqueKey)) {
+        employeeIdDateMap.set(uniqueKey, record);
+        attendanceData.push(record);
+      } else {
+        console.warn(`Duplicate record found for ${data.employeeId} on ${data.date}`);
+      }
+    });
+    
+    // Update cache untuk setiap tanggal
+    const dateMap = {};
+    attendanceData.forEach(record => {
+      const dateKey = record.date;
+      if (!dateMap[dateKey]) dateMap[dateKey] = [];
+      dateMap[dateKey].push(record);
+    });
+    
+    // Update individual date caches
+    for (const [dateKey, records] of Object.entries(dateMap)) {
+      // Jika sudah ada data di cache untuk tanggal ini, gabungkan
+      if (attendanceCache.has(dateKey)) {
+        const existingRecords = attendanceCache.get(dateKey);
+        const mergedRecords = mergeAttendanceRecords(existingRecords, records);
+        attendanceCache.set(dateKey, mergedRecords);
+      } else {
+        attendanceCache.set(dateKey, records);
+      }
+      updateCacheTimestamp(dateKey);
+    }
+    
+    return attendanceData;
+  } catch (error) {
+    console.error(`Error fetching batch data from ${startDate} to ${endDate}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Membagi rentang tanggal menjadi batch-batch kecil
+ * @param {string} startDate - Tanggal awal dalam format YYYY-MM-DD
+ * @param {string} endDate - Tanggal akhir dalam format YYYY-MM-DD
+ * @param {number} batchSize - Ukuran batch dalam hari
+ * @returns {Array<Object>} - Array objek batch dengan properti start dan end
+ */
+function splitDateRange(startDate, endDate, batchSize = 7) {
+  const batches = [];
+  
+  // Konversi string tanggal ke objek Date
+  let currentDate = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  
+  // Set waktu ke 00:00:00 untuk menghindari masalah perbandingan
+  currentDate.setHours(0, 0, 0, 0);
+  endDateObj.setHours(0, 0, 0, 0);
+  
+  while (currentDate <= endDateObj) {
+    const batchStart = formatDateForAPI(currentDate);
+    
+    // Hitung tanggal akhir batch (maksimal batchSize hari atau sampai endDate)
+    const batchEndDate = new Date(currentDate);
+    batchEndDate.setDate(batchEndDate.getDate() + batchSize - 1);
+    
+    // Jika batchEndDate melebihi endDateObj, gunakan endDateObj
+    const batchEnd = batchEndDate <= endDateObj 
+      ? formatDateForAPI(batchEndDate) 
+      : formatDateForAPI(endDateObj);
+    
+    batches.push({ start: batchStart, end: batchEnd });
+    
+    // Pindah ke batch berikutnya
+    currentDate.setDate(currentDate.getDate() + batchSize);
+  }
+  
+  return batches;
+}
+
+/**
+ * Menggabungkan dua array data kehadiran dan menghapus duplikat
+ * @param {Array} existingRecords - Array data kehadiran yang sudah ada
+ * @param {Array} newRecords - Array data kehadiran baru
+ * @returns {Array} - Array gabungan tanpa duplikat
+ */
+function mergeAttendanceRecords(existingRecords, newRecords) {
+  // Buat map dari record yang sudah ada berdasarkan id
+  const recordMap = new Map();
+  
+  // Tambahkan record yang sudah ada ke map
+  existingRecords.forEach(record => {
+    recordMap.set(record.id, record);
+  });
+  
+  // Tambahkan atau update dengan record baru
+  newRecords.forEach(record => {
+    recordMap.set(record.id, record);
+  });
+  
+  // Konversi kembali ke array
+  return Array.from(recordMap.values());
+}
+
+/**
+ * Menghapus duplikat dari array data kehadiran berdasarkan id
+ * @param {Array} records - Array data kehadiran
+ * @returns {Array} - Array tanpa duplikat
+ */
+function removeDuplicates(records) {
+  const uniqueMap = new Map();
+  
+  records.forEach(record => {
+    uniqueMap.set(record.id, record);
+  });
+  
+  return Array.from(uniqueMap.values());
+}
+
+/**
+ * Mendapatkan data kehadiran dari cache berdasarkan rentang tanggal
+ * @param {string} startDate - Tanggal awal
+ * @param {string} endDate - Tanggal akhir
+ * @param {string|null} shift - Filter shift
+ * @returns {Array} - Array data kehadiran
+ */
+function getCachedAttendanceByDateRange(startDate, endDate, shift = null) {
+  // Cek apakah ada cache untuk rentang tanggal ini
+  const cacheKey = shift ? `range_${startDate}_${endDate}_${shift}` : `range_${startDate}_${endDate}`;
+  
+  if (attendanceCache.has(cacheKey)) {
+    return attendanceCache.get(cacheKey);
+  }
+  
+  // Jika tidak ada cache untuk rentang, coba gabungkan dari cache per tanggal
+  const result = [];
+  const dates = getDatesInRange(startDate, endDate);
+  
+  for (const date of dates) {
+    const dateStr = formatDateForAPI(date);
+    
+    if (attendanceCache.has(dateStr)) {
+      const dateRecords = attendanceCache.get(dateStr);
+      
+      // Filter berdasarkan shift jika diperlukan
+      if (shift && shift !== "all") {
+        const filteredRecords = dateRecords.filter(record => record.shift === shift);
+        result.push(...filteredRecords);
+      } else {
+        result.push(...dateRecords);
+      }
     }
   }
   
-  // Sort by date and time
+  // Urutkan hasil
   result.sort((a, b) => {
-    if (a.date !== b.date) {
-      return new Date(b.date) - new Date(a.date); // Descending date
-    }
-    return b.timeIn - a.timeIn; // Descending time
+    // Sort by date desc, then by timeIn desc
+    const dateCompare = new Date(b.date) - new Date(a.date);
+    if (dateCompare !== 0) return dateCompare;
+    
+    // If dates are equal, compare timeIn
+    const timeA = a.timeIn instanceof Date ? a.timeIn : new Date(a.timeIn);
+    const timeB = b.timeIn instanceof Date ? b.timeIn : new Date(b.timeIn);
+    return timeB - timeA;
   });
   
   return result;
+}
+
+/**
+ * Mendapatkan data parsial dari cache untuk rentang tanggal
+ * @param {string} startDate - Tanggal awal
+ * @param {string} endDate - Tanggal akhir
+ * @param {string|null} shift - Filter shift
+ * @returns {Object} - Objek dengan properti complete dan data
+ */
+function getPartialCachedData(startDate, endDate, shift = null) {
+  const dates = getDatesInRange(startDate, endDate);
+  const data = [];
+  let complete = true;
+  
+  for (const date of dates) {
+    const dateStr = formatDateForAPI(date);
+    
+    // Cek apakah tanggal ini ada di cache dan masih valid
+    if (attendanceCache.has(dateStr) && !shouldUpdateCache(dateStr)) {
+      const dateRecords = attendanceCache.get(dateStr);
+      
+      // Filter berdasarkan shift jika diperlukan
+      if (shift && shift !== "all") {
+        const filteredRecords = dateRecords.filter(record => record.shift === shift);
+        data.push(...filteredRecords);
+      } else {
+        data.push(...dateRecords);
+      }
+    } else {
+      // Jika ada satu tanggal yang tidak ada di cache atau tidak valid,
+      // tandai bahwa data tidak lengkap
+      complete = false;
+    }
+  }
+  
+  return { complete, data };
+}
+
+/**
+ * Mendapatkan array tanggal dalam rentang
+ * @param {string} startDate - Tanggal awal dalam format YYYY-MM-DD
+ * @param {string} endDate - Tanggal akhir dalam format YYYY-MM-DD
+ * @returns {Array<Date>} - Array objek Date
+ */
+function getDatesInRange(startDate, endDate) {
+  const dates = [];
+  let currentDate = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  
+  // Set waktu ke 00:00:00 untuk menghindari masalah perbandingan
+  currentDate.setHours(0, 0, 0, 0);
+  endDateObj.setHours(0, 0, 0, 0);
+  
+  while (currentDate <= endDateObj) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return dates;
+}
+
+/**
+ * Format tanggal untuk API (YYYY-MM-DD)
+ * @param {Date} date - Objek Date
+ * @returns {string} - String tanggal dalam format YYYY-MM-DD
+ */
+function formatDateForAPI(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Menghitung selisih hari antara dua tanggal
+ * @param {string} startDate - Tanggal awal dalam format YYYY-MM-DD
+ * @param {string} endDate - Tanggal akhir dalam format YYYY-MM-DD
+ * @returns {number} - Selisih hari
+ */
+function calculateDateDifference(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  // Set waktu ke 00:00:00 untuk menghindari masalah perbandingan
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  
+  // Hitung selisih dalam milidetik dan konversi ke hari
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
 }
 
 

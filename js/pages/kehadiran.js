@@ -1,4 +1,5 @@
 import { getAttendanceByDateRange, deleteAttendanceByDateRange } from "../services/report-service.js";
+// PERBARUI import dengan menambahkan fungsi yang diperlukan
 import {
   attendanceCache,
   shouldUpdateCache as shouldUpdateAttendanceCache,
@@ -9,8 +10,6 @@ import {
 // Global variables
 let currentAttendanceData = [];
 let filteredData = [];
-let attendanceDataCache = new Map(); // Cache untuk laporan kehadiran
-let attendanceDataCacheMeta = new Map(); // Metadata untuk cache laporan
 
 // Fungsi untuk menampilkan atau menyembunyikan indikator loading
 function showLoading(show) {
@@ -155,27 +154,6 @@ function decompressData(compressedData) {
   }
 }
 
-// Tambahkan persistensi cache menggunakan localStorage
-function saveReportCacheToStorage() {
-  try {
-    // Konversi Map ke objek untuk localStorage
-    const cacheObj = {};
-    for (const [key, value] of attendanceDataCache.entries()) {
-      cacheObj[key] = value;
-    }
-
-    const metaObj = {};
-    for (const [key, value] of attendanceDataCacheMeta.entries()) {
-      metaObj[key] = value;
-    }
-
-    localStorage.setItem("reportCache", JSON.stringify(cacheObj));
-    localStorage.setItem("reportCacheMeta", JSON.stringify(metaObj));
-    console.log("Report cache saved to localStorage");
-  } catch (error) {
-    console.error("Error saving report cache to localStorage:", error);
-  }
-}
 
 // Fungsi untuk menampilkan data kehadiran
 function displayAttendanceData(data) {
@@ -357,6 +335,11 @@ async function loadAttendanceData(forceRefresh = false) {
     // Update data
     currentAttendanceData = result.attendanceRecords || [];
     
+    // TAMBAHKAN: Simpan data ke cache
+    attendanceCache.set(cacheKey, [...currentAttendanceData]);
+    updateAttendanceCacheTimestamp(cacheKey);
+    saveAttendanceCacheToStorage();
+    
     // Sembunyikan indikator loading
     showLoading(false);
     
@@ -404,6 +387,7 @@ async function loadAttendanceData(forceRefresh = false) {
 }
 
 
+
 // Fungsi forceRefreshData - diperbarui untuk validasi shift
 function forceRefreshData() {
   // Tampilkan konfirmasi
@@ -440,43 +424,6 @@ function forceRefreshData() {
     // Tampilkan pesan
     showAlert("info", "Data sedang disegarkan dari server...");
   }
-}
-
-
-function loadReportCacheFromStorage() {
-  try {
-    const cacheStr = localStorage.getItem("reportCache");
-    const metaStr = localStorage.getItem("reportCacheMeta");
-
-    if (cacheStr && metaStr) {
-      const cacheObj = JSON.parse(cacheStr);
-      const metaObj = JSON.parse(metaStr);
-
-      // Konversi objek kembali ke Map
-      attendanceDataCache.clear();
-      attendanceDataCacheMeta.clear();
-
-      for (const [key, value] of Object.entries(cacheObj)) {
-        attendanceDataCache.set(key, value);
-      }
-
-      for (const [key, value] of Object.entries(metaObj)) {
-        attendanceDataCacheMeta.set(key, value);
-      }
-    }
-  } catch (error) {
-    console.error("Error loading report cache from localStorage:", error);
-  }
-}
-// Fungsi untuk memeriksa apakah cache perlu diperbarui (lebih dari 1 jam)
-function shouldUpdateReportCache(cacheKey) {
-  if (!attendanceDataCacheMeta.has(cacheKey)) return true;
-
-  const lastUpdate = attendanceDataCacheMeta.get(cacheKey);
-  const now = Date.now();
-  const oneHour = 60 * 60 * 1000; // 1 jam dalam milidetik
-
-  return now - lastUpdate > oneHour;
 }
 
 // Modifikasi updateReportCacheTimestamp untuk menyimpan ke localStorage
@@ -584,7 +531,6 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Sembunyikan elemen laporan lainnya
   hideReportElements();
-  loadReportCacheFromStorage();
   
   // Tambahkan event listeners untuk tombol filter
   document.getElementById('filterAll')?.addEventListener('click', () => filterAttendanceByStatus('all'));
@@ -818,8 +764,6 @@ async function deleteAttendanceData() {
   }
 }
 
-
-
 // Fungsi untuk menghasilkan laporan kehadiran
 async function generateReport(forceRefresh = false) {
   try {
@@ -854,7 +798,8 @@ async function generateReport(forceRefresh = false) {
     const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
     
     // Tentukan apakah perlu refresh
-    let needsRefresh = forceRefresh || !attendanceDataCache.has(cacheKey);
+    // PERUBAHAN: Gunakan attendanceCache alih-alih attendanceDataCache
+    let needsRefresh = forceRefresh || !attendanceCache.has(cacheKey);
     
     // Jika mencakup hari ini atau ada update kehadiran baru, refresh data
     if (includesCurrentDay && lastAttendanceUpdate && cacheTimestamp) {
@@ -878,6 +823,11 @@ async function generateReport(forceRefresh = false) {
       } catch (e) {
         console.error("Error parsing deleted data range:", e);
       }
+    }
+    
+    // TAMBAHAN: Cek juga apakah cache perlu diperbarui berdasarkan TTL
+    if (!needsRefresh && shouldUpdateAttendanceCache(cacheKey)) {
+      needsRefresh = true;
     }
     
     let attendanceData = [];
@@ -918,9 +868,10 @@ async function generateReport(forceRefresh = false) {
           attendanceData = attendanceData.filter(record => record.shift === selectedShift);
         }
         
-        // Store in cache with timestamp
-        attendanceDataCache.set(cacheKey, [...attendanceData]);
-        localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+        // PERUBAHAN: Gunakan attendanceCache dan fungsi dari attendance-service.js
+        attendanceCache.set(cacheKey, [...attendanceData]);
+        updateAttendanceCacheTimestamp(cacheKey);
+        saveAttendanceCacheToStorage();
         
         // Hide loading message
         hideAlert();
@@ -928,9 +879,10 @@ async function generateReport(forceRefresh = false) {
         console.error("Error fetching attendance data:", error);
         
         // Jika gagal dan ada cache, gunakan cache sebagai fallback
-        if (attendanceDataCache.has(cacheKey)) {
+        // PERUBAHAN: Gunakan attendanceCache alih-alih attendanceDataCache
+        if (attendanceCache.has(cacheKey)) {
           console.log("Using cached data as fallback due to fetch error");
-          attendanceData = attendanceDataCache.get(cacheKey);
+          attendanceData = attendanceCache.get(cacheKey);
           showAlert("warning", "Gagal mengambil data terbaru. Menggunakan data cache sebagai fallback.");
         } else {
           // Jika tidak ada cache, set attendanceData ke array kosong
@@ -953,8 +905,8 @@ async function generateReport(forceRefresh = false) {
         cacheIndicator.style.display = 'inline-block';
       }
       
-      // Ambil data dari cache
-      attendanceData = attendanceDataCache.get(cacheKey) || [];
+      // PERUBAHAN: Ambil data dari attendanceCache alih-alih attendanceDataCache
+      attendanceData = attendanceCache.get(cacheKey) || [];
       
       // Hide loading message
       hideAlert();
@@ -1093,6 +1045,7 @@ async function generateReport(forceRefresh = false) {
     showAlert("danger", `<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan: ${error.message}`);
   }
 }
+
 
 // Fungsi untuk setup filter listeners
 function setupFilterListeners() {
