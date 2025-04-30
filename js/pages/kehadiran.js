@@ -303,11 +303,12 @@ async function loadAttendanceData(forceRefresh = false) {
     const today = getLocalDateString();
     const includesCurrentDay = (startDate <= today && today <= endDate);
     
-    // Jika rentang tanggal mencakup hari ini, selalu refresh data
-    forceRefresh = forceRefresh || includesCurrentDay;
+    // PERBAIKAN: Hanya refresh data jika dipaksa atau jika data mencakup hari ini dan cache sudah kedaluwarsa
+    const needsRefresh = forceRefresh || 
+                        (includesCurrentDay && shouldUpdateAttendanceCache(cacheKey)) || 
+                        !attendanceCache.has(cacheKey);
     
-    // Cek apakah data ada di cache dan masih valid
-    if (!forceRefresh && attendanceCache.has(cacheKey) && !shouldUpdateAttendanceCache(cacheKey)) {
+    if (!needsRefresh) {
       console.log(`Using cached attendance data for range ${startDate} to ${endDate}`);
       
       // Tampilkan indikator cache di UI
@@ -328,15 +329,30 @@ async function loadAttendanceData(forceRefresh = false) {
     // Tampilkan indikator loading
     showLoading(true);
     
-    // Ambil data dari server - tanpa pagination (limit = 0 atau nilai besar)
-    // Tambahkan parameter shift
-    const result = await getAttendanceByDateRange(startDate, endDate, null, 1000, selectedShift);
+    // PERBAIKAN: Gunakan batch loading untuk mengurangi jumlah reads
+    // Hanya ambil data dari server jika benar-benar diperlukan
+    let result;
+    
+    // PERBAIKAN: Jika rentang tanggal pendek (<=7 hari), ambil sekaligus
+    // Jika panjang, gunakan batch loading
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const dayDiff = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+    
+    if (dayDiff <= 7) {
+      // Ambil data sekaligus untuk rentang pendek
+      result = await getAttendanceByDateRange(startDate, endDate, null, 1000, selectedShift);
+    } else {
+      // Gunakan batch loading untuk rentang panjang
+      const batchData = await getAttendanceInBatches(startDate, endDate, selectedShift);
+      result = { attendanceRecords: batchData };
+    }
     
     // Update data
     currentAttendanceData = result.attendanceRecords || [];
     
-    // TAMBAHKAN: Simpan data ke cache
-    attendanceCache.set(cacheKey, [...currentAttendanceData]);
+    // PERBAIKAN: Simpan data ke cache dengan deep copy untuk menghindari referensi
+    attendanceCache.set(cacheKey, JSON.parse(JSON.stringify(currentAttendanceData)));
     updateAttendanceCacheTimestamp(cacheKey);
     saveAttendanceCacheToStorage();
     
@@ -385,8 +401,6 @@ async function loadAttendanceData(forceRefresh = false) {
     }
   }
 }
-
-
 
 // Fungsi forceRefreshData - diperbarui untuk validasi shift
 function forceRefreshData() {
