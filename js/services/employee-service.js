@@ -8,6 +8,8 @@ import {
   updateDoc,
   query,
   where,
+  setDoc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 // Cache constants

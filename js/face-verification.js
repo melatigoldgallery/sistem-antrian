@@ -1,14 +1,48 @@
-// Modul untuk verifikasi wajah menggunakan face-api.js
+import { getFaceDescriptor } from "./services/employee-service.js";
+
 
 // Variabel global untuk menyimpan status
 let isFaceApiInitialized = false;
 let videoStream = null;
 let faceMatchThreshold = 0.6; // Nilai threshold untuk pencocokan wajah (0.6 = 60% kecocokan)
-
-// Import layanan karyawan untuk mengakses data wajah
-import { getFaceDescriptor } from "./services/employee-service.js";
-
+// Tambahkan cache untuk descriptor wajah
+const faceDescriptorCache = new Map();
+let lastCacheCleanup = Date.now();
+const CACHE_CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 menit
 // Fungsi untuk memuat model face-api.js
+
+// Fungsi untuk mendapatkan face descriptor dengan caching
+export async function getCachedFaceDescriptor(employeeId) {
+  try {
+    // Bersihkan cache jika sudah waktunya
+    const now = Date.now();
+    if (now - lastCacheCleanup > CACHE_CLEANUP_INTERVAL) {
+      faceDescriptorCache.clear();
+      lastCacheCleanup = now;
+    }
+    
+    // Cek apakah descriptor ada di cache
+    if (faceDescriptorCache.has(employeeId)) {
+      console.log(`Using cached face descriptor for employee ID: ${employeeId}`);
+      return faceDescriptorCache.get(employeeId);
+    }
+    
+    // Jika tidak ada di cache, ambil dari database
+    console.log(`Fetching face descriptor for employee ID: ${employeeId}`);
+    const descriptor = await getFaceDescriptor(employeeId);
+    
+    // Simpan ke cache jika ditemukan
+    if (descriptor) {
+      faceDescriptorCache.set(employeeId, descriptor);
+    }
+    
+    return descriptor;
+  } catch (error) {
+    console.error("Error getting cached face descriptor:", error);
+    throw error;
+  }
+}
+
 export async function loadFaceApiModels() {
   if (isFaceApiInitialized) return true;
   
@@ -96,9 +130,10 @@ export function startFaceVerification() {
   return true;
 }
 
-// Fungsi untuk mendeteksi dan memverifikasi wajah
 export async function detectAndVerifyFace(employeeId) {
   try {
+    console.log(`Verifying face for employee ID: ${employeeId}`);
+    
     // Pastikan model sudah dimuat
     if (!isFaceApiInitialized) {
       await loadFaceApiModels();
@@ -107,7 +142,7 @@ export async function detectAndVerifyFace(employeeId) {
     // Pastikan kamera sudah diinisialisasi
     const videoElement = document.getElementById('faceVerificationVideo');
     if (!videoElement || !videoElement.srcObject) {
-      await initCamera();
+      throw new Error("Kamera belum diinisialisasi");
     }
     
     // Tampilkan status
@@ -117,17 +152,24 @@ export async function detectAndVerifyFace(employeeId) {
       statusElement.className = "text-info";
     }
     
-    // Tunggu video siap
-    if (videoElement.readyState !== 4) {
+    // Tunggu video siap - tambahkan pengecekan null
+    if (videoElement && videoElement.readyState !== 4) {
       await new Promise(resolve => {
         videoElement.onloadeddata = resolve;
       });
     }
     
-    // Deteksi wajah dari video
+    // OPTIMASI: Gunakan TinyFaceDetector dengan parameter yang dioptimalkan
+    const options = new faceapi.TinyFaceDetectorOptions({ 
+      inputSize: 320,  // Lebih kecil = lebih cepat
+      scoreThreshold: 0.5 // Lebih rendah = lebih cepat tapi kurang akurat
+    });
+    
+    // OPTIMASI: Deteksi wajah dengan ukuran gambar yang lebih kecil
+    const displaySize = { width: videoElement.width, height: videoElement.height };
     const detections = await faceapi.detectAllFaces(
       videoElement, 
-      new faceapi.TinyFaceDetectorOptions()
+      options
     ).withFaceLandmarks().withFaceDescriptors();
     
     // Periksa hasil deteksi
@@ -150,24 +192,30 @@ export async function detectAndVerifyFace(employeeId) {
     // Ambil descriptor wajah yang terdeteksi
     const detectedDescriptor = detections[0].descriptor;
     
-    // Ambil descriptor wajah dari database
-    const storedDescriptor = await getFaceDescriptor(employeeId);
+    // OPTIMASI: Gunakan cache untuk descriptor wajah
+    console.log(`Fetching stored face descriptor for employee ID: ${employeeId}`);
+    const storedDescriptor = await getCachedFaceDescriptor(employeeId);
+    
+    // Log untuk debugging
+    console.log("Stored descriptor:", storedDescriptor ? "Found" : "Not found");
     
     // Jika tidak ada data wajah tersimpan, ini adalah pendaftaran pertama kali
     if (!storedDescriptor) {
       if (statusElement) {
-        statusElement.textContent = "Data wajah belum terdaftar. Menyimpan data wajah baru...";
-        statusElement.className = "text-info";
+        statusElement.textContent = "Data wajah belum terdaftar.";
+        statusElement.className = "text-danger";
       }
       
-      // Simpan descriptor wajah baru
-      await saveFaceDescriptor(employeeId, detectedDescriptor);
-      
-      return { verified: true, isFirstTime: true, message: "Data wajah berhasil disimpan" };
+      return { verified: false, message: "Data wajah belum terdaftar" };
     }
     
-    // Bandingkan descriptor wajah
-    const distance = faceapi.euclideanDistance(detectedDescriptor, storedDescriptor);
+    // Pastikan storedDescriptor adalah Float32Array
+    const storedFloat32Array = storedDescriptor instanceof Float32Array 
+      ? storedDescriptor 
+      : new Float32Array(storedDescriptor);
+    
+    // OPTIMASI: Gunakan euclideanDistance yang lebih efisien
+    const distance = faceapi.euclideanDistance(detectedDescriptor, storedFloat32Array);
     const similarity = 1 - distance;
     
     console.log(`Face verification result: similarity ${similarity.toFixed(2)} (threshold: ${faceMatchThreshold})`);
@@ -203,6 +251,7 @@ export async function detectAndVerifyFace(employeeId) {
     return { verified: false, message: "Terjadi kesalahan: " + error.message };
   }
 }
+
 
 // Fungsi untuk menghapus data wajah
 export async function deleteFaceDescriptor(employeeId) {
