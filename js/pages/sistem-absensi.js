@@ -7,6 +7,18 @@ import {
   getLocalDateString,
 } from "../services/attendance-service.js";
 import { getLeaveRequestsByDate, getAllLeaveRequestsForDate, clearLeaveCacheForDate } from "../services/leave-service.js";
+// Import modul verifikasi wajah
+import { 
+  loadFaceApiModels, 
+  initCamera, 
+  startFaceVerification, 
+  detectAndVerifyFace 
+} from "../face-verification.js";
+
+// Tambahkan variabel global untuk verifikasi wajah
+let isFaceVerificationEnabled = true; // Dapat diubah menjadi false untuk menonaktifkan fitur
+let isFaceVerificationReady = false;
+let faceVerificationTimeout = null;
 
 // Initialize data
 let attendanceRecords = [];
@@ -296,9 +308,7 @@ function setupBarcodeScanner() {
   });
 }
 
-// Hapus seluruh fungsi processBarcode() yang lama
-
-// Perbaiki fungsi processScannedBarcode() untuk mencakup semua logika yang diperlukan
+// Fungsi untuk memproses barcode yang sudah dimodifikasi dengan verifikasi wajah
 async function processScannedBarcode(barcode) {
   // Validasi input barcode
   if (!barcode) {
@@ -351,6 +361,69 @@ async function processScannedBarcode(barcode) {
       return;
     }
 
+    // Tampilkan informasi karyawan yang sedang diverifikasi
+    showScanResult("info", `Memverifikasi identitas ${employee.name}...`);
+    
+    // INTEGRASI VERIFIKASI WAJAH
+    if (isFaceVerificationEnabled) {
+      // Inisialisasi verifikasi wajah jika belum siap
+      if (!isFaceVerificationReady) {
+        showScanResult("info", "Menyiapkan verifikasi wajah...");
+        
+        // Inisialisasi model dan kamera
+        await loadFaceApiModels();
+        await initCamera();
+        isFaceVerificationReady = true;
+      }
+      
+      // Tampilkan UI verifikasi wajah
+      showFaceVerificationUI();
+      
+      // Mulai verifikasi wajah
+      showScanResult("info", "Silakan posisikan wajah Anda di depan kamera...");
+      
+      try {
+        // Beri waktu untuk kamera menampilkan gambar
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Lakukan verifikasi wajah
+        const verificationResult = await detectAndVerifyFace(barcode);
+        
+        // Jika verifikasi gagal, hentikan proses absensi
+        if (!verificationResult || !verificationResult.verified) {
+          showScanResult("error", `Verifikasi wajah gagal: ${verificationResult?.message || 'Wajah tidak cocok'}`);
+          playNotificationSound('error', '');
+          
+          // Sembunyikan UI verifikasi wajah setelah beberapa detik
+          setTimeout(() => {
+            hideFaceVerificationUI();
+          }, 3000);
+          
+          return;
+        }
+        
+        // Jika ini adalah verifikasi pertama kali
+        if (verificationResult.isFirstTime) {
+          showScanResult("success", `Data wajah ${employee.name} berhasil disimpan untuk pertama kali!`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        // Sembunyikan UI verifikasi wajah setelah berhasil
+        hideFaceVerificationUI();
+        
+      } catch (verificationError) {
+        console.error("Error saat verifikasi wajah:", verificationError);
+        showScanResult("error", "Terjadi kesalahan saat verifikasi wajah");
+        playNotificationSound('error', '');
+        
+        // Sembunyikan UI verifikasi wajah
+        hideFaceVerificationUI();
+        return;
+      }
+    }
+    
+    // LANJUTKAN PROSES ABSENSI SETELAH VERIFIKASI WAJAH BERHASIL
+    
     // Get scan type (in/out)
     const scanType = document.querySelector('input[name="scanType"]:checked')?.value || "in";
     
@@ -400,6 +473,8 @@ async function processScannedBarcode(barcode) {
         status: isLate ? "Terlambat" : "Tepat Waktu",
         lateMinutes: isLate ? lateMinutes : 0,
         date: today,
+        // Tambahkan flag verifikasi wajah
+        faceVerified: isFaceVerificationEnabled
       };
 
       console.log("Saving attendance record:", attendance);
@@ -471,7 +546,9 @@ async function processScannedBarcode(barcode) {
         if (record.id === existingRecord.id) {
           return {
             ...record,
-            timeOut: now
+            timeOut: now,
+            // Tambahkan flag verifikasi wajah untuk checkout
+            faceVerifiedOut: isFaceVerificationEnabled
           };
         }
         return record;
@@ -510,6 +587,22 @@ async function processScannedBarcode(barcode) {
   if (barcodeInput) {
     barcodeInput.value = "";
     barcodeInput.focus();
+  }
+}
+
+// Fungsi untuk menampilkan UI verifikasi wajah
+function showFaceVerificationUI() {
+  const faceVerificationContainer = document.querySelector('.face-verification-container');
+  if (faceVerificationContainer) {
+    faceVerificationContainer.style.display = 'block';
+  }
+}
+
+// Fungsi untuk menyembunyikan UI verifikasi wajah
+function hideFaceVerificationUI() {
+  const faceVerificationContainer = document.querySelector('.face-verification-container');
+  if (faceVerificationContainer) {
+    faceVerificationContainer.style.display = 'none';
   }
 }
 
@@ -1027,6 +1120,90 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Setup barcode scanner detection - ini adalah satu-satunya setup yang diperlukan
     setupBarcodeScanner();
     
+    // TAMBAHAN: Inisialisasi verifikasi wajah jika fitur diaktifkan
+    if (isFaceVerificationEnabled) {
+      console.log("Memulai inisialisasi verifikasi wajah...");
+      
+      // Tambahkan toggle switch untuk mengaktifkan/menonaktifkan verifikasi wajah
+      const scannerHeader = document.querySelector('.scanner-card .card-header');
+      if (scannerHeader) {
+        const faceVerificationToggle = document.createElement('div');
+        faceVerificationToggle.className = 'face-verification-toggle ms-2';
+        faceVerificationToggle.innerHTML = `
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="faceVerificationToggle" ${isFaceVerificationEnabled ? 'checked' : ''}>
+            <label class="form-check-label" for="faceVerificationToggle">Verifikasi Wajah</label>
+          </div>
+        `;
+        scannerHeader.appendChild(faceVerificationToggle);
+        
+        // Tambahkan event listener untuk toggle
+        document.getElementById('faceVerificationToggle')?.addEventListener('change', function() {
+          isFaceVerificationEnabled = this.checked;
+          console.log(`Verifikasi wajah ${isFaceVerificationEnabled ? 'diaktifkan' : 'dinonaktifkan'}`);
+          
+          // Sembunyikan/tampilkan container verifikasi wajah
+          const faceVerificationContainer = document.querySelector('.face-verification-container');
+          if (faceVerificationContainer) {
+            faceVerificationContainer.style.display = isFaceVerificationEnabled ? 'block' : 'none';
+          }
+        });
+      }
+      
+      // Sembunyikan UI verifikasi wajah sampai diperlukan
+      const faceVerificationContainer = document.querySelector('.face-verification-container');
+      if (faceVerificationContainer) {
+        faceVerificationContainer.style.display = 'none';
+      }
+      
+      // Coba inisialisasi model di background
+      try {
+        await loadFaceApiModels();
+        console.log("Model verifikasi wajah berhasil dimuat");
+        
+        // Tambahkan tombol untuk reset data wajah
+        const scannerContainer = document.querySelector('.scanner-container');
+        if (scannerContainer) {
+          const resetFaceButton = document.createElement('button');
+          resetFaceButton.id = 'resetFaceData';
+          resetFaceButton.className = 'btn btn-sm btn-outline-warning mt-2';
+          resetFaceButton.innerHTML = '<i class="fas fa-redo-alt"></i> Reset Data Wajah';
+          scannerContainer.appendChild(resetFaceButton);
+          
+          // Tambahkan event listener untuk tombol reset
+          resetFaceButton.addEventListener('click', async function() {
+            const barcodeInput = document.getElementById('barcodeInput');
+            if (!barcodeInput || !barcodeInput.value.trim()) {
+              showScanResult("error", "Scan barcode terlebih dahulu untuk mereset data wajah");
+              return;
+            }
+            
+            const barcode = barcodeInput.value.trim();
+            try {
+              await deleteFaceDescriptor(barcode);
+              showScanResult("success", "Data wajah berhasil direset. Silakan scan ulang untuk menyimpan data wajah baru.");
+            } catch (error) {
+              console.error("Error saat mereset data wajah:", error);
+              showScanResult("error", "Gagal mereset data wajah");
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Gagal memuat model verifikasi wajah:", error);
+        showScanResult("error", "Gagal memuat model verifikasi wajah. Fitur dinonaktifkan.");
+        
+        // Nonaktifkan fitur jika gagal memuat model
+        isFaceVerificationEnabled = false;
+        
+        // Update toggle switch
+        const faceVerificationToggle = document.getElementById('faceVerificationToggle');
+        if (faceVerificationToggle) {
+          faceVerificationToggle.checked = false;
+          faceVerificationToggle.disabled = true;
+        }
+      }
+    }
+    
     // Setup refresh scanner button
     const refreshScanner = document.getElementById("refreshScanner");
     if (refreshScanner) {
@@ -1040,6 +1217,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const scanResult = document.getElementById("scanResult");
         if (scanResult) {
           scanResult.style.display = "none";
+        }
+        
+        // TAMBAHAN: Sembunyikan UI verifikasi wajah saat refresh
+        if (isFaceVerificationEnabled) {
+          const faceVerificationContainer = document.querySelector('.face-verification-container');
+          if (faceVerificationContainer) {
+            faceVerificationContainer.style.display = 'none';
+          }
         }
       });
     }
@@ -1081,6 +1266,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (barcodeInput) {
       barcodeInput.focus();
     }
+    
+    // TAMBAHAN: Inisialisasi kamera jika verifikasi wajah diaktifkan
+    if (isFaceVerificationEnabled) {
+      // Inisialisasi kamera hanya saat diperlukan untuk menghemat sumber daya
+      const initCameraButton = document.createElement('button');
+      initCameraButton.id = 'initCamera';
+      initCameraButton.className = 'btn btn-sm btn-outline-primary mt-2 me-2';
+      initCameraButton.innerHTML = '<i class="fas fa-camera"></i> Siapkan Kamera';
+      
+      // Tambahkan tombol ke container yang sesuai
+      const scannerContainer = document.querySelector('.scanner-container');
+      if (scannerContainer && !document.getElementById('initCamera')) {
+        scannerContainer.appendChild(initCameraButton);
+        
+        // Tambahkan event listener
+        initCameraButton.addEventListener('click', async function() {
+          try {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyiapkan...';
+            
+            // Inisialisasi kamera
+            const result = await initCamera();
+            if (result) {
+              showScanResult("success", "Kamera siap digunakan untuk verifikasi wajah");
+              isFaceVerificationReady = true;
+              
+              // Sembunyikan tombol setelah berhasil
+              this.style.display = 'none';
+            } else {
+              showScanResult("error", "Gagal menyiapkan kamera. Periksa izin kamera.");
+              this.disabled = false;
+              this.innerHTML = '<i class="fas fa-camera"></i> Coba Lagi';
+            }
+          } catch (error) {
+            console.error("Error saat inisialisasi kamera:", error);
+            showScanResult("error", "Terjadi kesalahan saat menyiapkan kamera");
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-camera"></i> Coba Lagi';
+          }
+        });
+      }
+    }
   } catch (error) {
     console.error("Error initializing attendance system:", error);
   }
@@ -1102,6 +1329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+
 
 // PERBAIKAN: Tambahkan fungsi untuk membersihkan cache yang sudah tidak relevan
 function cleanupAttendanceCache() {

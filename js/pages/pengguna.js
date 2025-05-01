@@ -5,14 +5,417 @@ import {
   updateEmployee, 
   getNextEmployeeId, 
   getNextBarcode,
-  refreshEmployeeCache
+  refreshEmployeeCache,
+  saveFaceDescriptor,
+  deleteFaceDescriptor
 } from '../services/employee-service.js';
+import { db } from '../configFirebase.js';
+import { 
+  collection, 
+  getDocs 
+} from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 // Initialize data
 let employees = [];
 let currentUserId = null;
 let lastCacheRefresh = 0;
 
+// Tambahkan variabel global untuk face-api
+let faceDetectionNet;
+let faceLandmarkNet;
+let faceRecognitionNet;
+let isFaceApiInitialized = false;
+let captureStream = null;
+
+// Fungsi untuk memuat model face-api.js
+async function initFaceApi() {
+  if (isFaceApiInitialized) return true;
+  
+  try {
+    // Tampilkan loading state
+    showNotification("info", "Memuat model pengenalan wajah...");
+    
+    // Set path ke model
+    const MODEL_URL = 'js/face-api/models';
+    
+    // Muat model secara paralel
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+    
+    isFaceApiInitialized = true;
+    showNotification("success", "Model pengenalan wajah berhasil dimuat");
+    return true;
+  } catch (error) {
+    console.error("Error loading face-api models:", error);
+    showNotification("error", "Gagal memuat model pengenalan wajah");
+    return false;
+  }
+}
+
+// Fungsi untuk menampilkan modal pendaftaran wajah
+function showFaceRegistrationModal(employeeId, employeeName, barcode) {
+  // Buat modal jika belum ada
+  let faceModal = document.getElementById('faceRegistrationModal');
+  
+  if (!faceModal) {
+    const modalHtml = `
+      <div class="modal fade" id="faceRegistrationModal" tabindex="-1" aria-labelledby="faceRegistrationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="faceRegistrationModalLabel">Daftarkan Wajah Karyawan</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="employee-info mb-3">
+                <p><strong>Nama:</strong> <span id="faceEmployeeName"></span></p>
+                <p><strong>ID:</strong> <span id="faceEmployeeId"></span></p>
+              </div>
+              <div class="face-capture-container">
+                <video id="faceVideo" width="100%" autoplay muted></video>
+                <canvas id="faceCanvas" width="400" height="300" style="display:none;"></canvas>
+                <div id="faceDetectionStatus" class="mt-2 text-center">Siapkan kamera...</div>
+              </div>
+              <div class="face-preview-container mt-3" style="display:none;">
+                <h6>Preview Wajah Terdeteksi:</h6>
+                <canvas id="facePreview" width="150" height="150"></canvas>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+              <button type="button" class="btn btn-primary" id="startCamera">
+                <i class="fas fa-camera"></i> Mulai Kamera
+              </button>
+              <button type="button" class="btn btn-success" id="captureFace" disabled>
+                <i class="fas fa-save"></i> Simpan Wajah
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Tambahkan modal ke body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    faceModal = document.getElementById('faceRegistrationModal');
+  }
+  
+  // Isi informasi karyawan
+  document.getElementById('faceEmployeeName').textContent = employeeName;
+  document.getElementById('faceEmployeeId').textContent = employeeId;
+  
+  // Simpan barcode sebagai data attribute untuk digunakan nanti
+  faceModal.dataset.barcode = barcode;
+  faceModal.dataset.employeeId = employeeId;
+  
+  // Setup event listeners
+  document.getElementById('startCamera').addEventListener('click', startFaceCapture);
+  document.getElementById('captureFace').addEventListener('click', captureAndSaveFace);
+  
+  // Bersihkan saat modal ditutup
+  faceModal.addEventListener('hidden.bs.modal', stopFaceCapture);
+  
+  // Tampilkan modal
+  const modal = new bootstrap.Modal(faceModal);
+  modal.show();
+}
+
+// Fungsi untuk memulai capture wajah
+async function startFaceCapture() {
+  try {
+    // Inisialisasi face-api jika belum
+    if (!isFaceApiInitialized) {
+      const initialized = await initFaceApi();
+      if (!initialized) return;
+    }
+    
+    const video = document.getElementById('faceVideo');
+    const statusElement = document.getElementById('faceDetectionStatus');
+    
+    // Ubah teks tombol
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyiapkan...';
+    this.disabled = true;
+    
+    // Minta akses kamera
+    captureStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: "user"
+      }
+    });
+    
+    // Tampilkan video
+    video.srcObject = captureStream;
+    
+    // Mulai deteksi wajah saat video siap
+    video.onloadedmetadata = () => {
+      // Aktifkan tombol capture
+      document.getElementById('captureFace').disabled = false;
+      
+      // Ubah teks tombol
+      document.getElementById('startCamera').innerHTML = '<i class="fas fa-camera"></i> Kamera Aktif';
+      
+      // Mulai deteksi wajah
+      detectFace(video, statusElement);
+    };
+  } catch (error) {
+    console.error("Error starting camera:", error);
+    showNotification("error", "Gagal mengakses kamera. Pastikan kamera terhubung dan izin diberikan.");
+    
+    // Reset tombol
+    this.innerHTML = '<i class="fas fa-camera"></i> Mulai Kamera';
+    this.disabled = false;
+  }
+}
+
+// Fungsi untuk mendeteksi wajah secara real-time
+async function detectFace(videoElement, statusElement) {
+  if (!videoElement || !statusElement) return;
+  
+  const canvas = document.getElementById('faceCanvas');
+  const context = canvas.getContext('2d');
+  const previewCanvas = document.getElementById('facePreview');
+  const previewContext = previewCanvas.getContext('2d');
+  
+  // Sesuaikan ukuran canvas dengan video
+  canvas.width = videoElement.videoWidth;
+  canvas.height = videoElement.videoHeight;
+  
+  // Fungsi untuk deteksi berulang
+  async function detect() {
+    if (!captureStream) return; // Hentikan jika stream sudah ditutup
+    
+    try {
+      // Deteksi wajah
+      const detections = await faceapi.detectAllFaces(
+        videoElement, 
+        new faceapi.TinyFaceDetectorOptions()
+      ).withFaceLandmarks().withFaceDescriptors();
+      
+      // Gambar frame video ke canvas
+      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      
+      // Update status
+      if (detections.length === 0) {
+        statusElement.textContent = "Tidak ada wajah terdeteksi. Posisikan wajah di depan kamera.";
+        statusElement.className = "text-warning";
+        document.getElementById('captureFace').disabled = true;
+        document.querySelector('.face-preview-container').style.display = 'none';
+      } else if (detections.length > 1) {
+        statusElement.textContent = "Terdeteksi lebih dari satu wajah. Pastikan hanya ada satu wajah.";
+        statusElement.className = "text-danger";
+        document.getElementById('captureFace').disabled = true;
+        document.querySelector('.face-preview-container').style.display = 'none';
+      } else {
+        // Satu wajah terdeteksi
+        statusElement.textContent = "Wajah terdeteksi! Klik 'Simpan Wajah' untuk menyimpan.";
+        statusElement.className = "text-success";
+        document.getElementById('captureFace').disabled = false;
+  // Tampilkan preview wajah
+  const detection = detections[0];
+  const box = detection.detection.box;
+  
+  // Tampilkan container preview
+  document.querySelector('.face-preview-container').style.display = 'block';
+  
+  // Crop wajah dan tampilkan di preview
+  const faceImg = context.getImageData(box.x, box.y, box.width, box.height);
+  
+  // Reset preview canvas dan sesuaikan ukuran
+  previewCanvas.width = 150;
+  previewCanvas.height = 150;
+  
+  // Gambar wajah yang di-crop ke preview canvas dengan menyesuaikan ukuran
+  previewContext.putImageData(faceImg, 0, 0, 0, 0, Math.min(faceImg.width, 150), Math.min(faceImg.height, 150));
+}
+
+// Lanjutkan deteksi
+requestAnimationFrame(detect);
+} catch (error) {
+console.error("Error in face detection:", error);
+statusElement.textContent = "Terjadi kesalahan saat deteksi wajah.";
+statusElement.className = "text-danger";
+}
+}
+
+// Mulai deteksi
+detect();
+}
+
+// Fungsi untuk menghentikan capture
+function stopFaceCapture() {
+// Hentikan stream kamera
+if (captureStream) {
+captureStream.getTracks().forEach(track => track.stop());
+captureStream = null;
+}
+
+// Reset UI
+const video = document.getElementById('faceVideo');
+if (video) video.srcObject = null;
+
+const startButton = document.getElementById('startCamera');
+if (startButton) {
+startButton.innerHTML = '<i class="fas fa-camera"></i> Mulai Kamera';
+startButton.disabled = false;
+}
+
+const captureButton = document.getElementById('captureFace');
+if (captureButton) captureButton.disabled = true;
+
+const previewContainer = document.querySelector('.face-preview-container');
+if (previewContainer) previewContainer.style.display = 'none';
+}
+
+// Fungsi untuk mengambil dan menyimpan wajah
+async function captureAndSaveFace() {
+try {
+const modal = document.getElementById('faceRegistrationModal');
+const employeeId = modal.dataset.employeeId;
+const barcode = modal.dataset.barcode;
+
+const video = document.getElementById('faceVideo');
+const canvas = document.getElementById('faceCanvas');
+const statusElement = document.getElementById('faceDetectionStatus');
+
+// Disable tombol saat proses
+this.disabled = true;
+this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+// Deteksi wajah dari frame saat ini
+const detections = await faceapi.detectAllFaces(
+video, 
+new faceapi.TinyFaceDetectorOptions()
+).withFaceLandmarks().withFaceDescriptors();
+
+if (detections.length === 0) {
+statusElement.textContent = "Tidak ada wajah terdeteksi. Coba lagi.";
+statusElement.className = "text-warning";
+this.disabled = false;
+this.innerHTML = '<i class="fas fa-save"></i> Simpan Wajah';
+return;
+}
+
+if (detections.length > 1) {
+statusElement.textContent = "Terdeteksi lebih dari satu wajah. Pastikan hanya ada satu wajah.";
+statusElement.className = "text-danger";
+this.disabled = false;
+this.innerHTML = '<i class="fas fa-save"></i> Simpan Wajah';
+return;
+}
+
+// Ambil descriptor wajah (data biometrik)
+const faceDescriptor = detections[0].descriptor;
+
+// Simpan descriptor ke Firebase
+await saveFaceDescriptor(employeeId, faceDescriptor);
+
+// Opsional: Simpan juga foto wajah untuk UI
+// Gambar frame video ke canvas
+const context = canvas.getContext('2d');
+context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+// Crop wajah dari canvas
+const box = detections[0].detection.box;
+const faceCanvas = document.createElement('canvas');
+faceCanvas.width = box.width;
+faceCanvas.height = box.height;
+const faceContext = faceCanvas.getContext('2d');
+faceContext.drawImage(
+canvas, 
+box.x, box.y, box.width, box.height, 
+0, 0, box.width, box.height
+);
+
+// Konversi canvas ke blob
+const blob = await new Promise(resolve => faceCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+
+// Upload ke Cloudinary dan simpan URL ke Firebase
+await saveFacePhoto(employeeId, blob);
+
+// Tampilkan notifikasi sukses
+showNotification("success", "Data wajah berhasil disimpan!");
+
+// Tutup modal
+const bsModal = bootstrap.Modal.getInstance(modal);
+bsModal.hide();
+
+// Tambahkan indikator wajah terdaftar di tabel
+updateFaceRegistrationStatus(employeeId, true);
+
+} catch (error) {
+console.error("Error capturing and saving face:", error);
+showNotification("error", "Gagal menyimpan data wajah: " + error.message);
+
+// Reset tombol
+this.disabled = false;
+this.innerHTML = '<i class="fas fa-save"></i> Simpan Wajah';
+}
+}
+
+// Fungsi untuk memperbarui status pendaftaran wajah di UI
+function updateFaceRegistrationStatus(employeeId, isRegistered) {
+// Cari baris karyawan di tabel
+const rows = document.querySelectorAll('#staffList tr');
+
+for (const row of rows) {
+const actionCell = row.querySelector('td:last-child');
+const editButton = actionCell.querySelector('.edit-staff');
+
+if (editButton && editButton.getAttribute('data-id') === employeeId) {
+// Cek apakah sudah ada badge
+let faceBadge = actionCell.querySelector('.face-badge');
+
+if (isRegistered) {
+  // Tambahkan atau perbarui badge
+  if (!faceBadge) {
+    faceBadge = document.createElement('span');
+    faceBadge.className = 'badge bg-success face-badge ms-1';
+    faceBadge.innerHTML = '<i class="fas fa-check"></i> Wajah Terdaftar';
+    actionCell.insertBefore(faceBadge, editButton);
+  } else {
+    faceBadge.className = 'badge bg-success face-badge ms-1';
+    faceBadge.innerHTML = '<i class="fas fa-check"></i> Wajah Terdaftar';
+  }
+} else if (faceBadge) {
+  // Hapus badge jika ada
+  faceBadge.remove();
+}
+
+break;
+}
+}
+}
+
+// Tambahkan fungsi untuk memeriksa status pendaftaran wajah
+async function checkFaceRegistrationStatus() {
+try {
+  const snapshot = await getDocs(collection(db, "employeeFaces"));
+
+// Buat set dari ID karyawan yang sudah terdaftar wajahnya
+const registeredIds = new Set();
+snapshot.forEach(doc => {
+if (doc.data().faceDescriptor) {
+  registeredIds.add(doc.id);
+}
+});
+
+// Update UI untuk setiap karyawan
+employees.forEach(employee => {
+updateFaceRegistrationStatus(employee.id, registeredIds.has(employee.id));
+});
+
+} catch (error) {
+console.error("Error checking face registration status:", error);
+}
+}
+
+
+        
 // Fungsi untuk menghasilkan barcode
 function generateBarcode(barcodeValue, elementId) {
   try {
@@ -158,7 +561,7 @@ async function loadEmployees(forceRefresh = false) {
   }
 }
 
-// Modifikasi fungsi updateStaffTable untuk menampilkan barcode
+// Modifikasi fungsi updateStaffTable untuk menambahkan tombol pendaftaran wajah
 function updateStaffTable() {
   const tbody = document.getElementById('staffList');
   const emptyState = document.getElementById('emptyStaff');
@@ -190,6 +593,9 @@ function updateStaffTable() {
       </td>
       <td>${formatEmployeeType(employee.type) || '-'}</td>
       <td>
+        <button class="btn btn-sm btn-outline-info register-face" data-id="${employee.id}" data-name="${employee.name}" data-barcode="${employee.barcode}" data-bs-toggle="tooltip" title="Daftarkan Wajah">
+          <i class="fas fa-camera"></i>
+        </button>
         <button class="btn btn-sm btn-outline-primary edit-staff" data-id="${employee.id}" data-bs-toggle="tooltip" title="Edit">
           <i class="fas fa-edit"></i>
         </button>
@@ -214,6 +620,9 @@ function updateStaffTable() {
   
   // Add event listeners to action buttons
   addActionButtonListeners();
+  
+  // Periksa status pendaftaran wajah
+  checkFaceRegistrationStatus();
 }
 
 
@@ -254,6 +663,17 @@ function setupEventListeners() {
       console.error("Error refreshing barcode:", error);
     }
   });
+    // Tambahkan event listener untuk tombol refresh status wajah
+    document.getElementById('refreshFaceStatus')?.addEventListener('click', function() {
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      this.disabled = true;
+      
+      checkFaceRegistrationStatus().finally(() => {
+        this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        this.disabled = false;
+        showNotification("success", "Status pendaftaran wajah diperbarui");
+      });
+    });
     // Tambahkan event listener untuk download semua barcode
     document.getElementById('downloadAllBarcodes')?.addEventListener('click', downloadAllBarcodes);
   // Export users
@@ -282,6 +702,17 @@ function addActionButtonListeners() {
   // Delete button
   document.querySelectorAll('.delete-staff').forEach(button => {
     button.addEventListener('click', handleDeleteClick);
+  });
+
+  // Register face button
+  document.querySelectorAll('.register-face').forEach(button => {
+    button.addEventListener('click', function() {
+      const id = this.getAttribute('data-id');
+      const name = this.getAttribute('data-name');
+      const barcode = this.getAttribute('data-barcode');
+      
+      showFaceRegistrationModal(id, name, barcode);
+    });
   });
 }
 
@@ -378,7 +809,13 @@ async function handleConfirmDelete() {
   
   try {
     await deleteEmployee(currentUserId);
-    
+    // Hapus juga data wajah jika ada
+    try {
+      await deleteFaceDescriptor(currentUserId);
+    } catch (faceError) {
+      console.error("Error deleting face data:", faceError);
+      // Lanjutkan meskipun gagal menghapus data wajah
+    }
     // Close modal
     const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
     confirmModal.hide();
@@ -576,7 +1013,15 @@ window.handleLogout = function() {
 document.addEventListener("DOMContentLoaded", async function () {
   // Add notification styles
   addNotificationStyles();
-  
+    // Tambahkan tombol refresh status wajah ke card header
+    const cardActions = document.querySelector('.card-actions');
+    if (cardActions) {
+      const refreshFaceButton = document.createElement('button');
+      refreshFaceButton.id = 'refreshFaceStatus';
+      refreshFaceButton.className = 'btn btn-sm btn-outline-info me-2';
+      refreshFaceButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Status Wajah';
+      cardActions.prepend(refreshFaceButton);
+    }
   // Load employees
   await loadEmployees();
   
@@ -590,4 +1035,11 @@ document.addEventListener("DOMContentLoaded", async function () {
   
   // Set interval to update cache status indicator every minute
   setInterval(updateCacheStatusIndicator, 60000);
+
+  // Inisialisasi face-api di background
+  initFaceApi().then(success => {
+    if (success) {
+      console.log("Face API initialized successfully");
+    }
+  });
 });
