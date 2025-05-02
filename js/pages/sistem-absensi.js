@@ -496,6 +496,7 @@ function focusBarcodeInput() {
  * Memproses barcode yang dipindai dan melakukan verifikasi wajah
  * @param {string} barcode - Barcode yang dipindai
  */
+// Modifikasi fungsi processScannedBarcode untuk menghormati toggle verifikasi wajah
 async function processScannedBarcode(barcode) {
   // Validasi input barcode
   if (!barcode) {
@@ -550,230 +551,248 @@ async function processScannedBarcode(barcode) {
       return;
     }
     
-        // OPTIMASI: Inisialisasi sistem verifikasi wajah di background
-        if (!isFaceVerificationInitialized) {
-          // Inisialisasi di background tanpa menunggu
-          initializeFaceVerification().then(success => {
-            console.log("Background face verification initialization:", success ? "success" : "failed");
-          });
-        }
+    // OPTIMASI: Inisialisasi sistem verifikasi wajah di background
+    if (!isFaceVerificationInitialized && isFaceVerificationEnabled) {
+      // Inisialisasi di background tanpa menunggu
+      initializeFaceVerification().then(success => {
+        console.log("Background face verification initialization:", success ? "success" : "failed");
+      });
+    }
         
     // Tampilkan informasi karyawan yang sedang diproses
     showScanResult("info", `Memverifikasi identitas ${employee.name}...`);
     
-    // TAMBAHAN: Lakukan verifikasi wajah sebelum melanjutkan proses absensi
-    try {
-      // Import fungsi verifikasi wajah jika belum diimpor
-      if (typeof showFaceVerificationModal !== 'function') {
-        const faceVerification = await import('../face-verification.js');
-        window.showFaceVerificationModal = async function(employeeId, employeeName) {
-          try {
-            // Inisialisasi kamera
-            await faceVerification.loadFaceApiModels();
-            await faceVerification.initCamera();
-            
-            // Tampilkan modal verifikasi wajah
-            const modal = new bootstrap.Modal(document.getElementById('faceVerificationModal'));
-            
-            // Isi informasi karyawan
-            document.getElementById('faceEmployeeName').textContent = employeeName;
-            document.getElementById('faceEmployeeId').textContent = employeeId;
-            
-            modal.show();
-            
-            // Lakukan verifikasi wajah
-            const result = await faceVerification.detectAndVerifyFace(employeeId);
-            
-            // Tutup modal
-            modal.hide();
-            
-            // Hentikan kamera
-            faceVerification.stopCamera();
-            
-            return result;
-          } catch (error) {
-            console.error("Error in face verification:", error);
-            return { verified: false, message: error.message };
-          }
-        };
+    // PERBAIKAN: Cek apakah verifikasi wajah diaktifkan dari toggle
+    let verificationPassed = true; // Default jika verifikasi wajah dinonaktifkan
+    
+    if (isFaceVerificationEnabled) {
+      try {
+        // Import fungsi verifikasi wajah jika belum diimpor
+        if (typeof showFaceVerificationModal !== 'function') {
+          const faceVerification = await import('../face-verification.js');
+          window.showFaceVerificationModal = async function(employeeId, employeeName) {
+            try {
+              // Inisialisasi kamera
+              await faceVerification.loadFaceApiModels();
+              await faceVerification.initCamera();
+              
+              // Tampilkan modal verifikasi wajah
+              const modal = new bootstrap.Modal(document.getElementById('faceVerificationModal'));
+              
+              // Isi informasi karyawan
+              document.getElementById('faceEmployeeName').textContent = employeeName;
+              document.getElementById('faceEmployeeId').textContent = employeeId;
+              
+              modal.show();
+              
+              // Lakukan verifikasi wajah
+              const result = await faceVerification.detectAndVerifyFace(employeeId);
+              
+              // Tutup modal
+              modal.hide();
+              
+              // Hentikan kamera
+              faceVerification.stopCamera();
+              
+              return result;
+            } catch (error) {
+              console.error("Error in face verification:", error);
+              return { verified: false, message: error.message };
+            }
+          };
+        }
+        
+        // Lakukan verifikasi wajah
+        const verificationResult = await showFaceVerificationModal(employee.id, employee.name);
+        
+        // Jika verifikasi gagal, hentikan proses absensi
+        if (!verificationResult || !verificationResult.verified) {
+          showScanResult("error", `Verifikasi wajah gagal: ${verificationResult?.message || 'Wajah tidak dikenali'}`);
+          playNotificationSound('error', '');
+          focusBarcodeInput();
+          return;
+        }
+        
+        // Jika verifikasi berhasil, lanjutkan proses absensi
+        showScanResult("success", "Verifikasi wajah berhasil!");
+        verificationPassed = true;
+      } catch (verificationError) {
+        console.error("Error during face verification:", verificationError);
+        
+        // Jika fitur verifikasi wajah gagal, tampilkan pesan dan lanjutkan proses
+        // Ini untuk menghindari blocking absensi jika ada masalah dengan kamera atau face-api
+        showScanResult("warning", "Verifikasi wajah dilewati: " + verificationError.message);
+        
+        // Tunggu sebentar agar pesan dapat dibaca
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Tetap lanjutkan proses jika terjadi error teknis
+        verificationPassed = true;
       }
-      
-      // Lakukan verifikasi wajah
-      const verificationResult = await showFaceVerificationModal(employee.id, employee.name);
-      
-      // Jika verifikasi gagal, hentikan proses absensi
-      if (!verificationResult || !verificationResult.verified) {
-        showScanResult("error", `Verifikasi wajah gagal: ${verificationResult?.message || 'Wajah tidak dikenali'}`);
-        playNotificationSound('error', '');
-        focusBarcodeInput();
-        return;
-      }
-      
-      // Jika verifikasi berhasil, lanjutkan proses absensi
-      showScanResult("success", "Verifikasi wajah berhasil!");
-    } catch (verificationError) {
-      console.error("Error during face verification:", verificationError);
-      
-      // Jika fitur verifikasi wajah gagal, tampilkan pesan dan lanjutkan proses
-      // Ini untuk menghindari blocking absensi jika ada masalah dengan kamera atau face-api
-      showScanResult("warning", "Verifikasi wajah dilewati: " + verificationError.message);
+    } else {
+      // Jika verifikasi wajah dinonaktifkan, tampilkan pesan
+      console.log("Face verification is disabled, proceeding with barcode only");
+      showScanResult("info", "Verifikasi wajah dinonaktifkan, melanjutkan dengan barcode");
       
       // Tunggu sebentar agar pesan dapat dibaca
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    // Get scan type (in/out)
-    const scanType = document.querySelector('input[name="scanType"]:checked')?.value || "in";
-    
-    // Get selected shift
-    const selectedShift = document.querySelector('input[name="shiftOption"]:checked')?.value || "morning";
-    
-    // Cek apakah data kehadiran hari ini sudah di-cache
-    let todayRecords = attendanceCache.get(today) || [];
-    
-    // Cari record kehadiran karyawan ini
-    const existingRecord = todayRecords.find(
-      (record) => record.employeeId === employee.employeeId &&
-                 (record.date === today || 
-                  (record.date instanceof Date && getLocalDateStringFromDate(record.date) === today))
-    );
-    
-    if (scanType === "in") {
-      // Check if already checked in
-      if (existingRecord && existingRecord.timeIn) {
-        showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
-        playNotificationSound('already-in', employee.name);
-        focusBarcodeInput();
-        return;
-      }
+    // Hanya lanjutkan jika verifikasi berhasil atau verifikasi wajah dinonaktifkan
+    if (verificationPassed) {
+      // Get scan type (in/out)
+      const scanType = document.querySelector('input[name="scanType"]:checked')?.value || "in";
       
-      // Use employee's default type and shift from their profile
-      const employeeType = employee.type || "staff";
-      const shift = selectedShift;
+      // Get selected shift
+      const selectedShift = document.querySelector('input[name="shiftOption"]:checked')?.value || "morning";
       
-      // Check if late based on employee type and shift
-      const isLate = checkIfLate(timeString, employeeType, shift);
+      // Cek apakah data kehadiran hari ini sudah di-cache
+      let todayRecords = attendanceCache.get(today) || [];
       
-      // Calculate late minutes if employee is late
-      let lateMinutes = 0;
-      if (isLate) {
-        const currentTime = new Date(`1970-01-01T${timeString}`);
-        const thresholdTime = getThresholdTime(employeeType, shift);
-        lateMinutes = Math.floor((currentTime - thresholdTime) / (1000 * 60));
-      }
+      // Cari record kehadiran karyawan ini
+      const existingRecord = todayRecords.find(
+        (record) => record.employeeId === employee.employeeId &&
+                   (record.date === today || 
+                    (record.date instanceof Date && getLocalDateStringFromDate(record.date) === today))
+      );
       
-      // Record attendance
-      const attendance = {
-        employeeId: employee.employeeId,
-        name: employee.name,
-        type: employeeType,
-        shift: shift,
-        timeIn: now,
-        status: isLate ? "Terlambat" : "Tepat Waktu",
-        lateMinutes: isLate ? lateMinutes : 0,
-        date: today,
-        // TAMBAHAN: Tambahkan flag verifikasi wajah
-        faceVerified: true
-      };
-      
-      console.log("Saving attendance record:", attendance);
-      const savedRecord = await recordAttendance(attendance);
-      
-      // Update local cache dengan record baru
-      if (savedRecord && savedRecord.id) {
-        // Tambahkan record baru ke cache
-        const newRecord = {
-          ...attendance,
-          id: savedRecord.id
+      if (scanType === "in") {
+        // Check if already checked in
+        if (existingRecord && existingRecord.timeIn) {
+          showScanResult("error", `${employee.name} sudah melakukan scan masuk hari ini!`);
+          playNotificationSound('already-in', employee.name);
+          focusBarcodeInput();
+          return;
+        }
+        
+        // Use employee's default type and shift from their profile
+        const employeeType = employee.type || "staff";
+        const shift = selectedShift;
+        
+        // Check if late based on employee type and shift
+        const isLate = checkIfLate(timeString, employeeType, shift);
+        
+        // Calculate late minutes if employee is late
+        let lateMinutes = 0;
+        if (isLate) {
+          const currentTime = new Date(`1970-01-01T${timeString}`);
+          const thresholdTime = getThresholdTime(employeeType, shift);
+          lateMinutes = Math.floor((currentTime - thresholdTime) / (1000 * 60));
+        }
+        
+        // Record attendance
+        const attendance = {
+          employeeId: employee.employeeId,
+          name: employee.name,
+          type: employeeType,
+          shift: shift,
+          timeIn: now,
+          status: isLate ? "Terlambat" : "Tepat Waktu",
+          lateMinutes: isLate ? lateMinutes : 0,
+          date: today,
+          // TAMBAHAN: Tambahkan flag verifikasi wajah
+          faceVerified: isFaceVerificationEnabled
         };
         
+        console.log("Saving attendance record:", attendance);
+        const savedRecord = await recordAttendance(attendance);
+        
+        // Update local cache dengan record baru
+        if (savedRecord && savedRecord.id) {
+          // Tambahkan record baru ke cache
+          const newRecord = {
+            ...attendance,
+            id: savedRecord.id
+          };
+          
+          // Update cache
+          const updatedRecords = [...todayRecords];
+          updatedRecords.push(newRecord);
+          attendanceCache.set(today, updatedRecords);
+          
+          // Update variabel global
+          attendanceRecords = updatedRecords;
+        }
+        
+        // Invalidate cache untuk laporan kehadiran
+        localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
+        localStorage.setItem("lastAttendanceScanDate", today);
+        
+        // Hapus cache laporan yang mungkin mencakup hari ini
+        clearTodayAttendanceCache();
+        
+        // Tampilkan pesan sukses
+        showScanResult(
+          "success",
+          `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
+            isLate ? `Terlambat ${lateMinutes} menit` : "Tepat Waktu"
+          }`
+        );
+        
+        // Play notification sound based on status
+        if (isLate) {
+          playNotificationSound('late', employee.name);
+        } else {
+          playNotificationSound('success-in', employee.name);
+        }
+        
+        // Trigger event untuk update UI
+        notifyAttendanceUpdate(today);
+        
+        // Update UI stats tanpa query baru
+        updateAttendanceStats();
+      } else {
+        // Scan out logic
+        if (!existingRecord) {
+          showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
+          playNotificationSound('error', '');
+          focusBarcodeInput();
+          return;
+        }
+        
+        if (existingRecord.timeOut) {
+          showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
+          playNotificationSound('already-out', employee.name);
+          focusBarcodeInput();
+          return;
+        }
+        
+        // Update attendance with checkout time
+        await updateAttendanceOut(existingRecord.id, now);
+        
+        // Update local cache
+        const updatedRecords = todayRecords.map(record => {
+          if (record.id === existingRecord.id) {
+            return {
+              ...record,
+              timeOut: now
+            };
+          }
+          return record;
+        });
+        
         // Update cache
-        const updatedRecords = [...todayRecords];
-        updatedRecords.push(newRecord);
         attendanceCache.set(today, updatedRecords);
         
         // Update variabel global
         attendanceRecords = updatedRecords;
+        
+        // Tandai bahwa ada perubahan data
+        localStorage.setItem("lastAttendanceUpdate", Date.now().toString());
+        
+        // Perbarui cache untuk hari ini
+        updateCacheTimestamp(today, 0); // Set timestamp ke 0 untuk memaksa refresh berikutnya
+        
+        // Tampilkan pesan sukses
+        showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
+        playNotificationSound('success-out', employee.name);
+        
+        // Trigger event untuk update UI
+        notifyAttendanceUpdate(today);
+        
+        // Update UI stats tanpa query baru
+        updateAttendanceStats();
       }
-      
-      // Invalidate cache untuk laporan kehadiran
-      localStorage.setItem("lastAttendanceScanTime", Date.now().toString());
-      localStorage.setItem("lastAttendanceScanDate", today);
-      
-      // Hapus cache laporan yang mungkin mencakup hari ini
-      clearTodayAttendanceCache();
-      
-      // Tampilkan pesan sukses
-      showScanResult(
-        "success",
-        `Absensi masuk berhasil: ${employee.name} (${formatEmployeeType(employeeType)} - ${formatShift(shift)}) - ${
-          isLate ? `Terlambat ${lateMinutes} menit` : "Tepat Waktu"
-        }`
-      );
-      
-      // Play notification sound based on status
-      if (isLate) {
-        playNotificationSound('late', employee.name);
-      } else {
-        playNotificationSound('success-in', employee.name);
-      }
-      
-      // Trigger event untuk update UI
-      notifyAttendanceUpdate(today);
-      
-      // Update UI stats tanpa query baru
-      updateAttendanceStats();
-    } else {
-      // Scan out logic
-      if (!existingRecord) {
-        showScanResult("error", `${employee.name} belum melakukan scan masuk hari ini!`);
-        playNotificationSound('error', '');
-        focusBarcodeInput();
-        return;
-      }
-      
-      if (existingRecord.timeOut) {
-        showScanResult("error", `${employee.name} sudah melakukan scan pulang hari ini!`);
-        playNotificationSound('already-out', employee.name);
-        focusBarcodeInput();
-        return;
-      }
-      
-      // Update attendance with checkout time
-      await updateAttendanceOut(existingRecord.id, now);
-      
-      // Update local cache
-      const updatedRecords = todayRecords.map(record => {
-        if (record.id === existingRecord.id) {
-          return {
-            ...record,
-            timeOut: now
-          };
-        }
-        return record;
-      });
-      
-      // Update cache
-      attendanceCache.set(today, updatedRecords);
-      
-      // Update variabel global
-      attendanceRecords = updatedRecords;
-      
-      // Tandai bahwa ada perubahan data
-      localStorage.setItem("lastAttendanceUpdate", Date.now().toString());
-      
-      // Perbarui cache untuk hari ini
-      updateCacheTimestamp(today, 0); // Set timestamp ke 0 untuk memaksa refresh berikutnya
-      
-      // Tampilkan pesan sukses
-      showScanResult("success", `Absensi pulang berhasil: ${employee.name}`);
-      playNotificationSound('success-out', employee.name);
-      
-      // Trigger event untuk update UI
-      notifyAttendanceUpdate(today);
-      
-      // Update UI stats tanpa query baru
-      updateAttendanceStats();
     }
   } catch (error) {
     console.error("Error scanning barcode:", error);
@@ -1492,23 +1511,78 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
         scannerHeader.appendChild(faceVerificationToggle);
         
-        // Tambahkan event listener untuk toggle
-        document.getElementById('faceVerificationToggle')?.addEventListener('change', function() {
-          isFaceVerificationEnabled = this.checked;
-          console.log(`Verifikasi wajah ${isFaceVerificationEnabled ? 'diaktifkan' : 'dinonaktifkan'}`);
+        // Tambahkan event listener untuk toggle dengan perbaikan
+        const toggleElement = document.getElementById('faceVerificationToggle');
+        if (toggleElement) {
+          toggleElement.addEventListener('change', function() {
+            // Update variabel global
+            isFaceVerificationEnabled = this.checked;
+            console.log(`Verifikasi wajah ${isFaceVerificationEnabled ? 'diaktifkan' : 'dinonaktifkan'}`);
+            
+            // Simpan preferensi ke localStorage agar tetap konsisten setelah refresh
+            localStorage.setItem('faceVerificationEnabled', isFaceVerificationEnabled ? 'true' : 'false');
+            
+            // Tampilkan pesan konfirmasi
+            showScanResult(
+              "info", 
+              `Verifikasi wajah telah ${isFaceVerificationEnabled ? 'diaktifkan' : 'dinonaktifkan'}`,
+              false,
+              true,
+              2000
+            );
+            
+            // Sembunyikan/tampilkan UI terkait verifikasi wajah
+            const faceVerificationContainer = document.querySelector('.face-verification-container');
+            if (faceVerificationContainer) {
+              faceVerificationContainer.style.display = isFaceVerificationEnabled ? 'block' : 'none';
+            }
+            
+            // Sembunyikan/tampilkan tombol inisialisasi kamera
+            const initCameraButton = document.getElementById('initCamera');
+            if (initCameraButton) {
+              initCameraButton.style.display = isFaceVerificationEnabled ? 'inline-block' : 'none';
+            }
+            
+            // Sembunyikan/tampilkan tombol reset data wajah
+            const resetFaceButton = document.getElementById('resetFaceData');
+            if (resetFaceButton) {
+              resetFaceButton.style.display = isFaceVerificationEnabled ? 'inline-block' : 'none';
+            }
+            
+            // Jika verifikasi wajah diaktifkan, coba inisialisasi di background
+            if (isFaceVerificationEnabled && !isFaceVerificationInitialized) {
+              initializeFaceVerification().then(success => {
+                console.log("Background face verification initialization:", success ? "success" : "failed");
+              });
+            }
+            
+            // Jika verifikasi wajah dinonaktifkan, hentikan kamera jika sedang aktif
+            if (!isFaceVerificationEnabled && videoStream) {
+              stopCamera();
+            }
+          });
           
-          // Sembunyikan/tampilkan container verifikasi wajah
-          const faceVerificationContainer = document.querySelector('.face-verification-container');
-          if (faceVerificationContainer) {
-            faceVerificationContainer.style.display = isFaceVerificationEnabled ? 'block' : 'none';
+          // Inisialisasi toggle berdasarkan nilai yang tersimpan di localStorage
+          const savedPreference = localStorage.getItem('faceVerificationEnabled');
+          if (savedPreference !== null) {
+            const isEnabled = savedPreference === 'true';
+            // Hanya update jika berbeda dari nilai default
+            if (isEnabled !== isFaceVerificationEnabled) {
+              toggleElement.checked = isEnabled;
+              isFaceVerificationEnabled = isEnabled;
+              
+              // Trigger event change untuk menerapkan perubahan UI
+              const event = new Event('change');
+              toggleElement.dispatchEvent(event);
+            }
           }
-        });
+        }
       }
       
-      // Sembunyikan UI verifikasi wajah sampai diperlukan
+      // Sembunyikan UI verifikasi wajah jika fitur dinonaktifkan
       const faceVerificationContainer = document.querySelector('.face-verification-container');
       if (faceVerificationContainer) {
-        faceVerificationContainer.style.display = 'none';
+        faceVerificationContainer.style.display = isFaceVerificationEnabled ? 'block' : 'none';
       }
       
       // Coba inisialisasi model di background
