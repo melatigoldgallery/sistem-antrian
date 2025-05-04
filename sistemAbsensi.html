@@ -33,46 +33,45 @@
     <!-- Tambahkan sebelum </head> -->
     <script src="js/face-api/face-api.min.js"></script>
     <!-- Tambahkan di bagian head -->
-<style>
-  /* Styling untuk verifikasi wajah */
-  .face-capture-container {
-    position: relative;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 15px;
-  }
-  
-  .face-capture-container video {
-    width: 100%;
-    background-color: #f8f9fa;
-    border-radius: 6px;
-  }
-  
-  #faceVerificationStatus {
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    margin-top: 10px;
-  }
-  
-  .text-success {
-    color: #28a745;
-  }
-  
-  .text-danger {
-    color: #dc3545;
-  }
-  
-  .text-warning {
-    color: #ffc107;
-  }
-  
-  .text-info {
-    color: #17a2b8;
-  }
-</style>
+    <style>
+      /* Styling untuk verifikasi wajah */
+      .face-capture-container {
+        position: relative;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 15px;
+      }
 
+      .face-capture-container video {
+        width: 100%;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+      }
+
+      #faceVerificationStatus {
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+
+      .text-success {
+        color: #28a745;
+      }
+
+      .text-danger {
+        color: #dc3545;
+      }
+
+      .text-warning {
+        color: #ffc107;
+      }
+
+      .text-info {
+        color: #17a2b8;
+      }
+    </style>
 
     <title>Sistem Absensi Staff - Melati Gold Shop</title>
   </head>
@@ -378,7 +377,7 @@
                 </div>
                 <div class="stat-card-info">
                   <h3 id="leaveCount">0</h3>
-                  <p>Izin</p>
+                  <p>Izin Libur</p>
                 </div>
               </div>
             </div>
@@ -422,7 +421,13 @@
                       </label>
                     </div>
                     <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="radio" name="scanType" id="scanTypeLatePerm" value="latepermission" />
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        name="scanType"
+                        id="scanTypeLatePerm"
+                        value="latepermission"
+                      />
                       <label class="form-check-label" for="scanTypeLatePerm">
                         <i class="fas fa-hourglass-half"></i>
                         Izin Terlambat
@@ -484,14 +489,19 @@
                       <i class="fas fa-paper-plane"></i>
                     </button>
                   </div>
-                  <div id="latePermissionForm" class="mt-3" style="display: none;">
+                  <!-- Tambahkan ini setelah scanner-input-group -->
+                  <div id="latePermissionForm" class="mt-3" style="display: none">
                     <div class="form-group">
-                      <label for="latePermissionReason"><i class="fas fa-comment-alt"></i> Alasan Izin Terlambat:</label>
-                      <textarea id="latePermissionReason" class="form-control" rows="2" placeholder="Masukkan alasan izin terlambat..."></textarea>
-                    </div>
-                    <div class="form-group mt-2">
-                      <label for="estimatedArrival"><i class="fas fa-clock"></i> Perkiraan Waktu Datang:</label>
-                      <input type="time" id="estimatedArrival" class="form-control">
+                      <label for="latePermissionCode">
+                        <i class="fas fa-key"></i>
+                        Kode Verifikasi:
+                      </label>
+                      <input
+                        type="text"
+                        id="latePermissionCode"
+                        class="form-control"
+                        placeholder="Masukkan kode verifikasi dari HRD"
+                      />
                     </div>
                   </div>
                   <div id="scanResult" class="scan-result"></div>
@@ -507,31 +517,42 @@
       </main>
     </div>
     <!-- Add this at the end of your body tag -->
-<div class="modal fade" id="faceVerificationModal" tabindex="-1" aria-labelledby="faceVerificationModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="faceVerificationModalLabel">Verifikasi Wajah</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="employee-info mb-3">
-          <p><strong>Nama:</strong> <span id="faceEmployeeName"></span></p>
-          <p><strong>ID:</strong> <span id="faceEmployeeId"></span></p>
+    <div
+      class="modal fade"
+      id="faceVerificationModal"
+      tabindex="-1"
+      aria-labelledby="faceVerificationModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="faceVerificationModalLabel">Verifikasi Wajah</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="employee-info mb-3">
+              <p>
+                <strong>Nama:</strong>
+                <span id="faceEmployeeName"></span>
+              </p>
+              <p>
+                <strong>ID:</strong>
+                <span id="faceEmployeeId"></span>
+              </p>
+            </div>
+            <div class="face-capture-container">
+              <video id="faceVerificationVideo" width="100%" autoplay muted></video>
+              <canvas id="faceVerificationCanvas" width="400" height="300" style="display: none"></canvas>
+              <div id="faceVerificationStatus" class="mt-2 text-center">Menyiapkan kamera...</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          </div>
         </div>
-        <div class="face-capture-container">
-          <video id="faceVerificationVideo" width="100%" autoplay muted></video>
-          <canvas id="faceVerificationCanvas" width="400" height="300" style="display:none;"></canvas>
-          <div id="faceVerificationStatus" class="mt-2 text-center">Menyiapkan kamera...</div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
       </div>
     </div>
-  </div>
-</div>
-
 
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>

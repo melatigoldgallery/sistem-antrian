@@ -574,7 +574,10 @@ function setupEventListeners() {
     generateReportBtn.addEventListener("click", generateReport);
   }
   
-  // Export buttons
+    // Tambahkan event listener untuk filter izin terlambat
+    document.getElementById('filterLatePermission')?.addEventListener('click', () => filterAttendanceByStatus('latepermission'));
+
+    // Export buttons
   const exportExcelBtn = document.getElementById("exportExcelBtn");
   if (exportExcelBtn) {
     exportExcelBtn.addEventListener("click", exportToExcel);
@@ -1067,17 +1070,20 @@ function setupFilterListeners() {
         filteredData = currentAttendanceData.filter(record => record.status === "Tepat Waktu");
       } else if (status === "late") {
         filteredData = currentAttendanceData.filter(record => record.status === "Terlambat");
+      } else if (status === "latepermission") {
+        filteredData = currentAttendanceData.filter(record => record.status === "Izin Terlambat");
       }
       
       // Update UI
-      renderAttendanceTable(filteredData);
-      calculateStats(filteredData);
+      updateSummaryCards();
+      displayAllData();
       
       // Update dropdown button text
       const statusFilterDropdown = document.getElementById("statusFilterDropdown");
       if (statusFilterDropdown) {
         const statusText = status === "all" ? "Status" : 
-                          status === "ontime" ? "Tepat Waktu" : "Terlambat";
+                          status === "ontime" ? "Tepat Waktu" : 
+                          status === "late" ? "Terlambat" : "Izin Terlambat";
         statusFilterDropdown.innerHTML = `<i class="fas fa-filter"></i> ${statusText}`;
       }
     });
@@ -1195,6 +1201,8 @@ function updateSummaryCards() {
   const totalAttendance = filteredData.length;
   const onTimeCount = filteredData.filter((record) => record.status === "Tepat Waktu").length;
   const lateCount = filteredData.filter((record) => record.status === "Terlambat").length;
+  // Tambahkan perhitungan untuk izin terlambat
+  const latePermissionCount = filteredData.filter((record) => record.status === "Izin Terlambat").length;
 
   // Update UI with null checks
   const totalAttendanceEl = document.getElementById("totalAttendance");
@@ -1205,6 +1213,10 @@ function updateSummaryCards() {
 
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) lateCountEl.textContent = lateCount;
+  
+  // Update UI untuk izin terlambat
+  const latePermissionCountEl = document.getElementById("latePermissionCount");
+  if (latePermissionCountEl) latePermissionCountEl.textContent = latePermissionCount;
 }
 
 /// Perbaikan fungsi filter tipe karyawan
@@ -1218,7 +1230,8 @@ function filterAttendanceData(filterType, value) {
         return record.shift === value;
       } else if (filterType === "status") {
         return (value === "ontime" && record.status === "Tepat Waktu") || 
-               (value === "late" && record.status === "Terlambat");
+               (value === "late" && record.status === "Terlambat") ||
+               (value === "latepermission" && record.status === "Izin Terlambat");
       } else if (filterType === "type") {
         return record.type === value;
       }
@@ -1240,6 +1253,16 @@ function filterAttendanceData(filterType, value) {
     if (employeeFilterDropdown) {
       employeeFilterDropdown.innerHTML = `<i class="fas fa-users"></i> ${buttonText}`;
     }
+  } else if (filterType === "status") {
+    let statusText = "Status";
+    if (value === "ontime") statusText = "Tepat Waktu";
+    else if (value === "late") statusText = "Terlambat";
+    else if (value === "latepermission") statusText = "Izin Terlambat";
+    
+    const statusFilterDropdown = document.getElementById("statusFilterDropdown");
+    if (statusFilterDropdown) {
+      statusFilterDropdown.innerHTML = `<i class="fas fa-filter"></i> ${statusText}`;
+    }
   }
 }
 
@@ -1255,6 +1278,9 @@ function filterAttendanceByStatus(status) {
   } else if (status === 'late') {
     // Filter terlambat - pastikan case sensitive sesuai dengan data
     filteredData = currentAttendanceData.filter(record => record.status === "Terlambat");
+  } else if (status === 'latepermission') {
+    // Filter izin terlambat
+    filteredData = currentAttendanceData.filter(record => record.status === "Izin Terlambat");
   }
   
   // Update UI
@@ -1270,6 +1296,8 @@ function filterAttendanceByStatus(status) {
       statusFilterDropdown.innerHTML = '<i class="fas fa-filter"></i> Tepat Waktu';
     } else if (status === 'late') {
       statusFilterDropdown.innerHTML = '<i class="fas fa-filter"></i> Terlambat';
+    } else if (status === 'latepermission') {
+      statusFilterDropdown.innerHTML = '<i class="fas fa-filter"></i> Izin Terlambat';
     }
   }
 }

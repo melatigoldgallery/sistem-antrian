@@ -257,47 +257,63 @@
             </div>
 
             <!-- Summary Cards -->
-            <div class="row mb-4" id="summaryCards" style="display: none">
-              <div class="col-md-4 mb-3">
-                <div class="card attendance-summary-card bg-light">
-                  <div class="card-body d-flex align-items-center">
-                    <div class="summary-icon bg-primary">
-                      <i class="fas fa-users"></i>
-                    </div>
-                    <div>
-                      <p class="summary-value" id="totalAttendance">0</p>
-                      <p class="summary-label">Total Kehadiran</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4 mb-3">
-                <div class="card attendance-summary-card bg-success bg-opacity-10">
-                  <div class="card-body d-flex align-items-center">
-                    <div class="summary-icon bg-success">
-                      <i class="fas fa-user-check"></i>
-                    </div>
-                    <div>
-                      <p class="summary-value text-success" id="onTimeCount">0</p>
-                      <p class="summary-label">Tepat Waktu</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4 mb-3">
-                <div class="card attendance-summary-card bg-warning bg-opacity-10">
-                  <div class="card-body d-flex align-items-center">
-                    <div class="summary-icon bg-warning">
-                      <i class="fas fa-user-clock"></i>
-                    </div>
-                    <div>
-                      <p class="summary-value text-warning" id="lateCount">0</p>
-                      <p class="summary-label">Terlambat</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- Summary Cards -->
+<div class="row mb-4" id="summaryCards" style="display: none">
+  <div class="col-md-3 mb-3">
+    <div class="card attendance-summary-card bg-light">
+      <div class="card-body d-flex align-items-center">
+        <div class="summary-icon bg-primary">
+          <i class="fas fa-users"></i>
+        </div>
+        <div>
+          <p class="summary-value" id="totalAttendance">0</p>
+          <p class="summary-label">Total Kehadiran</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card attendance-summary-card bg-success bg-opacity-10">
+      <div class="card-body d-flex align-items-center">
+        <div class="summary-icon bg-success">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div>
+          <p class="summary-value text-success" id="onTimeCount">0</p>
+          <p class="summary-label">Tepat Waktu</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card attendance-summary-card bg-warning bg-opacity-10">
+      <div class="card-body d-flex align-items-center">
+        <div class="summary-icon bg-warning">
+          <i class="fas fa-user-clock"></i>
+        </div>
+        <div>
+          <p class="summary-value text-warning" id="lateCount">0</p>
+          <p class="summary-label">Terlambat</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Tambahkan statscard untuk Izin Terlambat -->
+  <div class="col-md-3 mb-3">
+    <div class="card attendance-summary-card bg-info bg-opacity-10">
+      <div class="card-body d-flex align-items-center">
+        <div class="summary-icon bg-info">
+          <i class="fas fa-user-edit"></i>
+        </div>
+        <div>
+          <p class="summary-value text-info" id="latePermissionCount">0</p>
+          <p class="summary-label">Izin Terlambat</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
            <!-- Pastikan ID adalah "actionButtons" -->
 <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important;">
@@ -335,6 +351,7 @@
           <li><a class="dropdown-item" href="#" id="filterAll">Semua</a></li>
           <li><a class="dropdown-item" href="#" id="filterOnTime">Tepat Waktu</a></li>
           <li><a class="dropdown-item" href="#" id="filterLate">Terlambat</a></li>
+          <li><a class="dropdown-item" href="#" id="filterLatePermission">Izin Terlambat</a></li>
         </ul>
       </div>
                    <!-- Filter Tipe Karyawan -->
