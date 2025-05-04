@@ -472,8 +472,25 @@ export function clearLeaveCacheForDate(date) {
 // Fungsi untuk mendapatkan pengajuan izin berdasarkan tanggal
 export async function getLeaveRequestsByDate(date, forceRefresh = false) {
   try {
-    // Format tanggal untuk query
-    const formattedDate = typeof date === "string" ? date : date.toISOString().split("T")[0];
+    // PERBAIKAN: Tangani kasus date null atau undefined
+    if (!date) {
+      // Gunakan tanggal hari ini jika date tidak disediakan
+      const today = new Date();
+      date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
+
+    // Format tanggal untuk query - PERBAIKAN: Tambahkan null check
+    let formattedDate;
+    if (typeof date === "string") {
+      formattedDate = date;
+    } else if (date instanceof Date) {
+      formattedDate = date.toISOString().split("T")[0];
+    } else {
+      // Fallback jika format tidak dikenali
+      const today = new Date();
+      formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      console.warn(`Unrecognized date format, using today's date: ${formattedDate}`);
+    }
 
     // Cek cache jika tidak force refresh
     if (!forceRefresh && leaveCache.has(formattedDate)) {
@@ -482,14 +499,14 @@ export async function getLeaveRequestsByDate(date, forceRefresh = false) {
     }
 
     console.log(`Fetching leave data for ${formattedDate}`);
-
+    
     // Query Firestore untuk mendapatkan pengajuan izin pada tanggal tersebut
     const leaveRef = collection(db, "leave-requests");
     const q = query(leaveRef, where("rawLeaveDate", "==", formattedDate));
-
+    
     const querySnapshot = await getDocs(q);
     const leaveData = [];
-
+    
     querySnapshot.forEach((doc) => {
       const leave = { id: doc.id, ...doc.data() };
       leaveData.push(leave);
@@ -497,100 +514,122 @@ export async function getLeaveRequestsByDate(date, forceRefresh = false) {
 
     // Proses data izin
     const processedLeaveData = leaveData.map((leave) => {
+      // PERBAIKAN: Tambahkan null check untuk leave
+      if (!leave) return null;
+      
       // Pastikan replacementDetails tetap utuh
       if (!leave.replacementDetails || Object.keys(leave.replacementDetails).length === 0) {
         // Coba rekonstruksi replacementDetails dari data yang ada
         leave.replacementDetails = {};
-
+        
         if (leave.replacementType) {
           // Normalisasi replacementType ke lowercase untuk konsistensi
           const replacementType = typeof leave.replacementType === "string" ? leave.replacementType.toLowerCase() : "";
-
+          
           if (replacementType === "libur") {
             leave.replacementDetails.type = "libur";
             leave.replacementDetails.needReplacement = true;
-
+            
             // Handle tanggal pengganti
             if (leave.replacementDate) {
-              // Handle berbagai format tanggal
-              if (typeof leave.replacementDate === "string") {
-                leave.replacementDetails.formattedDate = leave.replacementDate;
-              } else if (leave.replacementDate instanceof Date) {
-                leave.replacementDetails.formattedDate = leave.replacementDate.toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
-              } else if (leave.replacementDate instanceof Timestamp) {
-                leave.replacementDetails.formattedDate = leave.replacementDate.toDate().toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
-              } else if (leave.replacementDate.seconds) {
-                leave.replacementDetails.formattedDate = new Date(
-                  leave.replacementDate.seconds * 1000
-                ).toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
+              // PERBAIKAN: Tambahkan try-catch untuk menangani error format tanggal
+              try {
+                // Handle berbagai format tanggal
+                if (typeof leave.replacementDate === "string") {
+                  leave.replacementDetails.formattedDate = leave.replacementDate;
+                } else if (leave.replacementDate instanceof Date) {
+                  leave.replacementDetails.formattedDate = leave.replacementDate.toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                } else if (leave.replacementDate instanceof Timestamp) {
+                  leave.replacementDetails.formattedDate = leave.replacementDate.toDate().toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                } else if (leave.replacementDate.seconds) {
+                  leave.replacementDetails.formattedDate = new Date(
+                    leave.replacementDate.seconds * 1000
+                  ).toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                }
+              } catch (dateError) {
+                console.warn(`Error formatting replacement date: ${dateError.message}`);
+                leave.replacementDetails.formattedDate = "Format tanggal tidak valid";
               }
             }
-
+            
             // Handle multiple dates
             if (leave.replacementDates && Array.isArray(leave.replacementDates)) {
-              leave.replacementDetails.dates = leave.replacementDates.map((date) => {
-                if (typeof date === "object" && date.date) {
+              try {
+                leave.replacementDetails.dates = leave.replacementDates.map((date) => {
+                  if (!date) return { date: null, formattedDate: "Tanggal tidak valid" };
+                  
+                  if (typeof date === "object" && date.date) {
+                    return {
+                      date: date.date,
+                      formattedDate: date.formattedDate || formatDateToLocale(date.date),
+                    };
+                  }
                   return {
-                    date: date.date,
-                    formattedDate: date.formattedDate || formatDateToLocale(date.date),
+                    date: date,
+                    formattedDate: formatDateToLocale(date),
                   };
-                }
-                return {
-                  date: date,
-                  formattedDate: formatDateToLocale(date),
-                };
-              });
+                });
+              } catch (datesError) {
+                console.warn(`Error processing replacement dates: ${datesError.message}`);
+                leave.replacementDetails.dates = [];
+              }
             }
           } else if (replacementType === "jam") {
             leave.replacementDetails.type = "jam";
             leave.replacementDetails.needReplacement = true;
-
+            
             if (leave.replacementHours) {
               leave.replacementDetails.hours = leave.replacementHours;
             }
-
+            
             if (leave.replacementDate) {
-              // Handle berbagai format tanggal
-              if (typeof leave.replacementDate === "string") {
-                leave.replacementDetails.formattedDate = leave.replacementDate;
-              } else if (leave.replacementDate instanceof Date) {
-                leave.replacementDetails.formattedDate = leave.replacementDate.toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
-              } else if (leave.replacementDate instanceof Timestamp) {
-                leave.replacementDetails.formattedDate = leave.replacementDate.toDate().toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
-              } else if (leave.replacementDate.seconds) {
-                leave.replacementDetails.formattedDate = new Date(
-                  leave.replacementDate.seconds * 1000
-                ).toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
+              // PERBAIKAN: Tambahkan try-catch untuk menangani error format tanggal
+              try {
+                // Handle berbagai format tanggal
+                if (typeof leave.replacementDate === "string") {
+                  leave.replacementDetails.formattedDate = leave.replacementDate;
+                } else if (leave.replacementDate instanceof Date) {
+                  leave.replacementDetails.formattedDate = leave.replacementDate.toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                } else if (leave.replacementDate instanceof Timestamp) {
+                  leave.replacementDetails.formattedDate = leave.replacementDate.toDate().toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                } else if (leave.replacementDate.seconds) {
+                  leave.replacementDetails.formattedDate = new Date(
+                    leave.replacementDate.seconds * 1000
+                  ).toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                }
+              } catch (dateError) {
+                console.warn(`Error formatting replacement date: ${dateError.message}`);
+                leave.replacementDetails.formattedDate = "Format tanggal tidak valid";
               }
             }
           } else if (replacementType === "tidak") {
@@ -598,18 +637,17 @@ export async function getLeaveRequestsByDate(date, forceRefresh = false) {
             leave.replacementDetails.needReplacement = false;
           }
         }
-
+        
         // Jika ini izin sakit dengan surat dokter
         if (leave.leaveType === "sakit" && leave.hasMedicalCertificate) {
           leave.replacementDetails.hasMedicalCertificate = true;
           leave.replacementDetails.needReplacement = false;
-
           if (leave.medicalCertificateFile) {
             leave.replacementDetails.medicalCertificateFile = leave.medicalCertificateFile;
           }
         }
       }
-
+      
       // Pastikan status pengganti ada
       if (!leave.replacementStatus) {
         // Jika izin sakit dengan surat dokter, set ke "Tidak Perlu Diganti"
@@ -619,24 +657,25 @@ export async function getLeaveRequestsByDate(date, forceRefresh = false) {
           leave.replacementStatus = "Belum Diganti";
         }
       }
-
+      
       // Pastikan status izin ada
       if (!leave.status) {
         leave.status = "Pending";
       }
-
+      
       return leave;
-    });
+    }).filter(leave => leave !== null); // Filter out null entries
 
     // Simpan ke cache
     leaveCache.set(formattedDate, processedLeaveData);
-
     return processedLeaveData;
   } catch (error) {
     console.error("Error getting leave requests by date:", error);
-    throw error;
+    // PERBAIKAN: Return empty array instead of throwing error
+    return [];
   }
 }
+
 
 // Tambahkan fungsi helper untuk format tanggal
 function formatDateToLocale(date) {

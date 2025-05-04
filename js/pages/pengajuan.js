@@ -332,6 +332,8 @@ document.getElementById("replacementType")?.addEventListener("change", function 
     setTimeout(updateLeaveReplacementUI, 0);
   } else if (this.value === "jam" && jamSection) {
     jamSection.style.display = "block";
+    // Inisialisasi form penggantian waktu
+    initReplacementTimeForm();
   }
 });
 
@@ -722,10 +724,34 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       };
     } else if (replacementType === "jam") {
       const replacementHourDate = document.getElementById("replacementHourDate").value;
-      const replacementHours = document.getElementById("replacementHours").value;
-
-      if (!replacementHourDate || !replacementHours) {
-        showFeedback("error", "Tanggal dan jumlah jam pengganti harus diisi!");
+      const timeValue = document.getElementById("replacementTimeValue")?.value;
+      const timeUnit = document.getElementById("replacementTimeUnit")?.value || "jam";
+  
+      if (!replacementHourDate || !timeValue) {
+        showFeedback("error", "Tanggal dan durasi pengganti harus diisi!");
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+        return;
+      }
+      
+      // Validasi nilai berdasarkan satuan
+      const value = parseInt(timeValue);
+      if (isNaN(value) || value < 1) {
+        showFeedback("error", "Durasi pengganti harus berupa angka positif!");
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+        return;
+      }
+      
+      if (timeUnit === "jam" && value > 12) {
+        showFeedback("error", "Jumlah jam maksimal adalah 12 jam per hari!");
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+        return;
+      }
+      
+      if (timeUnit === "menit" && value > 300) {
+        showFeedback("error", "Jumlah menit maksimal adalah 300 menit per hari!");
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
         return;
@@ -735,13 +761,15 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         type: "jam",
         needReplacement: true,
         date: replacementHourDate,
-        hours: replacementHours,
+        timeUnit: timeUnit,
+        timeValue: value,
         formattedDate: new Date(replacementHourDate).toLocaleDateString("id-ID", {
           weekday: "long",
           year: "numeric",
           month: "long",
           day: "numeric",
         }),
+        formattedValue: `${value} ${timeUnit}`
       };
     } else if (replacementType === "tidak") {
       replacementDetails = {
@@ -957,23 +985,124 @@ async function loadLeaveHistory(employeeId) {
 }
 
 // Initialize date inputs with min date validation
+// Initialize date inputs with min date validation
 function initDateInputs() {
   const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const formattedTomorrow = tomorrow.toISOString().split("T")[0];
+  
+  // Format tanggal hari ini menjadi YYYY-MM-DD untuk atribut min
+  const formattedToday = today.toISOString().split("T")[0];
 
   const startDateInput = document.getElementById("leaveStartDate");
   const endDateInput = document.getElementById("leaveEndDate");
 
   if (startDateInput) {
-    startDateInput.min = formattedTomorrow;
+    // Gunakan tanggal hari ini sebagai nilai minimum
+    startDateInput.min = formattedToday;
+    
+    // Opsional: Set default value ke tanggal hari ini
+    // startDateInput.value = formattedToday;
   }
 
   if (endDateInput) {
-    endDateInput.min = formattedTomorrow;
+    // Gunakan tanggal hari ini sebagai nilai minimum
+    endDateInput.min = formattedToday;
   }
+  
+  console.log("Date inputs initialized with today as minimum date:", formattedToday);
+}
+
+// Inisialisasi form penggantian waktu
+function initReplacementTimeForm() {
+  const timeUnit = document.getElementById('replacementTimeUnit');
+  const timeValue = document.getElementById('replacementTimeValue');
+  const helpText = document.getElementById('timeUnitHelp');
+  
+  if (!timeUnit || !timeValue || !helpText) return;
+  
+  // Update batasan input berdasarkan satuan waktu
+  timeUnit.addEventListener('change', function() {
+    if (this.value === 'jam') {
+      timeValue.max = 12;
+      timeValue.placeholder = "Masukkan jumlah jam";
+      helpText.textContent = "Maksimal 12 jam per hari";
+    } else {
+      timeValue.max = 300;
+      timeValue.placeholder = "Masukkan jumlah menit";
+      helpText.textContent = "Maksimal 300 menit per hari";
+    }
+    // Reset nilai input
+    timeValue.value = '';
+  });
+  
+  // Set tanggal minimum (H+1)
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const replacementHourDate = document.getElementById('replacementHourDate');
+  if (replacementHourDate) {
+    replacementHourDate.min = tomorrow.toISOString().split('T')[0];
+  }
+}
+
+// Tampilkan form penggantian yang sesuai
+function showReplacementForm(type) {
+  // Sembunyikan semua form
+  document.querySelectorAll('.replacement-detail').forEach(el => el.style.display = 'none');
+  
+  // Tampilkan form yang dipilih
+  if (type === 'jam') {
+    const form = document.getElementById('replacementJam');
+    if (form) {
+      form.style.display = 'block';
+      initReplacementTimeForm();
+    }
+  } else if (type === 'libur') {
+    const form = document.getElementById('replacementLibur');
+    if (form) form.style.display = 'block';
+  }
+}
+
+// Validasi dan simpan data penggantian waktu
+function getReplacementTimeData() {
+  const timeValue = document.getElementById('replacementTimeValue');
+  const timeUnit = document.getElementById('replacementTimeUnit');
+  const dateInput = document.getElementById('replacementHourDate');
+  
+  if (!timeValue || !timeUnit || !dateInput) return null;
+  
+  const value = parseInt(timeValue.value);
+  const unit = timeUnit.value;
+  const date = dateInput.value;
+  
+  // Validasi
+  if (!date) {
+    showAlert('danger', 'Tanggal penggantian harus diisi');
+    return null;
+  }
+  
+  if (!value || isNaN(value)) {
+    showAlert('danger', 'Durasi penggantian harus diisi');
+    return null;
+  }
+  
+  if (unit === 'jam' && (value < 1 || value > 12)) {
+    showAlert('danger', 'Jumlah jam harus antara 1-12 jam');
+    return null;
+  }
+  
+  if (unit === 'menit' && (value < 1 || value > 300)) {
+    showAlert('danger', 'Jumlah menit harus antara 1-300 menit');
+    return null;
+  }
+  
+  return {
+    type: 'jam',
+    unit: unit,
+    value: value,
+    date: date,
+    formattedValue: `${value} ${unit}`
+  };
 }
 
 // Reset button functionality

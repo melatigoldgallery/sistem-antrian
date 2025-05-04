@@ -233,7 +233,7 @@ function setRadioButtonsByTime() {
   // Definisikan rentang waktu dalam menit (dari 00:00)
   const ranges = [
     { start: 7 * 60, end: 13 * 60, scanType: "in", shift: "morning" }, // 07:00-13:00: Scan masuk + Shift pagi
-    { start: 13 * 60 + 30, end: 16 * 60, scanType: "in", shift: "afternoon" }, // 13:30-16:00: Scan masuk + Shift sore
+    { start: 13 * 60, end: 16 * 60, scanType: "in", shift: "afternoon" }, // 13:00-16:00: Scan masuk + Shift sore
     { start: 16 * 60 + 20, end: 17 * 60 + 30, scanType: "out", shift: "morning" }, // 16:20-17:30: Scan pulang + Shift pagi
     { start: 21 * 60, end: 23 * 60, scanType: "out", shift: "afternoon" }, // 21:00-23:00: Scan pulang + Shift sore
   ];
@@ -249,9 +249,6 @@ function setRadioButtonsByTime() {
     if (scanTypeIn && scanTypeOut) {
       scanTypeIn.checked = currentRange.scanType === "in";
       scanTypeOut.checked = currentRange.scanType === "out";
-
-      // TAMBAHAN: Atur toggle verifikasi wajah berdasarkan scan type
-      updateFaceVerificationToggleBasedOnScanType(currentRange.scanType === "in");
     }
 
     // Set shift (morning/afternoon)
@@ -261,44 +258,95 @@ function setRadioButtonsByTime() {
       shiftMorning.checked = currentRange.shift === "morning";
       shiftAfternoon.checked = currentRange.shift === "afternoon";
     }
+    
+    // PERBAIKAN: Atur status verifikasi wajah berdasarkan scan type dan shift
+    updateFaceVerificationBasedOnScanAndShift();
+  }
+}
+
+// FUNGSI BARU: Fungsi untuk mengatur status verifikasi wajah berdasarkan scan type dan shift
+function updateFaceVerificationBasedOnScanAndShift() {
+  // Dapatkan status radio button
+  const isScanIn = document.getElementById("scanTypeIn")?.checked || false;
+  const isMorningShift = document.getElementById("shiftMorning")?.checked || false;
+  
+  // Aktifkan verifikasi wajah hanya jika scan masuk DAN shift pagi
+  const shouldEnableFaceVerification = isScanIn && isMorningShift;
+  
+  // Dapatkan elemen toggle
+  const faceVerificationToggle = document.getElementById("faceVerificationToggle");
+  
+  if (faceVerificationToggle) {
+    // Atur status toggle berdasarkan kondisi
+    faceVerificationToggle.checked = shouldEnableFaceVerification;
+    
+    // Update variabel global
+    isFaceVerificationEnabled = shouldEnableFaceVerification;
+    
+    // Simpan preferensi ke localStorage
+    localStorage.setItem("faceVerificationEnabled", shouldEnableFaceVerification ? "true" : "false");
+    
+    // Update UI terkait verifikasi wajah
+    updateFaceVerificationUI(shouldEnableFaceVerification);
+    
+    // Log perubahan status
+    console.log(
+      `Verifikasi wajah ${shouldEnableFaceVerification ? "diaktifkan" : "dinonaktifkan"} karena ${
+        isScanIn ? "scan masuk" : "scan pulang"
+      } dan shift ${isMorningShift ? "pagi" : "sore"}`
+    );
+  }
+}
+
+// FUNGSI BARU: Fungsi untuk memperbarui UI verifikasi wajah
+function updateFaceVerificationUI(isEnabled) {
+  // Update UI terkait verifikasi wajah
+  const faceVerificationContainer = document.querySelector(".face-verification-container");
+  if (faceVerificationContainer) {
+    faceVerificationContainer.style.display = isEnabled ? "block" : "none";
+  }
+
+  // Update tombol terkait verifikasi wajah
+  const initCameraButton = document.getElementById("initCamera");
+  if (initCameraButton) {
+    initCameraButton.style.display = isEnabled ? "inline-block" : "none";
+  }
+
+  const resetFaceButton = document.getElementById("resetFaceData");
+  if (resetFaceButton) {
+    resetFaceButton.style.display = isEnabled ? "inline-block" : "none";
   }
 }
 
 // Tambahkan fungsi baru untuk mengatur toggle verifikasi wajah berdasarkan tipe scan
 function updateFaceVerificationToggleBasedOnScanType(isCheckIn) {
+  // Dapatkan status shift
+  const isMorningShift = document.getElementById("shiftMorning")?.checked || false;
+  
+  // Aktifkan verifikasi wajah hanya jika scan masuk DAN shift pagi
+  const shouldEnableFaceVerification = isCheckIn && isMorningShift;
+  
   // Dapatkan elemen toggle
   const faceVerificationToggle = document.getElementById("faceVerificationToggle");
 
   if (faceVerificationToggle) {
-    // Atur status toggle berdasarkan tipe scan
-    faceVerificationToggle.checked = isCheckIn;
+    // Atur status toggle berdasarkan kondisi
+    faceVerificationToggle.checked = shouldEnableFaceVerification;
 
     // Update variabel global
-    isFaceVerificationEnabled = isCheckIn;
+    isFaceVerificationEnabled = shouldEnableFaceVerification;
 
     // Simpan preferensi ke localStorage
-    localStorage.setItem("faceVerificationEnabled", isCheckIn ? "true" : "false");
+    localStorage.setItem("faceVerificationEnabled", shouldEnableFaceVerification ? "true" : "false");
 
     // Update UI terkait verifikasi wajah
-    const faceVerificationContainer = document.querySelector(".face-verification-container");
-    if (faceVerificationContainer) {
-      faceVerificationContainer.style.display = isCheckIn ? "block" : "none";
-    }
-
-    // Update tombol terkait verifikasi wajah
-    const initCameraButton = document.getElementById("initCamera");
-    if (initCameraButton) {
-      initCameraButton.style.display = isCheckIn ? "inline-block" : "none";
-    }
-
-    const resetFaceButton = document.getElementById("resetFaceData");
-    if (resetFaceButton) {
-      resetFaceButton.style.display = isCheckIn ? "inline-block" : "none";
-    }
+    updateFaceVerificationUI(shouldEnableFaceVerification);
 
     // Log perubahan status
     console.log(
-      `Verifikasi wajah ${isCheckIn ? "diaktifkan" : "dinonaktifkan"} karena scan ${isCheckIn ? "masuk" : "pulang"}`
+      `Verifikasi wajah ${shouldEnableFaceVerification ? "diaktifkan" : "dinonaktifkan"} karena ${
+        isCheckIn ? "scan masuk" : "scan pulang"
+      } dan shift ${isMorningShift ? "pagi" : "sore"}`
     );
   }
 }
@@ -602,11 +650,20 @@ async function processScannedBarcode(barcode) {
       return;
     }
 
-    // Inisialisasi verifikasi wajah jika diperlukan
-    initFaceVerificationIfNeeded();
-
-    // Tampilkan informasi karyawan yang sedang diproses
-    showScanResult("info", `Memverifikasi identitas ${employee.name}...`);
+     // PERBAIKAN: Periksa kondisi verifikasi wajah berdasarkan scan type dan shift
+     const isScanIn = document.getElementById("scanTypeIn")?.checked || false;
+     const isMorningShift = document.getElementById("shiftMorning")?.checked || false;
+     
+     // Aktifkan verifikasi wajah hanya jika scan masuk DAN shift pagi
+     isFaceVerificationEnabled = isScanIn && isMorningShift;
+     
+     // Update UI verifikasi wajah
+     updateFaceVerificationUI(isFaceVerificationEnabled);
+ 
+     // Inisialisasi verifikasi wajah jika diperlukan
+     if (isFaceVerificationEnabled) {
+       initFaceVerificationIfNeeded();
+     }
 
     // Verifikasi wajah jika diaktifkan
     const verificationPassed = await performFaceVerification(employee);
@@ -734,7 +791,6 @@ async function performFaceVerification(employee) {
   } else {
     // Jika verifikasi wajah dinonaktifkan, tampilkan pesan
     console.log("Face verification is disabled, proceeding with barcode only");
-    showScanResult("info", "Verifikasi wajah dinonaktifkan, melanjutkan dengan barcode");
     
     // Tunggu sebentar agar pesan dapat dibaca
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -897,6 +953,12 @@ async function processLatePermission(employee, existingRecord, now, today, selec
     // Update cache dan UI
     await updateCacheAndUI(savedRecord, attendance, todayRecords, today);
 
+    // PERBAIKAN: Update counter izin terlambat secara langsung
+    const latePermissionCountEl = document.getElementById("latePermissionCount");
+    if (latePermissionCountEl) {
+      const currentCount = parseInt(latePermissionCountEl.textContent || "0");
+      latePermissionCountEl.textContent = currentCount + 1;
+    }
     // Tampilkan pesan sukses
     showScanResult(
       "success",
@@ -904,7 +966,7 @@ async function processLatePermission(employee, existingRecord, now, today, selec
     );
 
     // Play notification sound
-    playNotificationSound("success-in", employee.name);
+    playNotificationSound("late-permission", employee.name);0
 
     // Reset form
     latePermissionCode.value = "";
@@ -1154,9 +1216,10 @@ async function updateAttendanceStats() {
             isDateInLeaveRange(today, request.startDate, request.endDate)
         ).length;
       } else {
-        // Jika cache kosong, ambil dari server dengan penanganan error yang lebih baik
+        // PERBAIKAN: Tangani error dengan lebih baik
         try {
-          const todayLeaves = await getLeaveRequestsByDate(null, today);
+          // Gunakan null check sebelum memanggil getLeaveRequestsByDate
+          const todayLeaves = await getLeaveRequestsByDate(today);
           if (todayLeaves && todayLeaves.length > 0) {
             leaveCount = todayLeaves.filter((req) => req.status === "Approved" || req.status === "Disetujui").length;
           }
@@ -1411,6 +1474,10 @@ function playNotificationSound(type, staffName = "") {
         break;
       case "late":
         utterance.text = staffName ? `${staffName} terlambat` : "terlambat";
+        break;
+        // TAMBAHAN: Case baru untuk izin terlambat
+      case "late-permission":
+        utterance.text = staffName ? `${staffName} izin terlambat` : "izin terlambat";
         break;
       case "not-found":
         utterance.text = "Barcode tidak terdaftar";
@@ -1699,12 +1766,6 @@ function updateStats() {
         return recordDateStr === today;
       }
 
-      // Jika record.date adalah Date, konversi ke string format YYYY-MM-DD
-      if (record.date instanceof Date) {
-        const recordDateStr = getLocalDateStringFromDate(record.date);
-        return recordDateStr === today;
-      }
-
       // Fallback: coba konversi ke string dan bandingkan
       return String(record.date) === today;
     });
@@ -1713,34 +1774,41 @@ function updateStats() {
     attendanceCache.set(today, todayRecords);
   }
 
-  // Hitung statistik dari data yang sudah difilter
-  const presentCount = todayRecords.length;
-  const lateCount = todayRecords.filter((record) => record.status === "Terlambat").length;
+  // PERBAIKAN: Hitung statistik dengan lebih teliti
+  let presentCount = 0;
+  let lateCount = 0;
+  let latePermissionCount = 0;
 
-    // PERBAIKAN: Tambahkan perhitungan izin terlambat
-    const latePermissionCount = todayRecords.filter((record) => record.status === "Izin Terlambat").length;
- 
-    // PERBAIKAN: Gunakan data izin yang sudah di-cache
+  // Hitung berdasarkan status
+  todayRecords.forEach((record) => {
+    // PERBAIKAN: Periksa status dengan lebih teliti dan case-insensitive
+    const status = record.status ? record.status.toLowerCase() : "";
+    
+    if (status.includes("izin terlambat")) {
+      latePermissionCount++;
+      presentCount++; // Karyawan izin terlambat juga dihitung sebagai hadir
+    } else if (status.includes("terlambat")) {
+      lateCount++;
+      presentCount++; // Karyawan terlambat juga dihitung sebagai hadir
+    } else if (status.includes("tepat waktu") || status === "present") {
+      presentCount++;
+    }
+  });
+
+  // PERBAIKAN: Gunakan data izin yang sudah di-cache
   // Tidak perlu query baru ke Firestore
-  const leaveCount = Array.isArray(leaveRequests) ? leaveRequests.length : 0;
-
-  // Hitung berdasarkan status (untuk informasi tambahan)
-  // Ini tidak memerlukan query baru ke Firestore
-  const approvedLeaves = Array.isArray(leaveRequests)
-    ? leaveRequests.filter((leave) => leave.status === "Approved" || leave.status === "Disetujui").length
-    : 0;
-
-  const pendingLeaves = Array.isArray(leaveRequests)
-    ? leaveRequests.filter((leave) => !leave.status || leave.status === "Pending").length
+  const leaveCount = Array.isArray(leaveRequests) 
+    ? leaveRequests.filter(leave => {
+        // Pastikan leave valid dan memiliki status
+        if (!leave || !leave.status) return false;
+        
+        // Hanya hitung izin yang disetujui
+        const status = leave.status.toLowerCase();
+        return status === "approved" || status === "disetujui";
+      }).length 
     : 0;
 
   // Update UI
-  const leaveCountEl = document.getElementById("leaveCount");
-  if (leaveCountEl) {
-    leaveCountEl.textContent = leaveCount;
-  }
-
-  // Update UI elements if they exist
   const presentCountEl = document.getElementById("presentCount");
   if (presentCountEl) {
     presentCountEl.textContent = presentCount;
@@ -1751,17 +1819,32 @@ function updateStats() {
   const lateCountEl = document.getElementById("lateCount");
   if (lateCountEl) {
     lateCountEl.textContent = lateCount;
+  } else {
+    console.warn("lateCount element not found");
   }
 
-    // PERBAIKAN: Update UI untuk izin terlambat
-    const latePermissionCountEl = document.getElementById("latePermissionCount");
-    if (latePermissionCountEl) {
-      latePermissionCountEl.textContent = latePermissionCount;
-    }
+  // PERBAIKAN: Update counter izin terlambat
+  const latePermissionCountEl = document.getElementById("latePermissionCount");
+  if (latePermissionCountEl) {
+    latePermissionCountEl.textContent = latePermissionCount;
+  } else {
+    console.warn("latePermissionCount element not found");
+  }
+
+  const leaveCountEl = document.getElementById("leaveCount");
+  if (leaveCountEl) {
+    leaveCountEl.textContent = leaveCount;
+  } else {
+    console.warn("leaveCount element not found");
+  }
 
   // Update tanggal absensi
   updateDateInfo();
+  
+  // Log untuk debugging
+  console.log(`Stats updated: ${presentCount} present, ${lateCount} late, ${latePermissionCount} late with permission, ${leaveCount} on leave`);
 }
+
 
 // Helper function untuk mendapatkan string tanggal dari objek Date
 function getLocalDateStringFromDate(date) {
@@ -1775,30 +1858,69 @@ function getLocalDateStringFromDate(date) {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
      // Tampilkan/sembunyikan form izin terlambat berdasarkan radio button
-  const scanTypeLatePerm = document.getElementById("scanTypeLatePerm");
-  const latePermissionForm = document.getElementById("latePermissionForm");
+     const scanTypeLatePerm = document.getElementById("scanTypeLatePerm");
+     const scanTypeIn = document.getElementById("scanTypeIn");
+     const scanTypeOut = document.getElementById("scanTypeOut");
+     const latePermissionForm = document.getElementById("latePermissionForm");
+     
+     // Fungsi untuk menangani tampilan form izin terlambat
+     function handleLatePermissionFormVisibility() {
+       if (latePermissionForm) {
+         // Cek apakah radio button izin terlambat dipilih
+         const isLatePermSelected = scanTypeLatePerm && scanTypeLatePerm.checked;
+         
+         // Tampilkan/sembunyikan form berdasarkan status radio button
+         latePermissionForm.style.display = isLatePermSelected ? "block" : "none";
+         
+         // Reset form jika tidak dipilih
+         if (!isLatePermSelected && latePermissionForm.querySelector("input")) {
+           latePermissionForm.querySelector("input").value = "";
+         }
+       }
+     }
+     
+     // Panggil fungsi saat halaman dimuat untuk mengatur status awal
+     handleLatePermissionFormVisibility();
+     
+     // Tambahkan event listener untuk semua radio button
+     if (scanTypeLatePerm) {
+       scanTypeLatePerm.addEventListener("change", handleLatePermissionFormVisibility);
+     }
+     
+     if (scanTypeIn) {
+       scanTypeIn.addEventListener("change", handleLatePermissionFormVisibility);
+     }
+     
+     if (scanTypeOut) {
+       scanTypeOut.addEventListener("change", handleLatePermissionFormVisibility);
+     }
   
-  if (scanTypeLatePerm && latePermissionForm) {
-    scanTypeLatePerm.addEventListener("change", function() {
-      latePermissionForm.style.display = this.checked ? "block" : "none";
-    });
-  }
+  // TAMBAHAN: Tambahkan event listener untuk radio button scan type dan shift
   
-  // Sembunyikan form saat radio button lain dipilih
-  const scanTypeIn = document.getElementById("scanTypeIn");
-  const scanTypeOut = document.getElementById("scanTypeOut");
+  const shiftMorning = document.getElementById("shiftMorning");
+  const shiftAfternoon = document.getElementById("shiftAfternoon");
   
+  // Event listener untuk scan type
   if (scanTypeIn) {
-    scanTypeIn.addEventListener("change", function() {
-      if (latePermissionForm) latePermissionForm.style.display = "none";
-    });
+    scanTypeIn.addEventListener("change", updateFaceVerificationBasedOnScanAndShift);
   }
   
   if (scanTypeOut) {
-    scanTypeOut.addEventListener("change", function() {
-      if (latePermissionForm) latePermissionForm.style.display = "none";
-    });
+    scanTypeOut.addEventListener("change", updateFaceVerificationBasedOnScanAndShift);
   }
+  
+  // Event listener untuk shift
+  if (shiftMorning) {
+    shiftMorning.addEventListener("change", updateFaceVerificationBasedOnScanAndShift);
+  }
+  
+  if (shiftAfternoon) {
+    shiftAfternoon.addEventListener("change", updateFaceVerificationBasedOnScanAndShift);
+  }
+
+    // Inisialisasi status verifikasi wajah berdasarkan radio button saat ini
+    updateFaceVerificationBasedOnScanAndShift();
+
     // Inisialisasi Web Speech API
     initSpeechSynthesis();
 
@@ -1914,25 +2036,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         faceVerificationContainer.style.display = isFaceVerificationEnabled ? "block" : "none";
       }
 
-      // TAMBAHAN: Tambahkan event listener untuk radio button scan type
-      const scanTypeIn = document.getElementById("scanTypeIn");
-      const scanTypeOut = document.getElementById("scanTypeOut");
+      // // TAMBAHAN: Tambahkan event listener untuk radio button scan type
+      // const scanTypeIn = document.getElementById("scanTypeIn");
+      // const scanTypeOut = document.getElementById("scanTypeOut");
 
-      if (scanTypeIn) {
-        scanTypeIn.addEventListener("change", function () {
-          if (this.checked) {
-            updateFaceVerificationToggleBasedOnScanType(true);
-          }
-        });
-      }
+      // if (scanTypeIn) {
+      //   scanTypeIn.addEventListener("change", function () {
+      //     if (this.checked) {
+      //       updateFaceVerificationToggleBasedOnScanType(true);
+      //     }
+      //   });
+      // }
 
-      if (scanTypeOut) {
-        scanTypeOut.addEventListener("change", function () {
-          if (this.checked) {
-            updateFaceVerificationToggleBasedOnScanType(false);
-          }
-        });
-      }
+      // if (scanTypeOut) {
+      //   scanTypeOut.addEventListener("change", function () {
+      //     if (this.checked) {
+      //       updateFaceVerificationToggleBasedOnScanType(false);
+      //     }
+      //   });
+      // }
 
       // Coba inisialisasi model di background
       try {

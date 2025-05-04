@@ -1124,8 +1124,34 @@ function populateLeaveTable() {
             }
           } else if (leave.replacementType === "jam") {
             replacementType = "Ganti Jam";
-            if (leave.replacementDetails && leave.replacementDetails.hours && leave.replacementDetails.formattedDate) {
-              replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
+            // PERBAIKAN: Tampilkan detail pengganti jam/menit sesuai format baru
+            if (leave.replacementDetails) {
+              // Cek apakah menggunakan format baru dengan timeUnit dan timeValue
+              if (leave.replacementDetails.timeUnit && leave.replacementDetails.timeValue) {
+                const timeValue = leave.replacementDetails.timeValue;
+                const timeUnit = leave.replacementDetails.timeUnit;
+                const formattedDate = leave.replacementDetails.formattedDate || 
+                                     (leave.replacementDetails.date ? new Date(leave.replacementDetails.date).toLocaleDateString("id-ID") : "-");
+                
+                replacementInfo = `${timeValue} ${timeUnit} pada ${formattedDate}`;
+              } 
+              // Cek apakah menggunakan format baru dengan unit dan value
+              else if (leave.replacementDetails.unit && leave.replacementDetails.value) {
+                const value = leave.replacementDetails.value;
+                const unit = leave.replacementDetails.unit;
+                const formattedDate = leave.replacementDetails.formattedDate || 
+                                     (leave.replacementDetails.date ? new Date(leave.replacementDetails.date).toLocaleDateString("id-ID") : "-");
+                
+                replacementInfo = `${value} ${unit} pada ${formattedDate}`;
+              }
+              // Format lama dengan hours
+              else if (leave.replacementDetails.hours && leave.replacementDetails.formattedDate) {
+                replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
+              }
+              // Format dengan formattedValue
+              else if (leave.replacementDetails.formattedValue && leave.replacementDetails.formattedDate) {
+                replacementInfo = `${leave.replacementDetails.formattedValue} pada ${leave.replacementDetails.formattedDate}`;
+              }
             }
           } else if (leave.replacementType === "tidak") {
             replacementType = "Tidak Perlu Diganti";
@@ -1690,10 +1716,36 @@ function exportToExcel() {
             }
           } else if (leave.replacementType === "jam") {
             replacementType = "Ganti Jam";
-            if (leave.replacementDetails && leave.replacementDetails.hours && leave.replacementDetails.formattedDate) {
-              replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
-            }
-          } else if (leave.replacementType === "tidak") {
+            // PERBAIKAN: Format pengganti jam/menit sesuai format baru
+        if (leave.replacementDetails) {
+          // Cek apakah menggunakan format baru dengan timeUnit dan timeValue
+          if (leave.replacementDetails.timeUnit && leave.replacementDetails.timeValue) {
+            const timeValue = leave.replacementDetails.timeValue;
+            const timeUnit = leave.replacementDetails.timeUnit;
+            const formattedDate = leave.replacementDetails.formattedDate || 
+                                 (leave.replacementDetails.date ? new Date(leave.replacementDetails.date).toLocaleDateString("id-ID") : "-");
+            
+            replacementInfo = `${timeValue} ${timeUnit} pada ${formattedDate}`;
+          } 
+          // Cek apakah menggunakan format baru dengan unit dan value
+          else if (leave.replacementDetails.unit && leave.replacementDetails.value) {
+            const value = leave.replacementDetails.value;
+            const unit = leave.replacementDetails.unit;
+            const formattedDate = leave.replacementDetails.formattedDate || 
+                                 (leave.replacementDetails.date ? new Date(leave.replacementDetails.date).toLocaleDateString("id-ID") : "-");
+            
+            replacementInfo = `${value} ${unit} pada ${formattedDate}`;
+          }
+          // Format lama dengan hours
+          else if (leave.replacementDetails.hours && leave.replacementDetails.formattedDate) {
+            replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
+          }
+          // Format dengan formattedValue
+          else if (leave.replacementDetails.formattedValue && leave.replacementDetails.formattedDate) {
+            replacementInfo = `${leave.replacementDetails.formattedValue} pada ${leave.replacementDetails.formattedDate}`;
+          }
+        }
+      } else if (leave.replacementType === "tidak") {
             replacementType = "Tidak Perlu Diganti";
           }
         }
@@ -2053,10 +2105,36 @@ function exportToPDF() {
             }
           } else if (leave.replacementType === "jam") {
             replacementType = "Ganti Jam";
-            if (leave.replacementDetails && leave.replacementDetails.hours && leave.replacementDetails.formattedDate) {
-              replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
-            }
-          } else if (leave.replacementType === "tidak") {
+            // PERBAIKAN: Format pengganti jam/menit sesuai format baru
+        if (leave.replacementDetails) {
+          // Cek apakah menggunakan format baru dengan timeUnit dan timeValue
+          if (leave.replacementDetails.timeUnit && leave.replacementDetails.timeValue) {
+            const timeValue = leave.replacementDetails.timeValue;
+            const timeUnit = leave.replacementDetails.timeUnit;
+            const formattedDate = leave.replacementDetails.formattedDate || 
+                                 (leave.replacementDetails.date ? new Date(leave.replacementDetails.date).toLocaleDateString("id-ID") : "-");
+            
+            replacementInfo = `${timeValue} ${timeUnit} pada ${formattedDate}`;
+          } 
+          // Cek apakah menggunakan format baru dengan unit dan value
+          else if (leave.replacementDetails.unit && leave.replacementDetails.value) {
+            const value = leave.replacementDetails.value;
+            const unit = leave.replacementDetails.unit;
+            const formattedDate = leave.replacementDetails.formattedDate || 
+                                 (leave.replacementDetails.date ? new Date(leave.replacementDetails.date).toLocaleDateString("id-ID") : "-");
+            
+            replacementInfo = `${value} ${unit} pada ${formattedDate}`;
+          }
+          // Format lama dengan hours
+          else if (leave.replacementDetails.hours && leave.replacementDetails.formattedDate) {
+            replacementInfo = `${leave.replacementDetails.hours} jam pada ${leave.replacementDetails.formattedDate}`;
+          }
+          // Format dengan formattedValue
+          else if (leave.replacementDetails.formattedValue && leave.replacementDetails.formattedDate) {
+            replacementInfo = `${leave.replacementDetails.formattedValue} pada ${leave.replacementDetails.formattedDate}`;
+          }
+        }
+      } else if (leave.replacementType === "tidak") {
             replacementType = "Tidak Perlu Diganti";
           }
         }
