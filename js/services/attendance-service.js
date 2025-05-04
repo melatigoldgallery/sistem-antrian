@@ -1,3 +1,32 @@
+
+// 📦 Caching Logic for Service Layer (Attendance Records)
+const CACHE_KEY_SERVICE = 'cachedAttendanceServiceData';
+const CACHE_EXPIRATION_SERVICE = 5 * 60 * 1000; // 5 minutes
+
+function saveServiceCache(data) {
+  const cache = {
+    timestamp: Date.now(),
+    data: data
+  };
+  sessionStorage.setItem(CACHE_KEY_SERVICE, JSON.stringify(cache));
+}
+
+function getServiceCache() {
+  const raw = sessionStorage.getItem(CACHE_KEY_SERVICE);
+  if (!raw) return null;
+
+  const cache = JSON.parse(raw);
+  const now = Date.now();
+
+  if ((now - cache.timestamp) > CACHE_EXPIRATION_SERVICE) {
+    sessionStorage.removeItem(CACHE_KEY_SERVICE);
+    return null;
+  }
+
+  return cache.data;
+}
+
+
 import { db } from "../configFirebase.js";
 import {
   collection,
@@ -642,7 +671,8 @@ export async function getTodayAttendance() {
     updateCacheTimestamp(today);
     saveAttendanceCacheToStorage();
     
-    return records;
+    saveServiceCache(records);
+  return records;
   } catch (error) {
     console.error("Error getting today's attendance:", error);
     

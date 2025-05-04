@@ -1,3 +1,32 @@
+
+// 📦 Caching Logic for Attendance Data
+const CACHE_KEY = 'cachedAttendanceData';
+const CACHE_EXPIRATION = 5 * 60 * 1000; // 5 minutes
+
+function saveAttendanceToCache(data) {
+  const cache = {
+    timestamp: Date.now(),
+    data: data
+  };
+  sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+}
+
+function getAttendanceFromCache() {
+  const raw = sessionStorage.getItem(CACHE_KEY);
+  if (!raw) return null;
+
+  const cache = JSON.parse(raw);
+  const now = Date.now();
+
+  if ((now - cache.timestamp) > CACHE_EXPIRATION) {
+    sessionStorage.removeItem(CACHE_KEY);
+    return null;
+  }
+
+  return cache.data;
+}
+
+
 // Import semua service yang dibutuhkan
 import { findEmployeeByBarcode, getEmployees, getFaceDescriptor } from "../services/employee-service.js";
 import {

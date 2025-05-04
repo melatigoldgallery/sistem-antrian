@@ -1,3 +1,32 @@
+
+// 📦 Caching Logic for Kehadiran Module
+const CACHE_KEY_KEHADIRAN = 'cachedKehadiranData';
+const CACHE_EXPIRATION_KEHADIRAN = 5 * 60 * 1000; // 5 minutes
+
+function saveKehadiranCache(data) {
+  const cache = {
+    timestamp: Date.now(),
+    data: data
+  };
+  sessionStorage.setItem(CACHE_KEY_KEHADIRAN, JSON.stringify(cache));
+}
+
+function getKehadiranCache() {
+  const raw = sessionStorage.getItem(CACHE_KEY_KEHADIRAN);
+  if (!raw) return null;
+
+  const cache = JSON.parse(raw);
+  const now = Date.now();
+
+  if ((now - cache.timestamp) > CACHE_EXPIRATION_KEHADIRAN) {
+    sessionStorage.removeItem(CACHE_KEY_KEHADIRAN);
+    return null;
+  }
+
+  return cache.data;
+}
+
+
 import { getAttendanceByDateRange, deleteAttendanceByDateRange } from "../services/report-service.js";
 // PERBARUI import dengan menambahkan fungsi yang diperlukan
 import {
