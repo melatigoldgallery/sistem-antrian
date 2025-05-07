@@ -2,7 +2,7 @@ import {
   getLeaveRequestsByMonth,
   clearLeaveCache,
   listenToLeaveRequests,
-  stopListeningToLeaveRequests,
+  stopListeningToLeaveRequests
 } from "../services/leave-service.js";
 import { deleteLeaveRequestsByMonth } from "../services/report-service.js";
 import { attendanceCache } from "../services/attendance-service.js"; // Impor dari attendance-service
@@ -625,9 +625,6 @@ async function generateReport(forceRefresh = false) {
     // Show loading state
     showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Memuat data izin...', false);
 
-    // Gunakan listener untuk mendapatkan data secara real-time
-    setupRealtimeListener();
-
     // Sebagai fallback, jika listener gagal, gunakan metode query biasa
     const result = await getLeaveRequestsByMonth(month, year, null, itemsPerPage);
 
@@ -651,6 +648,9 @@ async function generateReport(forceRefresh = false) {
 
     // Simpan cache ke localStorage
     saveReportCacheToStorage();
+
+    // Simpan semua data di allCachedData
+    allCachedData = [...currentLeaveData];
 
     // Sembunyikan indikator cache di UI
     const cacheIndicator = document.getElementById("cacheIndicator");
@@ -684,6 +684,8 @@ async function generateReport(forceRefresh = false) {
     // Update delete confirmation modal with month and year
     document.getElementById("deleteMonthName").textContent = monthNames[month - 1];
     document.getElementById("deleteYear").textContent = year;
+    // Setup real-time listener untuk pembaruan
+    setupRealtimeListener();
   } catch (error) {
     console.error("Error generating report:", error);
 
