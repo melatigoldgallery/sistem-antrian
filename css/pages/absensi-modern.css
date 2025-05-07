@@ -224,6 +224,7 @@ body {
   /* Sembunyikan link absensi bagian kehadiran, laporan kehadiran dan supervisor */
   #absensiSubmenu .nav-item:nth-child(1),
   #absensiSubmenu .nav-item:nth-child(3),
+  #absensiSubmenu .nav-item:nth-child(4),
   #absensiSubmenu .nav-item:nth-child(5) {
     display: none;
   }
