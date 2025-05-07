@@ -46,7 +46,11 @@ function addReplacementDateField() {
       updateReplacementDateLabels();
     });
   }
+    // Tambahkan event listener untuk input tanggal baru
+    const newDateInput = dateItem.querySelector(`#replacementDate${index}`);
+    enableDatePickerOnClick(newDateInput);
 }
+
 
 // Function to update labels after removing a date field
 function updateReplacementDateLabels() {
@@ -807,7 +811,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
     await submitLeaveRequest(leaveRequest);
 
    // Setelah berhasil submit
-   showFeedback("success", "Pengajuan izin berhasil diajukan! Silakan cek status pengajuan secara berkala.");
+   showFeedback("success", "Pengajuan izin berhasil diajukan!");
    this.reset();
    
    // Perbaikan: Periksa apakah elemen ada sebelum mengakses propertinya
@@ -985,7 +989,6 @@ async function loadLeaveHistory(employeeId) {
 }
 
 // Initialize date inputs with min date validation
-// Initialize date inputs with min date validation
 function initDateInputs() {
   const today = new Date();
   
@@ -1001,14 +1004,78 @@ function initDateInputs() {
     
     // Opsional: Set default value ke tanggal hari ini
     // startDateInput.value = formattedToday;
+     // Tambahkan event listener untuk klik pada input tanggal
+     startDateInput.addEventListener("click", function() {
+      if (this.showPicker) {
+        this.showPicker();
+      }
+    });
   }
 
   if (endDateInput) {
     // Gunakan tanggal hari ini sebagai nilai minimum
     endDateInput.min = formattedToday;
+
+    // Tambahkan event listener untuk klik pada input tanggal
+    endDateInput.addEventListener("click", function() {
+      if (this.showPicker) {
+        this.showPicker();
+      }
+    });
   }
   
+  // Tambahkan event listener untuk semua input tanggal lainnya
+  document.querySelectorAll('input[type="date"]').forEach(dateInput => {
+    if (dateInput !== startDateInput && dateInput !== endDateInput) {
+      dateInput.addEventListener("click", function() {
+        if (this.showPicker) {
+          this.showPicker();
+        }
+      });
+    }
+    
+    // Tambahkan event listener untuk icon kalender di sebelahnya
+    const parentGroup = dateInput.closest('.input-group');
+    if (parentGroup) {
+      const icon = parentGroup.querySelector('.input-group-text');
+      if (icon) {
+        icon.addEventListener('click', function() {
+          // Fokuskan input dan buka date picker
+          dateInput.focus();
+          if (dateInput.showPicker) {
+            dateInput.showPicker();
+          }
+        });
+      }
+    }
+  });
   console.log("Date inputs initialized with today as minimum date:", formattedToday);
+}
+
+// Tambahkan fungsi ini untuk menangani input tanggal yang ditambahkan secara dinamis
+function enableDatePickerOnClick(dateInput) {
+  if (!dateInput) return;
+  
+  dateInput.addEventListener("click", function() {
+    if (this.showPicker) {
+      this.showPicker();
+    }
+  });
+  
+  // Tambahkan event listener untuk icon kalender di sebelahnya
+  const parentGroup = dateInput.closest('.input-group');
+  if (parentGroup) {
+    const icon = parentGroup.querySelector('.input-group-text');
+    if (icon) {
+      icon.addEventListener('click', function() {
+        // Fokuskan input dan buka date picker
+        dateInput.focus();
+        if (dateInput.showPicker) {
+          dateInput.showPicker();
+        }
+      });
+    }
+  }
 }
 
 // Inisialisasi form penggantian waktu
@@ -1158,6 +1225,22 @@ window.addEventListener("offline", function () {
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
+  // Tambahkan style untuk input tanggal
+  const style = document.createElement('style');
+  style.textContent = `
+    input[type="date"] {
+      cursor: pointer;
+    }
+    .input-group .input-group-text, 
+    .input-group input[type="date"] {
+      cursor: pointer;
+    }
+    .input-group:hover input[type="date"] {
+      background-color: #f8f9fa;
+    }
+  `;
+  document.head.appendChild(style);
+
   loadEmployees();
   initDateInputs();
 
