@@ -452,7 +452,7 @@
                             <label for="replacementDate0" class="form-label">Tanggal Ganti Libur 1</label>
                             <div class="input-group">
                               <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                              <input type="date" class="form-control replacement-date" id="replacementDate0" />
+                              <input type="date" class="form-control replacement-date" id="replacementDate0" required/>
                             </div>
                           </div>
                         </div>
@@ -481,7 +481,7 @@
                           <label for="replacementHourDate" class="form-label">Tanggal Ganti Waktu</label>
                           <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                            <input type="date" class="form-control" id="replacementHourDate" />
+                            <input type="date" class="form-control" id="replacementHourDate" required/>
                           </div>
                         </div>
 
@@ -496,7 +496,7 @@
                               id="replacementTimeValue"
                               min="1"
                               max="300"
-                              placeholder="Masukkan durasi"
+                              placeholder="Masukkan durasi" required
                             />
                             <select class="form-select" id="replacementTimeUnit" style="max-width: 100px">
                               <option value="jam">jam</option>

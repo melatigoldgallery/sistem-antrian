@@ -2,114 +2,100 @@ import { initializeUsers } from './auth/initUsers.js';
 import { loginUser } from './auth/initUsers.js';
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (!username || !password) {
-      alert('Mohon isi username dan password');
-      return;
-    }
-  
-    try {
-      // Tampilkan indikator loading
-      const loginButton = document.querySelector('#loginForm button[type="submit"]');
-      const originalButtonText = loginButton ? loginButton.innerHTML : 'Login';
-      if (loginButton) {
-        loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-        loginButton.disabled = true;
-      }
-      
-      console.log("Attempting to login with username:", username);
-      
-      // Coba login dengan hardcoded credentials terlebih dahulu
-      let result = { success: false };
-      
-      // Hardcoded login untuk admin
-      if (username === 'supervisor' && password === 'svmlt116') {
-        console.log("Using hardcoded admin credentials");
-        const auth = getAuth();
-        try {
-          await signInWithEmailAndPassword(auth, 'melatigoldshopid@gmail.com', 'svmlt116');
-          result = { success: true, role: 'admin', username: 'supervisor' };
-          console.log("Hardcoded admin login successful");
-        } catch (authError) {
-          console.error("Direct admin auth failed:", authError);
-        }
-      } 
-      // Hardcoded login untuk operator
-      else if (username === 'stafmelati' && password === 'staf116') {
-        console.log("Using hardcoded operator credentials");
-        const auth = getAuth();
-        try {
-          await signInWithEmailAndPassword(auth, 'fattahula43@gmail.com', 'staf116');
-          result = { success: true, role: 'staf', username: 'staf' };
-          console.log("Hardcoded operator login successful");
-        } catch (authError) {
-          console.error("Direct operator auth failed:", authError);
-        }
-      }
-      
-      // Jika hardcoded login gagal, coba dengan metode normal
-      if (!result.success) {
-        console.log("Hardcoded login failed, trying normal login flow");
-        try {
-          // Initialize users first
-          await initializeUsers();
-          
-          // Login dengan username/password
-          result = await loginUser(username, password);
-          console.log("Normal login result:", result);
-        } catch (initError) {
-          console.error("Login process error:", initError);
-          result = { success: false, message: "Terjadi kesalahan saat login" };
-        }
-      }
-      
-      // Kembalikan tombol ke keadaan semula
-      if (loginButton) {
-        loginButton.innerHTML = originalButtonText;
-        loginButton.disabled = false;
-      }
-      
-      if (result.success) {
-        console.log("Login successful, redirecting...");
-        sessionStorage.setItem('currentUser', JSON.stringify({
-          username: result.username,
-          role: result.role
-        }));
-        
-        // Simpan juga di userRole untuk kompatibilitas
-  sessionStorage.setItem('userRole', result.role);
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  const toastMessage = document.getElementById('toastMessage');
+  toastMessage.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
 
-        // Redirect semua user ke dashboard.html
-        window.location.href = 'dashboard.html';
-        
-        // Atau jika Anda ingin membedakan berdasarkan role:
-        /*
-        if (result.role === 'admin') {
-          window.location.href = 'dashboard.html';
-        } else if (result.role === 'staf') {
-          window.location.href = 'dashboard.html'; // Ganti dengan halaman yang sesuai untuk staf
-        } else {
-          window.location.href = 'dashboard.html'; // Default redirect
-        }
-        */
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  
+  if (!username || !password) {
+    showToast('Mohon isi username dan password');
+    return;
+  }
+  
+  try {
+    const loginButton = document.querySelector('#loginForm button[type="submit"]');
+    const originalButtonText = loginButton ? loginButton.innerHTML : 'Login';
+    if (loginButton) {
+      loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+      loginButton.disabled = true;
+    }
+    
+    console.log("Attempting to login with username:", username);
+    
+    let result = { success: false };
+    
+    if (username === 'supervisor' && password === 'svmlt116') {
+      console.log("Using hardcoded admin credentials");
+      const auth = getAuth();
+      try {
+        await signInWithEmailAndPassword(auth, 'melatigoldshopid@gmail.com', 'svmlt116');
+        result = { success: true, role: 'admin', username: 'supervisor' };
+        console.log("Hardcoded admin login successful");
+      } catch (authError) {
+        console.error("Direct admin auth failed:", authError);
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      alert('Gagal login: Silakan periksa koneksi internet dan coba lagi');
-      
-      // Pastikan tombol login dikembalikan ke keadaan semula
-      const loginButton = document.querySelector('#loginForm button[type="submit"]');
-      if (loginButton) {
-        loginButton.innerHTML = 'Login';
-        loginButton.disabled = false;
+    } else if (username === 'stafmelati' && password === 'staf116') {
+      console.log("Using hardcoded operator credentials");
+      const auth = getAuth();
+      try {
+        await signInWithEmailAndPassword(auth, 'fattahula43@gmail.com', 'staf116');
+        result = { success: true, role: 'staf', username: 'staf' };
+        console.log("Hardcoded operator login successful");
+      } catch (authError) {
+        console.error("Direct operator auth failed:", authError);
       }
     }
-  });
+    
+    if (!result.success) {
+      console.log("Hardcoded login failed, trying normal login flow");
+      try {
+        await initializeUsers();
+        result = await loginUser(username, password);
+        console.log("Normal login result:", result);
+      } catch (initError) {
+        console.error("Login process error:", initError);
+        result = { success: false, message: "Terjadi kesalahan saat login" };
+      }
+    }
+    
+    if (loginButton) {
+      loginButton.innerHTML = originalButtonText;
+      loginButton.disabled = false;
+    }
+    
+    if (result.success) {
+      console.log("Login successful, redirecting...");
+      sessionStorage.setItem('currentUser', JSON.stringify({
+        username: result.username,
+        role: result.role
+      }));
+      sessionStorage.setItem('userRole', result.role);
+      window.location.href = 'dashboard.html';
+    } else {
+      showToast('Username atau password salah. Silakan coba lagi.');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    showToast('Terjadi kesalahan saat login. Silakan periksa koneksi internet dan coba lagi.');
+    const loginButton = document.querySelector('#loginForm button[type="submit"]');
+    if (loginButton) {
+      loginButton.innerHTML = 'Login';
+      loginButton.disabled = false;
+    }
+  }
+});
+
   document.addEventListener('DOMContentLoaded', function() {
     // Toggle password visibility
     const togglePasswordButton = document.querySelector('.toggle-password');

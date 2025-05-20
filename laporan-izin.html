@@ -26,6 +26,15 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <!-- Favicon sederhana -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <style>
+      /* Tambahkan di bagian <head> laporan-izin.html */
+      #leaveReportTable td:nth-child(5),
+      #leaveReportTable td:nth-child(7) {
+        white-space: pre-line !important;
+        word-break: break-word;
+        max-width: 250px;
+      }
+    </style>
     <title>Laporan Izin - Melati Gold Shop</title>
   </head>
   <body>
@@ -248,12 +257,21 @@
                         <!-- Will be populated with JavaScript -->
                       </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 filter">
                       <label for="replacementTypeFilter" class="form-label">Jenis Pengganti</label>
                       <select id="replacementTypeFilter" class="form-select">
                         <option value="all">Semua Jenis</option>
-                        <option value="libur">Izin Ganti Libur</option>
+                        <option value="libur" selected>Izin Ganti Libur</option>
                         <option value="jam">Izin Ganti Jam</option>
+                      </select>
+                    </div>
+                    <!-- Tambahkan filter status pengganti -->
+                    <div class="col-md-2 filter">
+                      <label for="replacementStatusFilter" class="form-label">Status Pengganti</label>
+                      <select id="replacementStatusFilter" class="form-select">
+                        <option value="all">Semua Status</option>
+                        <option value="sudah">Sudah Diganti</option>
+                        <option value="belum" selected>Belum Diganti</option>
                       </select>
                     </div>
                   </div>
@@ -343,40 +361,33 @@
             <!-- Table Card -->
             <div class="card" id="tableContainer" style="display: none">
               <!-- Ganti bagian card-actions di laporan-izin.html -->
-<div class="card-header">
-  <h2>
-    <i class="fas fa-list"></i>
-    Data Izin Karyawan
-    <span id="cacheIndicator" class="badge bg-info ms-2" style="display: none">
-      <i class="fas fa-database me-1"></i>
-      Cache
-    </span>
-  </h2>
-  <div class="card-actions">
-    <div class="btn-group">
-      <button class="btn btn-primary" id="filterDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="fas fa-filter me-1"></i>
-        Filter
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterDropdownBtn">
-        <li><h6 class="dropdown-header">Status Pengganti</h6></li>
-        <li><a class="dropdown-item fs-6" href="#" data-replacement-filter="all">Semua</a></li>
-        <li><a class="dropdown-item" href="#" data-replacement-filter="sudah">Sudah Diganti</a></li>
-        <li><a class="dropdown-item" href="#" data-replacement-filter="belum">Belum Diganti</a></li>
-      </ul>
-    </div>
-    <button id="refreshData" class="btn btn-primary ms-2" data-bs-toggle="tooltip" title="Muat ulang data terbaru">
-      <i class="fas fa-sync-alt me-1"></i>
-      Refresh Data
-    </button>
-    <div class="refresh-status ms-2" id="refreshStatus" style="display: none;">
-      <div class="spinner-border spinner-border-sm text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <small class="text-muted ms-1">Memperbarui...</small>
-    </div>
-  </div>
-</div>
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-list"></i>
+                  Data Izin Karyawan
+                  <span id="cacheIndicator" class="badge bg-info ms-2" style="display: none">
+                    <i class="fas fa-database me-1"></i>
+                    Cache
+                  </span>
+                </h2>
+                <div class="card-actions">
+                  <button
+                    id="refreshData"
+                    class="btn btn-primary ms-2"
+                    data-bs-toggle="tooltip"
+                    title="Muat ulang data terbaru"
+                  >
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Refresh Data
+                  </button>
+                  <div class="refresh-status ms-2" id="refreshStatus" style="display: none">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <small class="text-muted ms-1">Memperbarui...</small>
+                  </div>
+                </div>
+              </div>
 
               <div class="card-body">
                 <div class="table-container">
@@ -387,7 +398,7 @@
                         <th>ID Staff</th>
                         <th>Nama</th>
                         <th>Tanggal Izin</th>
-                        <th>Alasan</th>
+                        <th>Alasan Izin<!--  --></th>
                         <th>Jenis Pengganti</th>
                         <th>Detail Pengganti</th>
                         <th>Status</th>

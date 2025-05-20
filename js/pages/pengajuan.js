@@ -14,6 +14,46 @@ function calculateDaysBetween(startDate, endDate) {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
 }
 
+// Tambahkan fungsi validasi sederhana
+function validateLeaveForm() {
+  // Validasi dasar
+  const employeeId = document.getElementById("employeeId").value;
+  const leaveStartDate = document.getElementById("leaveStartDate").value;
+  const leaveEndDate = document.getElementById("leaveEndDate").value;
+  const leaveReason = document.getElementById("leaveReason").value;
+  const replacementType = document.getElementById("replacementType").value;
+
+  if (!employeeId || !leaveStartDate || !leaveEndDate || !leaveReason || !replacementType) {
+    showFeedback("error", "Mohon lengkapi semua field yang diperlukan!");
+    return false;
+  }
+
+  // Validasi khusus berdasarkan jenis pengganti
+  if (replacementType === "libur") {
+    const replacementDates = document.querySelectorAll(".replacement-date");
+    let allFilled = true;
+
+    replacementDates.forEach((input) => {
+      if (!input.value) allFilled = false;
+    });
+
+    if (!allFilled) {
+      showFeedback("error", "Mohon isi semua tanggal ganti libur!");
+      return false;
+    }
+  } else if (replacementType === "jam") {
+    const replacementHourDate = document.getElementById("replacementHourDate").value;
+    const timeValue = document.getElementById("replacementTimeValue").value;
+
+    if (!replacementHourDate || !timeValue) {
+      showFeedback("error", "Mohon lengkapi tanggal dan durasi pengganti!");
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // Function to add a new date input field
 function addReplacementDateField() {
   const container = document.getElementById("replacementDatesContainer");
@@ -27,7 +67,7 @@ function addReplacementDateField() {
     <label for="replacementDate${index}" class="form-label">Tanggal Ganti Libur ${index + 1}</label>
     <div class="input-group">
       <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-      <input type="date" class="form-control replacement-date" id="replacementDate${index}" />
+      <input type="date" class="form-control replacement-date" id="replacementDate${index}" required/>
       ${
         index > 0
           ? '<button type="button" class="btn btn-outline-danger remove-date"><i class="fas fa-times"></i></button>'
@@ -46,11 +86,10 @@ function addReplacementDateField() {
       updateReplacementDateLabels();
     });
   }
-    // Tambahkan event listener untuk input tanggal baru
-    const newDateInput = dateItem.querySelector(`#replacementDate${index}`);
-    enableDatePickerOnClick(newDateInput);
+  // Tambahkan event listener untuk input tanggal baru
+  const newDateInput = dateItem.querySelector(`#replacementDate${index}`);
+  enableDatePickerOnClick(newDateInput);
 }
-
 
 // Function to update labels after removing a date field
 function updateReplacementDateLabels() {
@@ -321,23 +360,40 @@ document.querySelectorAll('input[name="leaveTypeRadio"]')?.forEach((radio) => {
 });
 
 // Event listener for replacement type selection
-document.getElementById("replacementType")?.addEventListener("change", function () {
+document.getElementById("replacementType")?.addEventListener("change", function() {
   const liburSection = document.getElementById("replacementLibur");
   const jamSection = document.getElementById("replacementJam");
-
-  // Hide both sections first
-  if (liburSection) liburSection.style.display = "none";
-  if (jamSection) jamSection.style.display = "none";
-
-  // Show the appropriate section based on selection
-  if (this.value === "libur" && liburSection) {
-    liburSection.style.display = "block";
-    // Force update of the UI for multiple dates
-    setTimeout(updateLeaveReplacementUI, 0);
-  } else if (this.value === "jam" && jamSection) {
-    jamSection.style.display = "block";
-    // Inisialisasi form penggantian waktu
-    initReplacementTimeForm();
+  
+  // Reset required attributes
+  document.querySelectorAll(".replacement-date").forEach(input => {
+    input.removeAttribute("required");
+  });
+  
+  const hourDate = document.getElementById("replacementHourDate");
+  const timeValue = document.getElementById("replacementTimeValue");
+  
+  if (hourDate) hourDate.removeAttribute("required");
+  if (timeValue) timeValue.removeAttribute("required");
+  
+  // Set required berdasarkan pilihan
+  if (this.value === "libur") {
+    if (liburSection) liburSection.style.display = "block";
+    if (jamSection) jamSection.style.display = "none";
+    
+    // Set required untuk tanggal ganti libur
+    document.querySelectorAll(".replacement-date").forEach(input => {
+      input.setAttribute("required", "");
+    });
+  } else if (this.value === "jam") {
+    if (liburSection) liburSection.style.display = "none";
+    if (jamSection) jamSection.style.display = "block";
+    
+    // Set required untuk pengganti jam
+    if (hourDate) hourDate.setAttribute("required", "");
+    if (timeValue) timeValue.setAttribute("required", "");
+  } else {
+    if (liburSection) liburSection.style.display = "none";
+    if (jamSection) jamSection.style.display = "none";
   }
 });
 
@@ -537,10 +593,13 @@ function checkPendingUploads() {
 document.getElementById("leaveForm")?.addEventListener("submit", async function (e) {
   e.preventDefault();
 
-   // Scroll ke atas halaman terlebih dahulu
-   window.scrollTo({
+  // Validasi form sebelum submit
+  if (!validateLeaveForm()) return;
+
+  // Scroll ke atas halaman terlebih dahulu
+  window.scrollTo({
     top: 0,
-    behavior: "smooth"
+    behavior: "smooth",
   });
 
   // Show loading state
@@ -613,7 +672,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         const fileInput = document.getElementById("medicalCertificateFile");
         if (fileInput.files.length > 0) {
           const file = fileInput.files[0];
-          
+
           // Validasi file
           const validation = validateFile(file);
           if (!validation.valid) {
@@ -644,7 +703,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
               `medical-certificates/${employeeId}`,
               3 // maksimal 3 kali percobaan
             );
-            
+
             console.log("Upload result:", uploadResult); // Debugging
 
             // Simpan informasi file
@@ -653,7 +712,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
               publicId: uploadResult.publicId,
               name: file.name,
               type: file.type,
-              size: file.size
+              size: file.size,
             };
 
             // Jika file disimpan sementara (offline)
@@ -677,9 +736,9 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         type: "sakit",
         needReplacement: replacementType !== "tidak",
         hasMedicalCertificate: hasMedicalCertificate,
-        medicalCertificateFile: medicalCertificateFileInfo
+        medicalCertificateFile: medicalCertificateFileInfo,
       };
-      
+
       console.log("Replacement details with medical certificate:", replacementDetails); // Debugging
     } else if (leaveType === "cuti") {
       const cutiType = document.querySelector('input[name="leaveTypeRadio"]:checked')?.value || "regular";
@@ -730,14 +789,14 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       const replacementHourDate = document.getElementById("replacementHourDate").value;
       const timeValue = document.getElementById("replacementTimeValue")?.value;
       const timeUnit = document.getElementById("replacementTimeUnit")?.value || "jam";
-  
+
       if (!replacementHourDate || !timeValue) {
         showFeedback("error", "Tanggal dan durasi pengganti harus diisi!");
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
         return;
       }
-      
+
       // Validasi nilai berdasarkan satuan
       const value = parseInt(timeValue);
       if (isNaN(value) || value < 1) {
@@ -746,14 +805,14 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
         submitBtn.disabled = false;
         return;
       }
-      
+
       if (timeUnit === "jam" && value > 12) {
         showFeedback("error", "Jumlah jam maksimal adalah 12 jam per hari!");
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
         return;
       }
-      
+
       if (timeUnit === "menit" && value > 300) {
         showFeedback("error", "Jumlah menit maksimal adalah 300 menit per hari!");
         submitBtn.innerHTML = originalBtnText;
@@ -773,7 +832,7 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
           month: "long",
           day: "numeric",
         }),
-        formattedValue: `${value} ${timeUnit}`
+        formattedValue: `${value} ${timeUnit}`,
       };
     } else if (replacementType === "tidak") {
       replacementDetails = {
@@ -804,42 +863,41 @@ document.getElementById("leaveForm")?.addEventListener("submit", async function 
       submissionDate: new Date().toISOString(),
       status: "Menunggu Persetujuan",
     };
-    
+
     console.log("Final leave request data:", leaveRequest); // Debugging
 
     // Submit the leave request
     await submitLeaveRequest(leaveRequest);
 
-   // Setelah berhasil submit
-   showFeedback("success", "Pengajuan izin berhasil diajukan!");
-   this.reset();
-   
-   // Perbaikan: Periksa apakah elemen ada sebelum mengakses propertinya
-   const elementsToHide = [
-     "replacementLibur",
-     "replacementJam",
-     "sickLeaveSection",
-     "leaveSection",
-     "multiDateWarning",
-     "filePreviewContainer",
-   ];
+    // Setelah berhasil submit
+    showFeedback("success", "Pengajuan izin berhasil diajukan!");
+    this.reset();
 
-   elementsToHide.forEach((id) => {
-     const element = document.getElementById(id);
-     if (element) element.style.display = "none";
-   });
-   // Reload leave history
-   await loadLeaveHistory(employeeId);
- } catch (error) {
-   console.error("Error submitting leave request:", error);
-   showFeedback("error", "Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.");
- } finally {
-   // Restore button state
-   submitBtn.innerHTML = originalBtnText;
-   submitBtn.disabled = false;
- }
+    // Perbaikan: Periksa apakah elemen ada sebelum mengakses propertinya
+    const elementsToHide = [
+      "replacementLibur",
+      "replacementJam",
+      "sickLeaveSection",
+      "leaveSection",
+      "multiDateWarning",
+      "filePreviewContainer",
+    ];
+
+    elementsToHide.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.style.display = "none";
+    });
+    // Reload leave history
+    await loadLeaveHistory(employeeId);
+  } catch (error) {
+    console.error("Error submitting leave request:", error);
+    showFeedback("error", "Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.");
+  } finally {
+    // Restore button state
+    submitBtn.innerHTML = originalBtnText;
+    submitBtn.disabled = false;
+  }
 });
-
 
 // Function to show feedback messages with custom duration
 function showFeedback(type, message, autoHide = true, duration = 5000) {
@@ -850,36 +908,40 @@ function showFeedback(type, message, autoHide = true, duration = 5000) {
   feedbackElement.className = `alert alert-${
     type === "error" ? "danger" : type === "warning" ? "warning" : type === "info" ? "info" : "success"
   } mb-4 feedback-popup`;
-  
+
   feedbackElement.innerHTML = message;
   feedbackElement.style.display = "block";
-  
+
   // Tambahkan style untuk membuat feedback lebih menonjol
   feedbackElement.style.position = "sticky";
   feedbackElement.style.top = "20px";
   feedbackElement.style.zIndex = "1050";
   feedbackElement.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-  feedbackElement.style.borderLeft = type === "error" ? "5px solid #dc3545" : 
-                                     type === "warning" ? "5px solid #ffc107" : 
-                                     type === "info" ? "5px solid #0dcaf0" : 
-                                     "5px solid #198754";
-  
+  feedbackElement.style.borderLeft =
+    type === "error"
+      ? "5px solid #dc3545"
+      : type === "warning"
+      ? "5px solid #ffc107"
+      : type === "info"
+      ? "5px solid #0dcaf0"
+      : "5px solid #198754";
+
   // Tambahkan animasi untuk menarik perhatian
   feedbackElement.style.animation = "feedbackPulse 0.5s ease-in-out";
-  
+
   // Scroll ke elemen dengan posisi di atas viewport
   window.scrollTo({
     top: 0,
-    behavior: "smooth"
+    behavior: "smooth",
   });
-  
+
   // Auto-hide after specified duration if autoHide is true
   if (autoHide) {
     setTimeout(() => {
       // Tambahkan animasi fade out
       feedbackElement.style.animation = "feedbackFadeOut 0.5s ease-in-out";
       feedbackElement.style.opacity = "0";
-      
+
       setTimeout(() => {
         feedbackElement.style.display = "none";
         // Reset opacity untuk penggunaan berikutnya
@@ -888,7 +950,6 @@ function showFeedback(type, message, autoHide = true, duration = 5000) {
     }, duration);
   }
 }
-
 
 // Update leave history table
 function updateLeaveHistoryTable() {
@@ -991,7 +1052,7 @@ async function loadLeaveHistory(employeeId) {
 // Initialize date inputs with min date validation
 function initDateInputs() {
   const today = new Date();
-  
+
   // Format tanggal hari ini menjadi YYYY-MM-DD untuk atribut min
   const formattedToday = today.toISOString().split("T")[0];
 
@@ -1001,11 +1062,11 @@ function initDateInputs() {
   if (startDateInput) {
     // Gunakan tanggal hari ini sebagai nilai minimum
     startDateInput.min = formattedToday;
-    
+
     // Opsional: Set default value ke tanggal hari ini
     // startDateInput.value = formattedToday;
-     // Tambahkan event listener untuk klik pada input tanggal
-     startDateInput.addEventListener("click", function() {
+    // Tambahkan event listener untuk klik pada input tanggal
+    startDateInput.addEventListener("click", function () {
       if (this.showPicker) {
         this.showPicker();
       }
@@ -1017,29 +1078,29 @@ function initDateInputs() {
     endDateInput.min = formattedToday;
 
     // Tambahkan event listener untuk klik pada input tanggal
-    endDateInput.addEventListener("click", function() {
+    endDateInput.addEventListener("click", function () {
       if (this.showPicker) {
         this.showPicker();
       }
     });
   }
-  
+
   // Tambahkan event listener untuk semua input tanggal lainnya
-  document.querySelectorAll('input[type="date"]').forEach(dateInput => {
+  document.querySelectorAll('input[type="date"]').forEach((dateInput) => {
     if (dateInput !== startDateInput && dateInput !== endDateInput) {
-      dateInput.addEventListener("click", function() {
+      dateInput.addEventListener("click", function () {
         if (this.showPicker) {
           this.showPicker();
         }
       });
     }
-    
+
     // Tambahkan event listener untuk icon kalender di sebelahnya
-    const parentGroup = dateInput.closest('.input-group');
+    const parentGroup = dateInput.closest(".input-group");
     if (parentGroup) {
-      const icon = parentGroup.querySelector('.input-group-text');
+      const icon = parentGroup.querySelector(".input-group-text");
       if (icon) {
-        icon.addEventListener('click', function() {
+        icon.addEventListener("click", function () {
           // Fokuskan input dan buka date picker
           dateInput.focus();
           if (dateInput.showPicker) {
@@ -1055,19 +1116,19 @@ function initDateInputs() {
 // Tambahkan fungsi ini untuk menangani input tanggal yang ditambahkan secara dinamis
 function enableDatePickerOnClick(dateInput) {
   if (!dateInput) return;
-  
-  dateInput.addEventListener("click", function() {
+
+  dateInput.addEventListener("click", function () {
     if (this.showPicker) {
       this.showPicker();
     }
   });
-  
+
   // Tambahkan event listener untuk icon kalender di sebelahnya
-  const parentGroup = dateInput.closest('.input-group');
+  const parentGroup = dateInput.closest(".input-group");
   if (parentGroup) {
-    const icon = parentGroup.querySelector('.input-group-text');
+    const icon = parentGroup.querySelector(".input-group-text");
     if (icon) {
-      icon.addEventListener('click', function() {
+      icon.addEventListener("click", function () {
         // Fokuskan input dan buka date picker
         dateInput.focus();
         if (dateInput.showPicker) {
@@ -1080,15 +1141,15 @@ function enableDatePickerOnClick(dateInput) {
 
 // Inisialisasi form penggantian waktu
 function initReplacementTimeForm() {
-  const timeUnit = document.getElementById('replacementTimeUnit');
-  const timeValue = document.getElementById('replacementTimeValue');
-  const helpText = document.getElementById('timeUnitHelp');
-  
+  const timeUnit = document.getElementById("replacementTimeUnit");
+  const timeValue = document.getElementById("replacementTimeValue");
+  const helpText = document.getElementById("timeUnitHelp");
+
   if (!timeUnit || !timeValue || !helpText) return;
-  
+
   // Update batasan input berdasarkan satuan waktu
-  timeUnit.addEventListener('change', function() {
-    if (this.value === 'jam') {
+  timeUnit.addEventListener("change", function () {
+    if (this.value === "jam") {
       timeValue.max = 12;
       timeValue.placeholder = "Masukkan jumlah jam";
       helpText.textContent = "Maksimal 12 jam per hari";
@@ -1098,77 +1159,77 @@ function initReplacementTimeForm() {
       helpText.textContent = "Maksimal 300 menit per hari";
     }
     // Reset nilai input
-    timeValue.value = '';
+    timeValue.value = "";
   });
-  
+
   // Set tanggal minimum (H+1)
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  const replacementHourDate = document.getElementById('replacementHourDate');
+
+  const replacementHourDate = document.getElementById("replacementHourDate");
   if (replacementHourDate) {
-    replacementHourDate.min = tomorrow.toISOString().split('T')[0];
+    replacementHourDate.min = tomorrow.toISOString().split("T")[0];
   }
 }
 
 // Tampilkan form penggantian yang sesuai
 function showReplacementForm(type) {
   // Sembunyikan semua form
-  document.querySelectorAll('.replacement-detail').forEach(el => el.style.display = 'none');
-  
+  document.querySelectorAll(".replacement-detail").forEach((el) => (el.style.display = "none"));
+
   // Tampilkan form yang dipilih
-  if (type === 'jam') {
-    const form = document.getElementById('replacementJam');
+  if (type === "jam") {
+    const form = document.getElementById("replacementJam");
     if (form) {
-      form.style.display = 'block';
+      form.style.display = "block";
       initReplacementTimeForm();
     }
-  } else if (type === 'libur') {
-    const form = document.getElementById('replacementLibur');
-    if (form) form.style.display = 'block';
+  } else if (type === "libur") {
+    const form = document.getElementById("replacementLibur");
+    if (form) form.style.display = "block";
   }
 }
 
 // Validasi dan simpan data penggantian waktu
 function getReplacementTimeData() {
-  const timeValue = document.getElementById('replacementTimeValue');
-  const timeUnit = document.getElementById('replacementTimeUnit');
-  const dateInput = document.getElementById('replacementHourDate');
-  
+  const timeValue = document.getElementById("replacementTimeValue");
+  const timeUnit = document.getElementById("replacementTimeUnit");
+  const dateInput = document.getElementById("replacementHourDate");
+
   if (!timeValue || !timeUnit || !dateInput) return null;
-  
+
   const value = parseInt(timeValue.value);
   const unit = timeUnit.value;
   const date = dateInput.value;
-  
+
   // Validasi
   if (!date) {
-    showAlert('danger', 'Tanggal penggantian harus diisi');
+    showAlert("danger", "Tanggal penggantian harus diisi");
     return null;
   }
-  
+
   if (!value || isNaN(value)) {
-    showAlert('danger', 'Durasi penggantian harus diisi');
+    showAlert("danger", "Durasi penggantian harus diisi");
     return null;
   }
-  
-  if (unit === 'jam' && (value < 1 || value > 12)) {
-    showAlert('danger', 'Jumlah jam harus antara 1-12 jam');
+
+  if (unit === "jam" && (value < 1 || value > 12)) {
+    showAlert("danger", "Jumlah jam harus antara 1-12 jam");
     return null;
   }
-  
-  if (unit === 'menit' && (value < 1 || value > 300)) {
-    showAlert('danger', 'Jumlah menit harus antara 1-300 menit');
+
+  if (unit === "menit" && (value < 1 || value > 300)) {
+    showAlert("danger", "Jumlah menit harus antara 1-300 menit");
     return null;
   }
-  
+
   return {
-    type: 'jam',
+    type: "jam",
     unit: unit,
     value: value,
     date: date,
-    formattedValue: `${value} ${unit}`
+    formattedValue: `${value} ${unit}`,
   };
 }
 
@@ -1226,7 +1287,7 @@ window.addEventListener("offline", function () {
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
   // Tambahkan style untuk input tanggal
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.textContent = `
     input[type="date"] {
       cursor: pointer;
