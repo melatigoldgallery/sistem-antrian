@@ -551,9 +551,10 @@ function setDefaultMonthAndYear() {
 
 async function generateReport(forceRefresh = false) {
   try {
-    const monthSelector = document.getElementById("monthSelector");
+   const monthSelector = document.getElementById("monthSelector");
     const yearSelector = document.getElementById("yearSelector");
     const replacementTypeFilter = document.getElementById("replacementTypeFilter");
+    const replacementStatusFilter = document.getElementById("replacementStatusFilter");
 
     if (!monthSelector || !yearSelector) {
       console.error("Month or year selector not found");
@@ -563,6 +564,7 @@ async function generateReport(forceRefresh = false) {
     const month = parseInt(monthSelector.value);
     const year = parseInt(yearSelector.value);
     const selectedReplacementType = replacementTypeFilter ? replacementTypeFilter.value : "all";
+    const selectedReplacementStatus = replacementStatusFilter ? replacementStatusFilter.value : "all";
 
     // Buat kunci cache
     const cacheKey = `${month}_${year}`;
@@ -592,9 +594,9 @@ async function generateReport(forceRefresh = false) {
       lastVisibleDoc = cachedData.lastDoc;
       // Tandai hasMoreData jika total data lebih dari itemsPerPage
       hasMoreData = allCachedData.length > itemsPerPage;
-      // Terapkan filter jenis pengganti jika dipilih
-      if (selectedReplacementType !== "all") {
-        filterByReplacementType(selectedReplacementType);
+      // PERBAIKAN: Terapkan kedua filter jika dipilih
+      if (selectedReplacementType !== "all" || selectedReplacementStatus !== "all") {
+        applyFilters(selectedReplacementType, selectedReplacementStatus);
       } else {
         // Update UI
         updateSummaryCards();
@@ -716,8 +718,8 @@ async function generateReport(forceRefresh = false) {
       const replacementTypeFilter = document.getElementById("replacementTypeFilter");
       const selectedReplacementType = replacementTypeFilter ? replacementTypeFilter.value : "all";
 
-      if (selectedReplacementType !== "all") {
-        filterByReplacementType(selectedReplacementType);
+    if (selectedReplacementType !== "all" || selectedReplacementStatus !== "all") {
+      applyFilters(selectedReplacementType, selectedReplacementStatus);
       } else {
         // Update UI
         updateSummaryCards();
@@ -734,6 +736,115 @@ async function generateReport(forceRefresh = false) {
       hideReportElements();
       document.getElementById("noDataMessage").style.display = "block";
     }
+  }
+}
+
+// Add a new function to apply both filters at once
+function applyFilters(typeFilter, statusFilter) {
+  try {
+    // If no data, do nothing
+    if (!currentLeaveData || currentLeaveData.length === 0) return;
+
+    // Get original data from cache if needed
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+    const cacheKey = `${month}_${year}`;
+
+    let originalData = [];
+    if (reportCache.has(cacheKey)) {
+      originalData = [...reportCache.get(cacheKey).data];
+      // Update allCachedData with complete data from cache
+      allCachedData = [...originalData];
+    } else {
+      originalData = [...allCachedData]; // Gunakan allCachedData sebagai sumber data asli
+    }
+
+    console.log(`Applying filters - Type: ${typeFilter}, Status: ${statusFilter}, Total data: ${originalData.length}`);
+
+    // Apply both filters
+    let filteredData = originalData;
+
+    // Apply type filter if not "all"
+    if (typeFilter !== "all") {
+      filteredData = filteredData.filter(leave => leave.replacementType === typeFilter);
+      console.log(`After type filter: ${filteredData.length} items`);
+    }
+
+    // Apply status filter if not "all"
+    if (statusFilter !== "all") {
+      filteredData = filteredData.filter(leave => {
+        // Check for special cases first (medical certificate or leave)
+        const hasMedicalCert = 
+          leave.leaveType === "sakit" && 
+          leave.replacementDetails && 
+          leave.replacementDetails.hasMedicalCertificate;
+        
+        const isLeave = leave.leaveType === "cuti";
+        
+        // These types don't need replacement
+        if (hasMedicalCert || isLeave) {
+          // If filtering for "sudah" or "belum", these should be excluded
+          return statusFilter === "all";
+        }
+        
+        // Check if it's a multi-day leave
+        const isMultiDay = 
+          leave.leaveStartDate && 
+          leave.leaveEndDate && 
+          leave.leaveStartDate !== leave.leaveEndDate;
+        
+        if (isMultiDay && leave.replacementStatusArray && leave.replacementStatusArray.length > 0) {
+          // For multi-day, check if any day matches the filter
+          if (statusFilter === "sudah") {
+            // Check for any status containing "sudah" (case insensitive)
+            return leave.replacementStatusArray.some(status => {
+              if (!status) return false;
+              return status.toLowerCase().includes("sudah");
+            });
+          } else if (statusFilter === "belum") {
+            // Check for any status containing "belum" or empty
+            return leave.replacementStatusArray.some(status => {
+              if (!status) return true;
+              return status.toLowerCase().includes("belum");
+            });
+          }
+        } else {
+          // For single-day, check replacementStatus
+          let status = leave.replacementStatus || "";
+          
+          // Convert to string and lowercase for consistent comparison
+          status = String(status).toLowerCase();
+          
+          if (statusFilter === "sudah") {
+            return status.includes("sudah");
+          } else if (statusFilter === "belum") {
+            return !status || status.includes("belum");
+          }
+        }
+        
+        // Default for "all" filter
+        return true;
+      });
+      console.log(`After status filter: ${filteredData.length} items`);
+    }
+
+    // Update data for display
+    currentLeaveData = filteredData.slice(0, itemsPerPage);
+    allCachedData = filteredData;
+    hasMoreData = filteredData.length > itemsPerPage;
+
+    // Update UI
+    updateSummaryCards();
+    populateLeaveTable();
+
+    // Update Load More button
+    const loadMoreContainer = document.getElementById("loadMoreContainer");
+    if (loadMoreContainer) {
+      loadMoreContainer.style.display = hasMoreData ? "block" : "none";
+    }
+  } catch (error) {
+    console.error("Error applying filters:", error);
+    showAlert("danger", "Terjadi kesalahan saat menerapkan filter: " + error.message);
   }
 }
 
@@ -785,13 +896,30 @@ function setupEventListeners() {
     loadMoreBtn.addEventListener("click", loadMoreData);
   }
 
-  // Replacement type filter
+ // Replacement type filter
   const replacementTypeFilter = document.getElementById("replacementTypeFilter");
   if (replacementTypeFilter) {
-    replacementTypeFilter.addEventListener("change", function () {
-      // Jika sudah ada data, langsung filter
+    replacementTypeFilter.addEventListener("change", function() {
+      const replacementStatusFilter = document.getElementById("replacementStatusFilter");
+      const statusValue = replacementStatusFilter ? replacementStatusFilter.value : "all";
+      
+      // If data exists, apply both filters
       if (currentLeaveData && currentLeaveData.length > 0) {
-        filterByReplacementType(this.value);
+        applyFilters(this.value, statusValue);
+      }
+    });
+  }
+
+  // Replacement status filter
+  const replacementStatusFilter = document.getElementById("replacementStatusFilter");
+  if (replacementStatusFilter) {
+    replacementStatusFilter.addEventListener("change", function() {
+      const replacementTypeFilter = document.getElementById("replacementTypeFilter");
+      const typeValue = replacementTypeFilter ? replacementTypeFilter.value : "all";
+      
+      // If data exists, apply both filters
+      if (currentLeaveData && currentLeaveData.length > 0) {
+        applyFilters(typeValue, this.value);
       }
     });
   }

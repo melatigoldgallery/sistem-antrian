@@ -224,10 +224,6 @@ async function loadAllLeaveRequests(forceRefresh = false) {
   }
 }
 
-
-
-
-
 // Update pending leave table
 function updatePendingLeaveTable() {
   const tbody = document.getElementById("pendingLeaveList");

@@ -479,18 +479,30 @@ async function downloadAllBarcodes() {
         container.style.textAlign = "center";
         container.style.width = "200px";
         container.style.display = "inline-block";
-
-        // Clone barcode element
-        const barcodeClone = barcodeElement.cloneNode(true);
-        container.appendChild(barcodeClone);
+        container.style.borderRadius = "8px";
+        container.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
 
         // Tambahkan nama karyawan
         const nameElement = document.createElement("div");
-        nameElement.style.marginTop = "10px";
+        nameElement.style.marginTop = "5px";
         nameElement.style.fontWeight = "bold";
-        nameElement.style.fontSize = "14px";
+        nameElement.style.fontSize = "18px";
         nameElement.textContent = employee.name;
         container.appendChild(nameElement);
+
+        // Tambahkan ID karyawan
+        const idElement = document.createElement("div");
+        idElement.style.marginBottom = "2px";
+        idElement.style.fontSize = "14px";
+        idElement.style.color = "#444";
+        idElement.textContent = `ID: ${employee.employeeId}`;
+        container.appendChild(idElement);
+
+        // Clone barcode element
+        const barcodeClone = barcodeElement.cloneNode(true);
+        barcodeClone.style.width = "100%";
+        barcodeClone.style.height = "80px";
+        container.appendChild(barcodeClone);
 
         // Tambahkan ke body sementara untuk dirender
         document.body.appendChild(container);
@@ -784,13 +796,13 @@ async function downloadSingleBarcode(employeeId, employeeName) {
     nameElement.textContent = employee.name;
     container.appendChild(nameElement);
     
-    // // Tambahkan ID karyawan
-    // const idElement = document.createElement('div');
-    // idElement.style.marginBottom = '15px';
-    // idElement.style.fontSize = '14px';
-    // idElement.style.color = '#666';
-    // idElement.textContent = `ID: ${employee.employeeId}`;
-    // container.appendChild(idElement);
+    // Tambahkan ID karyawan
+    const idElement = document.createElement('div');
+    idElement.style.marginBottom = '2px';
+    idElement.style.fontSize = '14px';
+    idElement.style.color = '#444';
+    idElement.textContent = `ID: ${employee.employeeId}`;
+    container.appendChild(idElement);
     
     // Clone barcode element
     const barcodeClone = barcodeElement.cloneNode(true);
