@@ -1,3 +1,32 @@
+
+// 📦 Caching Logic for Service Layer (Attendance Records)
+const CACHE_KEY_SERVICE = 'cachedAttendanceServiceData';
+const CACHE_EXPIRATION_SERVICE = 5 * 60 * 1000; // 5 minutes
+
+function saveServiceCache(data) {
+  const cache = {
+    timestamp: Date.now(),
+    data: data
+  };
+  sessionStorage.setItem(CACHE_KEY_SERVICE, JSON.stringify(cache));
+}
+
+function getServiceCache() {
+  const raw = sessionStorage.getItem(CACHE_KEY_SERVICE);
+  if (!raw) return null;
+
+  const cache = JSON.parse(raw);
+  const now = Date.now();
+
+  if ((now - cache.timestamp) > CACHE_EXPIRATION_SERVICE) {
+    sessionStorage.removeItem(CACHE_KEY_SERVICE);
+    return null;
+  }
+
+  return cache.data;
+}
+
+
 import { db } from "../configFirebase.js";
 import {
   collection,
@@ -540,8 +569,10 @@ export async function updateAttendanceOut(id, timeOut) {
 }
 
 // Modifikasi getTodayAttendance untuk mencegah duplikasi
+// Modifikasi getTodayAttendance untuk menangani berbagai format data timeIn
 export async function getTodayAttendance() {
   try {
+    // Definisikan variabel today di dalam fungsi
     const today = getLocalDateString();
     
     // Cek apakah data sudah ada di cache dan masih valid
@@ -567,21 +598,71 @@ export async function getTodayAttendance() {
     const employeeIds = new Set(); // Untuk mencegah duplikasi
     
     snapshot.forEach(doc => {
-      const data = doc.data();
-      const record = {
-        id: doc.id,
-        ...data,
-        // Convert Firestore Timestamp to JS Date
-        timeIn: data.timeIn ? data.timeIn.toDate() : null,
-        timeOut: data.timeOut ? data.timeOut.toDate() : null,
-      };
-      
-      // Cek duplikasi berdasarkan employeeId
-      if (!employeeIds.has(data.employeeId)) {
-        employeeIds.add(data.employeeId);
-        records.push(record);
-      } else {
-        console.warn(`Duplicate attendance record found for employee ${data.employeeId} on ${today}`);
+      try {
+        const data = doc.data();
+        
+        // PERBAIKAN: Tangani berbagai format data timeIn dan timeOut
+        let timeInDate = null;
+        let timeOutDate = null;
+        
+        // Cek dan konversi timeIn
+        if (data.timeIn) {
+          if (typeof data.timeIn.toDate === 'function') {
+            // Ini adalah Firestore Timestamp
+            timeInDate = data.timeIn.toDate();
+          } else if (data.timeIn instanceof Date) {
+            // Ini sudah berupa Date
+            timeInDate = data.timeIn;
+          } else if (data.timeIn._seconds !== undefined && data.timeIn._nanoseconds !== undefined) {
+            // Ini adalah objek Timestamp yang sudah dikonversi ke JSON
+            timeInDate = new Date(data.timeIn._seconds * 1000);
+          } else if (typeof data.timeIn === 'string') {
+            // Ini adalah string tanggal
+            timeInDate = new Date(data.timeIn);
+          } else if (typeof data.timeIn === 'number') {
+            // Ini adalah timestamp dalam milidetik
+            timeInDate = new Date(data.timeIn);
+          }
+        }
+        
+        // Cek dan konversi timeOut
+        if (data.timeOut) {
+          if (typeof data.timeOut.toDate === 'function') {
+            // Ini adalah Firestore Timestamp
+            timeOutDate = data.timeOut.toDate();
+          } else if (data.timeOut instanceof Date) {
+            // Ini sudah berupa Date
+            timeOutDate = data.timeOut;
+          } else if (data.timeOut._seconds !== undefined && data.timeOut._nanoseconds !== undefined) {
+            // Ini adalah objek Timestamp yang sudah dikonversi ke JSON
+            timeOutDate = new Date(data.timeOut._seconds * 1000);
+          } else if (typeof data.timeOut === 'string') {
+            // Ini adalah string tanggal
+            timeOutDate = new Date(data.timeOut);
+          } else if (typeof data.timeOut === 'number') {
+            // Ini adalah timestamp dalam milidetik
+            timeOutDate = new Date(data.timeOut);
+          }
+        }
+        
+        const record = {
+          id: doc.id,
+          ...data,
+          // Gunakan hasil konversi
+          timeIn: timeInDate,
+          timeOut: timeOutDate,
+        };
+        
+        // Cek duplikasi berdasarkan employeeId
+        if (!employeeIds.has(data.employeeId)) {
+          employeeIds.add(data.employeeId);
+          records.push(record);
+        } else {
+          console.warn(`Duplicate attendance record found for employee ${data.employeeId} on ${today}`);
+        }
+      } catch (docError) {
+        console.error(`Error processing document ${doc.id}:`, docError);
+        // Lanjutkan ke dokumen berikutnya
       }
     });
     
@@ -590,9 +671,13 @@ export async function getTodayAttendance() {
     updateCacheTimestamp(today);
     saveAttendanceCacheToStorage();
     
-    return records;
+    saveServiceCache(records);
+  return records;
   } catch (error) {
     console.error("Error getting today's attendance:", error);
+    
+    // Definisikan today di sini juga untuk fallback
+    const today = getLocalDateString();
     
     // Fallback to cache if available
     if (attendanceCache.has(today)) {
@@ -603,6 +688,8 @@ export async function getTodayAttendance() {
     throw error;
   }
 }
+
+
 
 /**
  * Mendapatkan data kehadiran berdasarkan rentang tanggal dengan optimasi cache dan batching

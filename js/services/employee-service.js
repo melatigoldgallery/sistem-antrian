@@ -8,12 +8,68 @@ import {
   updateDoc,
   query,
   where,
+  setDoc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 // Cache constants
 const CACHE_KEY = 'employees_cache';
 const CACHE_TIMESTAMP_KEY = 'employees_cache_timestamp';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam dalam milidetik
+// Tambahkan fungsi-fungsi untuk mengelola data wajah karyawan
+
+// Simpan face descriptor untuk karyawan
+export async function saveFaceDescriptor(employeeId, descriptor) {
+  try {
+    // Konversi Float32Array ke array biasa untuk disimpan di Firestore
+    const descriptorArray = Array.from(descriptor);
+    
+    // Simpan ke Firestore
+    const faceRef = doc(db, "employeeFaces", employeeId);
+    await setDoc(faceRef, {
+      employeeId: employeeId,
+      faceDescriptor: descriptorArray,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving face descriptor:", error);
+    throw error;
+  }
+}
+
+// Dapatkan face descriptor berdasarkan ID karyawan
+export async function getFaceDescriptor(employeeId) {
+  try {
+    const faceRef = doc(db, "employeeFaces", employeeId);
+    const faceDoc = await getDoc(faceRef);
+    
+    if (faceDoc.exists() && faceDoc.data().faceDescriptor) {
+      // Konversi array biasa kembali ke Float32Array
+      const descriptorData = faceDoc.data().faceDescriptor;
+      return new Float32Array(descriptorData);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error getting face descriptor:", error);
+    throw error;
+  }
+}
+
+// Hapus face descriptor (untuk reset)
+export async function deleteFaceDescriptor(employeeId) {
+  try {
+    const faceRef = doc(db, "employeeFaces", employeeId);
+    await deleteDoc(faceRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting face descriptor:", error);
+    throw error;
+  }
+}
 
 // Helper function to check if cache is valid
 function isCacheValid() {

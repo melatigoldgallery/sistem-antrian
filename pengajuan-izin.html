@@ -22,36 +22,49 @@
     <!-- Favicon sederhana -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
     <!-- Tambahkan style ini di bagian head, sebelum </head> -->
-<style>
-  /* Animasi untuk feedback popup */
-  @keyframes feedbackPulse {
-    0% { transform: scale(0.98); opacity: 0.8; }
-    50% { transform: scale(1.02); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  
-  @keyframes feedbackFadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-  
-  /* Style untuk feedback popup */
-  .feedback-popup {
-    position: sticky !important;
-    top: 20px !important;
-    z-index: 1050 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    border-radius: 8px !important;
-    padding: 16px !important;
-    margin-bottom: 20px !important;
-    font-weight: 500 !important;
-  }
-  
-  /* Pastikan feedback terlihat di atas konten lain */
-  #formFeedback {
-    position: relative;
-  }
-</style>
+    <style>
+      /* Animasi untuk feedback popup */
+      @keyframes feedbackPulse {
+        0% {
+          transform: scale(0.98);
+          opacity: 0.8;
+        }
+        50% {
+          transform: scale(1.02);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes feedbackFadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      /* Style untuk feedback popup */
+      .feedback-popup {
+        position: sticky !important;
+        top: 20px !important;
+        z-index: 1050 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+        margin-bottom: 20px !important;
+        font-weight: 500 !important;
+      }
+
+      /* Pastikan feedback terlihat di atas konten lain */
+      #formFeedback {
+        position: relative;
+      }
+    </style>
 
     <title>Pengajuan Izin - Melati Gold Shop</title>
   </head>
@@ -420,7 +433,7 @@
                   </div>
 
                   <!-- Section Ganti Libur - UPDATED -->
-                  <div class="col-6">
+                  <div class="col-12">
                     <div id="replacementLibur" class="replacement-detail card mt-0" style="display: none">
                       <div class="card-body">
                         <h6 class="mb-3">
@@ -439,7 +452,7 @@
                             <label for="replacementDate0" class="form-label">Tanggal Ganti Libur 1</label>
                             <div class="input-group">
                               <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                              <input type="date" class="form-control replacement-date" id="replacementDate0" />
+                              <input type="date" class="form-control replacement-date" id="replacementDate0" required/>
                             </div>
                           </div>
                         </div>
@@ -462,30 +475,35 @@
                       <div class="card-body">
                         <h6 class="mb-3">
                           <i class="fas fa-clock me-2"></i>
-                          Detail Ganti Jam
+                          Detail Ganti Waktu
                         </h6>
                         <div class="mb-3">
-                          <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
+                          <label for="replacementHourDate" class="form-label">Tanggal Ganti Waktu</label>
                           <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-                            <input type="date" class="form-control" id="replacementHourDate" />
+                            <input type="date" class="form-control" id="replacementHourDate" required/>
                           </div>
                         </div>
+
+                        <!-- Input waktu dengan dropdown satuan -->
                         <div class="mb-3">
-                          <label for="replacementHours" class="form-label">Jumlah Jam Pengganti</label>
+                          <label for="replacementTimeValue" class="form-label">Durasi Pengganti</label>
                           <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
                             <input
                               type="number"
                               class="form-control"
-                              id="replacementHours"
+                              id="replacementTimeValue"
                               min="1"
-                              max="12"
-                              placeholder="Masukkan jumlah jam"
+                              max="300"
+                              placeholder="Masukkan durasi" required
                             />
-                            <span class="input-group-text">jam</span>
+                            <select class="form-select" id="replacementTimeUnit" style="max-width: 100px">
+                              <option value="jam">jam</option>
+                              <option value="menit">menit</option>
+                            </select>
                           </div>
-                          <div class="form-text">Maksimal 12 jam per hari</div>
+                          <div id="timeUnitHelp" class="form-text">Maksimal 12 jam atau 300 menit per hari</div>
                         </div>
                       </div>
                     </div>
@@ -521,7 +539,7 @@
                   </h6>
                   <ul class="mb-0">
                     <li>Pastikan alasan izin dijelaskan dengan detail</li>
-                    <li>Pengajuan akan diproses oleh HRD dalam waktu 1x24 jam</li>
+                    <li>Pengajuan akan diproses oleh HRD maksimal dalam waktu 1x24 jam</li>
                     <li>Status pengajuan dapat dilihat di menu "Laporan Izin"</li>
                   </ul>
                 </div>
@@ -549,8 +567,8 @@
                           Ganti Jam
                         </h5>
                         <p class="card-text">
-                          Opsi ini memungkinkan Anda mengganti jam kerja dengan bekerja lebih lama di hari
-                          yang ditentukan.
+                          Opsi ini memungkinkan Anda mengganti jam kerja dengan bekerja lebih lama di hari yang
+                          ditentukan.
                         </p>
                       </div>
                     </div>

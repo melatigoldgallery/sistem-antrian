@@ -27,154 +27,196 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/pages/absensi-modern.css"/>
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <!-- Favicon sederhana -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <!-- Tambahkan sebelum </head> -->
+    <script src="js/face-api/face-api.min.js"></script>
+    <!-- Tambahkan di bagian head -->
+    <style>
+      /* Styling untuk verifikasi wajah */
+      .face-capture-container {
+        position: relative;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 15px;
+      }
+
+      .face-capture-container video {
+        width: 100%;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+      }
+
+      #faceVerificationStatus {
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+
+      .text-success {
+        color: #28a745;
+      }
+
+      .text-danger {
+        color: #dc3545;
+      }
+
+      .text-warning {
+        color: #ffc107;
+      }
+
+      .text-info {
+        color: #17a2b8;
+      }
+    </style>
+
     <title>Sistem Absensi Staff - Melati Gold Shop</title>
   </head>
   <body>
     <div class="app-container">
-   <!-- Sidebar -->
-   <aside class="sidebar">
-    <div class="sidebar-header">
-      <img src="img/Melati.jfif" alt="Logo" class="logo" />
-      <h1 class="brand-name">Melati Gold Shop</h1>
-    </div>
-    <div class="sidebar-menu">
-      <ul class="nav flex-column" id="sidebarAccordion">
-        <li class="nav-item">
-          <a class="nav-link active" href="dashboard.html">
-            <i class="fas fa-tachometer-alt"></i>
-            <span class="menu-text">Dashboard</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="buyback.html">
-            <i class="fas fa-exchange-alt"></i>
-            <span class="menu-text">Buyback</span>
-          </a>
-        </li>
-        <!-- Antrian dropdown menu -->
-        <li class="nav-item">
-          <a
-            class="nav-link collapsed"
-            href="#"
-            data-bs-toggle="collapse"
-            data-bs-target="#antrianSubmenu"
-            aria-expanded="false"
-          >
-            <i class="fas fa-ticket-alt"></i>
-            <span class="menu-text">Antrian</span>
-            <i class="fas fa-angle-down ms-auto submenu-icon"></i>
-          </a>
-          <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
-            <ul class="nav flex-column ms-3">
-              <li class="nav-item">
-                <a class="nav-link" href="admin.html">
-                  <i class="fas fa-user-cog"></i>
-                  <span class="menu-text">Admin Antrian</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="display.html">
-                  <i class="fas fa-desktop"></i>
-                  <span class="menu-text">Display Antrian</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="analisis.html">
-                  <i class="fas fa-chart-bar"></i>
-                  <span class="menu-text">Laporan Antrian</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-        </li>
-        <!-- Absensi dropdown menu -->
-        <li class="nav-item">
-          <a
-            class="nav-link collapsed"
-            href="#"
-            data-bs-toggle="collapse"
-            data-bs-target="#absensiSubmenu"
-            aria-expanded="false"
-          >
-            <i class="fas fa-clipboard-check"></i>
-            <span class="menu-text">Absensi</span>
-            <i class="fas fa-angle-down ms-auto submenu-icon"></i>
-          </a>
-          <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
-            <ul class="nav flex-column ms-3">
-              <li class="nav-item">
-                <a class="nav-link" href="sistemAbsensi.html">
-                  <i class="fas fa-user-check"></i>
-                  <span class="menu-text">Kehadiran</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="pengajuan-izin.html">
-                  <i class="fas fa-calendar-plus"></i>
-                  <span class="menu-text">Pengajuan Izin</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="laporan-kehadiran.html">
-                  <i class="fas fa-file-alt"></i>
-                  <span class="menu-text">Laporan Kehadiran</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="laporan-izin.html">
-                  <i class="fas fa-file-medical"></i>
-                  <span class="menu-text">Laporan Izin</span>
-                </a>
-              </li>
-              <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
-              <li class="nav-item">
-                <a
-                  class="nav-link collapsed supervisor-toggle"
-                  href="#"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#supervisorSubmenu"
-                  aria-expanded="false"
-                >
-                  <i class="fas fa-user-tie"></i>
-                  <span class="menu-text">Supervisor</span>
-                  <i class="fas fa-chevron-down submenu-icon"></i>
-                </a>
-                <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
-                <div class="collapse supervisor-menu" id="supervisorSubmenu">
-                  <ul class="nav flex-column ms-3">
-                    <li class="nav-item">
-                      <a class="nav-link" href="supervisor.html">
-                        <i class="fas fa-desktop"></i>
-                        <span class="menu-text">Status Pengajuan Izin</span>
-                      </a>
-                    </li>
-                    <li class="nav-item">
-                      <a class="nav-link" href="tambah-pengguna.html">
-                        <i class="fas fa-user-cog"></i>
-                        <span class="menu-text">Tambah Pengguna</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </li>
-      </ul>
-    </div>
-    <div class="sidebar-footer">
-      <p>© 2025 Melati Gold Shop</p>
-    </div>
-  </aside>
-
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold Shop</h1>
+        </div>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column" id="sidebarAccordion">
+            <li class="nav-item">
+              <a class="nav-link active" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="buyback.html">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Buyback</span>
+              </a>
+            </li>
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
+                  <li class="nav-item">
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
+                      <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
+                    </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
 
       <!-- Main Content -->
       <main class="main-content">
         <!-- Top Navigation -->
-        <header class="top-nav ">
+        <header class="top-nav">
           <div class="menu-toggle d-md-flex d-none">
             <i class="fa-solid fa-minimize"></i>
           </div>
@@ -299,7 +341,7 @@
                 </div>
               </div>
             </div>
-                      <!-- Quick Stats -->
+            <!-- Quick Stats -->
             <div class="stats-cards m-0">
               <div class="stat-card">
                 <div class="stat-card-icon bg-primary">
@@ -320,38 +362,50 @@
                   <p>Terlambat</p>
                 </div>
               </div>
-
+              <div class="stat-card">
+                <div class="stat-card-icon bg-info">
+                  <i class="fas fa-hourglass-half"></i>
+                </div>
+                <div class="stat-card-info">
+                  <h3 id="latePermissionCount">0</h3>
+                  <p>Izin Terlambat</p>
+                </div>
+              </div>
               <div class="stat-card">
                 <div class="stat-card-icon bg-success">
                   <i class="fas fa-clipboard-list"></i>
                 </div>
                 <div class="stat-card-info">
                   <h3 id="leaveCount">0</h3>
-                  <p>Izin</p>
+                  <p>Izin Libur</p>
                 </div>
               </div>
             </div>
-            
 
             <!-- Scanner Section -->
             <div class="card scanner-card">
-              <div class="card-header">
-                <h2>
+              <div class="card-header d-flex justify-content-start align-items-center">
+                <h2 class="mb-0">
                   <i class="fas fa-qrcode"></i>
                   Scan Barcode Kehadiran
                 </h2>
-                <button id="refreshLeaveData" class="btn btn-sm btn-outline-primary">
-                  <i class="fas fa-sync-alt"></i> Refresh Data
-                </button>
-              </div>
-                <div class="alert alert-info m-2">
-              <div class="d-flex align-items-center">
-                <i class="fas fa-calendar-day me-2"></i>
-                <div>
-                  <strong>Absensi Hari Ini:</strong> <span id="dateInfo">-</span>
+                <div class="header-actions mx-2">
+                  <button id="refreshLeaveData" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Refresh Data
+                  </button>
                 </div>
               </div>
-            </div>
+              
+              <div class="alert alert-info m-2">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-calendar-day me-2"></i>
+                  <div>
+                    <strong>Absensi Hari Ini:</strong>
+                    <span id="dateInfo">-</span>
+                  </div>
+                </div>
+              </div>
               <div class="card-body">
                 <div class="scanner-container">
                   <div class="scan-type-selector mb-0">
@@ -369,8 +423,21 @@
                         Scan Pulang
                       </label>
                     </div>
+                    <div class="form-check form-check-inline">
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        name="scanType"
+                        id="scanTypeLatePerm"
+                        value="latepermission"
+                      />
+                      <label class="form-check-label" for="scanTypeLatePerm">
+                        <i class="fas fa-hourglass-half"></i>
+                        Izin Terlambat
+                      </label>
+                    </div>
                   </div>
-                  
+
                   <div class="shift-selector mb-0">
                     <div class="form-check form-check-inline">
                       <input
@@ -398,10 +465,17 @@
                     <div class="d-flex align-items-center">
                       <i class="fas fa-exclamation-triangle me-2"></i>
                       <div>
-                        <strong>Perhatian!</strong> Pastikan memilih scan masuk atau pulang dan shift yang sesuai dengan jadwal kerja Anda:
+                        <strong>Perhatian!</strong>
+                        Pastikan memilih scan masuk atau pulang dan shift yang sesuai dengan jadwal kerja Anda:
                         <ul class="mb-0 mt-1">
-                          <li><strong>Shift Pagi:</strong> Staff (08:45), OB (07:30)</li>
-                          <li><strong>Shift Sore:</strong> Staff (14:20), OB (13:45)</li>
+                          <li>
+                            <strong>Shift Pagi:</strong>
+                            Staff (08:45), OB (07:30)
+                          </li>
+                          <li>
+                            <strong>Shift Sore:</strong>
+                            Staff (14:20), OB (13:45)
+                          </li>
                         </ul>
                       </div>
                     </div>
@@ -418,6 +492,21 @@
                       <i class="fas fa-paper-plane"></i>
                     </button>
                   </div>
+                  <!-- Tambahkan ini setelah scanner-input-group -->
+                  <div id="latePermissionForm" class="mt-3" style="display: none">
+                    <div class="form-group">
+                      <label for="latePermissionCode">
+                        <i class="fas fa-key"></i>
+                        Kode Verifikasi:
+                      </label>
+                      <input
+                        type="text"
+                        id="latePermissionCode"
+                        class="form-control"
+                        placeholder="Masukkan kode verifikasi dari HRD"
+                      />
+                    </div>
+                  </div>
                   <div id="scanResult" class="scan-result"></div>
                 </div>
 
@@ -430,140 +519,48 @@
         </div>
       </main>
     </div>
-
-    <!-- Add Leave Modal -->
-    <div class="modal fade" id="addLeaveModal" tabindex="-1" aria-labelledby="addLeaveModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addLeaveModalLabel">Tambah Data Izin</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form id="addLeaveForm">
-              <div class="mb-3">
-                <label for="leaveEmployeeId" class="form-label">ID Karyawan</label>
-                <select class="form-select" id="leaveEmployeeId" required>
-                  <option value="" selected disabled>Pilih Karyawan</option>
-                  <!-- Options will be populated by JavaScript -->
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="leaveEmployeeType" class="form-label">Tipe Karyawan</label>
-                <select class="form-select" id="leaveEmployeeType" required>
-                  <option value="" selected disabled>Pilih Tipe</option>
-                  <option value="staff">Staff</option>
-                  <option value="ob">Office Boy</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="leaveShift" class="form-label">Shift</label>
-                <select class="form-select" id="leaveShift" required>
-                  <option value="" selected disabled>Pilih Shift</option>
-                  <option value="morning">Shift Pagi</option>
-                  <option value="afternoon">Shift Sore</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="leaveDate" class="form-label">Tanggal Izin</label>
-                <input type="date" class="form-control" id="leaveDate" required />
-              </div>
-              <div class="mb-3">
-                <label for="leaveReason" class="form-label">Alasan</label>
-                <textarea class="form-control" id="leaveReason" rows="3" required></textarea>
-              </div>
-              <div class="mb-3">
-                <label for="leaveReplacementType" class="form-label">Jenis Pengganti</label>
-                <select class="form-select" id="leaveReplacementType" required>
-                  <option value="" selected disabled>Pilih Jenis Pengganti</option>
-                  <option value="libur">Ganti Libur</option>
-                  <option value="jam">Ganti Jam</option>
-                </select>
-              </div>
-              <div id="replacementLiburFields" class="replacement-fields" style="display: none">
-                <div class="mb-3">
-                  <label for="replacementDate" class="form-label">Tanggal Ganti Libur</label>
-                  <input type="date" class="form-control" id="replacementDate" />
-                </div>
-              </div>
-              <div id="replacementJamFields" class="replacement-fields" style="display: none">
-                <div class="mb-3">
-                  <label for="replacementHourDate" class="form-label">Tanggal Ganti Jam</label>
-                  <input type="date" class="form-control" id="replacementHourDate" />
-                </div>
-                <div class="mb-3">
-                  <label for="replacementHours" class="form-label">Jumlah Jam</label>
-                  <input type="number" class="form-control" id="replacementHours" min="1" max="12" />
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-primary" id="submitLeaveBtn">Simpan</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Change Shift Modal -->
+    <!-- Add this at the end of your body tag -->
     <div
       class="modal fade"
-      id="changeShiftModal"
+      id="faceVerificationModal"
       tabindex="-1"
-      aria-labelledby="changeShiftModalLabel"
+      aria-labelledby="faceVerificationModalLabel"
       aria-hidden="true"
     >
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="changeShiftModalLabel">Ubah Shift Karyawan</h5>
+            <h5 class="modal-title" id="faceVerificationModalLabel">Verifikasi Wajah</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form id="changeShiftForm">
-              <input type="hidden" id="changeShiftEmployeeId" />
-              <div class="mb-3">
-                <label for="employeeInfo" class="form-label">Karyawan</label>
-                <div id="employeeInfo" class="form-control-plaintext"></div>
-              </div>
-              <div class="mb-3">
-                <label for="employeeTypeInfo" class="form-label">Tipe Karyawan</label>
-                <div id="employeeTypeInfo" class="form-control-plaintext"></div>
-              </div>
-              <div class="mb-3">
-                <label for="currentShift" class="form-label">Shift Saat Ini</label>
-                <div id="currentShift" class="form-control-plaintext"></div>
-              </div>
-              <div class="mb-3">
-                <label for="newShift" class="form-label">Shift Baru</label>
-                <select class="form-select" id="newShift" required>
-                  <option value="" selected disabled>Pilih Shift Baru</option>
-                  <option value="morning">Shift Pagi</option>
-                  <option value="afternoon">Shift Sore</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="shiftChangeReason" class="form-label">Alasan Perubahan</label>
-                <textarea class="form-control" id="shiftChangeReason" rows="2" required></textarea>
-              </div>
-              <div class="mb-3">
-                <label for="shiftChangeDate" class="form-label">Tanggal Mulai Berlaku</label>
-                <input type="date" class="form-control" id="shiftChangeDate" required />
-              </div>
-            </form>
+            <div class="employee-info mb-3">
+              <p>
+                <strong>Nama:</strong>
+                <span id="faceEmployeeName"></span>
+              </p>
+              <p>
+                <strong>ID:</strong>
+                <span id="faceEmployeeId"></span>
+              </p>
+            </div>
+            <div class="face-capture-container">
+              <video id="faceVerificationVideo" width="100%" autoplay muted></video>
+              <canvas id="faceVerificationCanvas" width="400" height="300" style="display: none"></canvas>
+              <div id="faceVerificationStatus" class="mt-2 text-center">Menyiapkan kamera...</div>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-primary" id="submitShiftChangeBtn">Simpan Perubahan</button>
           </div>
         </div>
       </div>
     </div>
+
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/sistem-absensi.js"></script>
-    <!-- Kontrol akses menu -->
-<script type="module" src="js/menuControl.js"></script>
+    <script src="js/face-api/face-api.min.js"></script>
+    <script type="module" src="js/menuControl.js"></script>
   </body>
 </html>

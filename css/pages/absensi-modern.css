@@ -69,7 +69,7 @@ body {
 }
 
 .status-approved {
-  color: var(--success-color);
+  color: var(--primary-dark);
   font-weight: 600;
 }
 
@@ -409,7 +409,6 @@ body {
 
 #leaveReportTable th,
 #leaveReportTable td {
-  white-space: nowrap;
   font-size: 0.8rem;
   padding: 0.5rem;
 }
@@ -441,8 +440,28 @@ body {
 }
 
 #summaryCards .stat-card-info p {
-  font-size: 0.8rem;
+  font-size: 0.8rem;      
 }
+
+#refreshData {
+  display: none;
+}
+
+.filter {
+  display: none;
+}
+  /* Memperlebar kolom alasan dan detail pengganti */
+  #leaveReportTable td:nth-child(5),
+  #leaveReportTable td:nth-child(7) {
+    min-width: 200px !important;
+    max-width: 300px !important;
+  }
+
+  /* Menyembunyikan kolom ID Staff yang kurang penting di mobile */
+  #leaveReportTable th:nth-child(2),
+  #leaveReportTable td:nth-child(2) {
+    display: none;
+  }
 
 }
 
