@@ -21,6 +21,316 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <!-- Favicon sederhana -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <style>
+      /* Stats Cards Improvements */
+      .stats-cards {
+        gap: 1rem;
+        flex-wrap: nowrap;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 280px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--card-gradient-start), var(--card-gradient-end));
+      }
+
+      .stat-card:nth-child(1) {
+        --card-gradient-start: #0d6efd;
+        --card-gradient-end: #6610f2;
+      }
+
+      .stat-card:nth-child(2) {
+        --card-gradient-start: #ffc107;
+        --card-gradient-end: #fd7e14;
+      }
+
+      .stat-card:nth-child(3) {
+        --card-gradient-start: #0dcaf0;
+        --card-gradient-end: #0d6efd;
+      }
+
+      .stat-card:nth-child(4) {
+        --card-gradient-start: #198754;
+        --card-gradient-end: #20c997;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      .stat-card-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card-icon::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+        border-radius: 16px;
+      }
+
+      .stat-card-icon i {
+        font-size: 1.75rem;
+        color: white;
+        position: relative;
+        z-index: 1;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+
+      .stat-card-info {
+        flex: 1;
+      }
+
+      .stat-card-info h4 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+        line-height: 1.3;
+      }
+
+      .stat-card-info p {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0;
+        line-height: 1.4;
+        font-weight: 500;
+      }
+
+      .stat-card-success {
+        flex: 1;
+      }
+
+      .stat-card-success h4 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+        line-height: 1.3;
+      }
+
+      .stat-card-success p {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0;
+        line-height: 1.4;
+        font-weight: 500;
+      }
+
+      /* Animation for loading */
+      .stat-card {
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      .stat-card:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+      .stat-card:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .stat-card:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .stat-card:nth-child(4) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Hover effect for icons */
+      .stat-card:hover .stat-card-icon {
+        transform: scale(1.1);
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover .stat-card-icon i {
+        transform: rotate(5deg);
+        transition: transform 0.3s ease;
+      }
+
+      .page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.header-content .page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.header-content .page-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.breadcrumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0;
+}
+
+.breadcrumb-item.active {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.welcome-section {
+  background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid #e3f2fd;
+}
+
+.welcome-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-text {
+  color: #6c757d;
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+.welcome-icon {
+  font-size: 4rem;
+  color: #667eea;
+  opacity: 0.3;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.quick-access-item {
+  height: 100%;
+}
+
+.quick-btn {
+  height: 100%;
+  border: 2px solid;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.quick-btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quick-btn-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.quick-btn-text {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.quick-btn-desc {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.activity-item {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stats-cards {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .page-header {
+    padding: 1.5rem;
+  }
+  
+  .header-content .page-title {
+    font-size: 2rem;
+  }
+  
+  .welcome-section {
+    padding: 1.5rem;
+  }
+}
+    </style>
     <title>Dashboard - Melati Gold Shop</title>
   </head>
   <body>
@@ -37,12 +347,6 @@
               <a class="nav-link" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link buyback" href="buyback.html">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="menu-text">Buyback</span>
               </a>
             </li>
             <!-- Antrian dropdown menu -->
@@ -196,29 +500,51 @@
         <div class="page-content">
           <div class="dashboard-desktop-content">
             <div class="page-header">
-              <h1>Dashboard</h1>
+              <div class="header-content">
+                <h1 class="page-title">Dashboard</h1>
+                <p class="page-subtitle">Selamat datang di Sistem Manajemen Melati Gold Shop</p>
+              </div>
               <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                  <li class="breadcrumb-item active" aria-current="page">Home</li>
+                  <li class="breadcrumb-item active" aria-current="page">
+                    <i class="fas fa-home me-1"></i>
+                    Home
+                  </li>
                 </ol>
               </nav>
             </div>
 
             <div class="content-wrapper">
-              <!-- Dashboard Cards -->
-              <div class="stats-cards d-flex justify-content-evenly">
-                <div class="stat-card">
-                  <div class="stat-card-icon bg-primary">
-                    <i class="fas fa-ticket-alt"></i>
+              <!-- Welcome Section -->
+              <div class="welcome-section mb-4">
+                <div class="row align-items-center">
+                  <div class="col-md-8">
+                    <div class="welcome-content">
+                      <h2 class="welcome-title">Halo, Admin!</h2>
+                      <p class="welcome-text">Kelola sistem antrian dan absensi dengan mudah melalui dashboard ini.</p>
+                    </div>
                   </div>
-                  <div class="stat-card-info">
-                    <h4>Sistem Antrian</h4>
-                    <p>Kelola antrian pelanggan</p>
+                  <div class="col-md-4 text-end">
+                    <div class="welcome-image">
+                      <i class="fas fa-chart-line welcome-icon"></i>
+                    </div>
                   </div>
                 </div>
+              </div>
 
+              <!-- Dashboard Cards -->
+              <div class="stats-cards d-flex justify-content-center gap-4 mb-4">
                 <div class="stat-card">
-                  <div class="stat-card-icon bg-success">
+                  <div class="stat-card-icon bg-primary">
+                    <i class="fas fa-boxes-stacked"></i>
+                  </div>
+                  <div class="stat-card-info">
+                    <h4>Manajemen Stok</h4>
+                    <p>Kelola inventori dan stok barang</p>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-card-icon bg-warning">
                     <i class="fas fa-exchange-alt"></i>
                   </div>
                   <div class="stat-card-info">
@@ -226,45 +552,113 @@
                     <p>Hitung harga penerimaan buyback</p>
                   </div>
                 </div>
+              </div>
 
-                <div class="stat-card">
-                  <div class="stat-card-icon bg-warning">
-                    <i class="fas fa-clipboard-check"></i>
-                  </div>
-                  <div class="stat-card-info">
-                    <h4>Sistem Absensi</h4>
-                    <p>Kelola kehadiran staff</p>
+              <!-- Quick Access -->
+              <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                  <h2 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Akses Cepat
+                  </h2>
+                </div>
+                <div class="card-body p-4">
+                  <div class="row g-4">
+                    <div class="col-lg-3 col-md-6">
+                      <div class="quick-access-item">
+                        <a href="admin.html" class="btn btn-outline-primary w-100 py-3 quick-btn">
+                          <div class="quick-btn-content">
+                            <i class="fas fa-user-cog quick-btn-icon"></i>
+                            <span class="quick-btn-text">Admin Antrian</span>
+                            <small class="quick-btn-desc">Kelola sistem antrian</small>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                      <div class="quick-access-item">
+                        <a href="sistemAbsensi.html" class="btn btn-outline-warning w-100 py-3 quick-btn">
+                          <div class="quick-btn-content">
+                            <i class="fas fa-user-check quick-btn-icon"></i>
+                            <span class="quick-btn-text">Absensi</span>
+                            <small class="quick-btn-desc">Sistem kehadiran</small>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                      <div class="quick-access-item">
+                        <a href="display.html" class="btn btn-outline-info w-100 py-3 quick-btn">
+                          <div class="quick-btn-content">
+                            <i class="fas fa-desktop quick-btn-icon"></i>
+                            <span class="quick-btn-text">Display Antrian</span>
+                            <small class="quick-btn-desc">Tampilan antrian</small>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                      <div class="quick-access-item">
+                        <a href="analisis.html" class="btn btn-outline-success w-100 py-3 quick-btn">
+                          <div class="quick-btn-content">
+                            <i class="fas fa-chart-bar quick-btn-icon"></i>
+                            <span class="quick-btn-text">Laporan</span>
+                            <small class="quick-btn-desc">Analisis data</small>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Quick Access -->
-              <div class="card mt-3">
-                <div class="card-header">
-                  <h2>
-                    <i class="fas fa-bolt"></i>
-                    Akses Cepat
-                  </h2>
+              <!-- System Status -->
+              <div class="row mt-4">
+                <div class="col-md-6">
+                  <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-light">
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Status Sistem
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <div class="status-item d-flex align-items-center mb-3">
+                        <div class="status-indicator bg-success me-3"></div>
+                        <div>
+                          <strong>Sistem Antrian</strong>
+                          <br />
+                          <small class="text-muted">Berjalan normal</small>
+                        </div>
+                      </div>
+                      <div class="status-item d-flex align-items-center">
+                        <div class="status-indicator bg-success me-3"></div>
+                        <div>
+                          <strong>Sistem Absensi</strong>
+                          <br />
+                          <small class="text-muted">Berjalan normal</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-4 mb-3">
-                      <a href="admin.html" class="btn btn-primary w-100 py-3">
-                        <i class="fas fa-user-cog me-2"></i>
-                        Admin Antrian
-                      </a>
+                <div class="col-md-6">
+                  <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-light">
+                      <h5 class="card-title mb-0">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        Aktivitas Terbaru
+                      </h5>
                     </div>
-                    <div class="col-md-4 mb-3">
-                      <a href="buyback.html" class="btn btn-success w-100 py-3">
-                        <i class="fas fa-exchange-alt me-2"></i>
-                        Buyback
-                      </a>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                      <a href="sistemAbsensi.html" class="btn btn-warning w-100 py-3">
-                        <i class="fas fa-user-check me-2"></i>
-                        Absensi
-                      </a>
+                    <div class="card-body">
+                      <div class="activity-item mb-3">
+                        <small class="text-muted">Hari ini</small>
+                        <p class="mb-1">Sistem beroperasi normal</p>
+                      </div>
+                      <div class="activity-item">
+                        <small class="text-muted">Kemarin</small>
+                        <p class="mb-1">Update sistem berhasil</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -274,24 +668,26 @@
           <div class="dashboard-mobile-content">
             <div class="app-intro-container">
               <div class="app-intro-header text-center mb-4">
-                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="app-logo mb-3">
+                <img src="img/Melati.jfif" alt="Melati Gold Shop Logo" class="app-logo mb-3" />
                 <h1 class="app-title">Sistem Absensi</h1>
                 <p class="app-subtitle">Melati Gold Shop</p>
               </div>
-              
+
               <div class="app-intro-card">
                 <div class="card shadow-sm">
                   <div class="card-body">
                     <h2 class="card-title text-primary mb-3">
-                      <i class="fas fa-info-circle me-2"></i>Tentang Aplikasi
+                      <i class="fas fa-info-circle me-2"></i>
+                      Tentang Aplikasi
                     </h2>
                     <p class="card-text">
-                      Sistem Absensi Melati Gold Shop bertujuan untuk memudahkan pencatatan kehadiran, keterlambatan, dan pengajuan izin karyawan.
+                      Sistem Absensi Melati Gold Shop bertujuan untuk memudahkan pencatatan kehadiran, keterlambatan,
+                      dan pengajuan izin karyawan.
                     </p>
                   </div>
                 </div>
               </div>
-              
+
               <div class="app-features mt-4">
                 <div class="row g-3">
                   <div class="col-12">
@@ -329,13 +725,14 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="app-action mt-4 mb-3 text-center">
                 <a href="pengajuan-izin.html" class="btn btn-primary btn-lg">
-                  <i class="fas fa-sign-in-alt me-2"></i>Ajukan Izin
+                  <i class="fas fa-sign-in-alt me-2"></i>
+                  Ajukan Izin
                 </a>
               </div>
-              
+
               <div class="app-version text-center text-muted mt-4">
                 <p>Versi 1.0.0 | &copy; 2025 Melati Gold Shop</p>
               </div>
@@ -348,20 +745,20 @@
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <!-- Kontrol akses menu -->
-<script type="module" src="js/menuControl.js"></script>
-<!-- Script untuk menyembunyikan menu supervisor -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Cek role user
-    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-    const isAdmin = currentUser.username === 'adminmelati' || currentUser.role === 'admin';
-    
-    if (!isAdmin) {
-      console.log("Non-admin user detected, hiding supervisor menu");
-      
-      // Tambahkan style untuk menyembunyikan menu supervisor
-      const style = document.createElement('style');
-      style.textContent = `
+    <script type="module" src="js/menuControl.js"></script>
+    <!-- Script untuk menyembunyikan menu supervisor -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Cek role user
+        const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
+        const isAdmin = currentUser.username === "adminmelati" || currentUser.role === "admin";
+
+        if (!isAdmin) {
+          console.log("Non-admin user detected, hiding supervisor menu");
+
+          // Tambahkan style untuk menyembunyikan menu supervisor
+          const style = document.createElement("style");
+          style.textContent = `
         .supervisor-toggle, .supervisor-menu, #supervisorSubmenu {
           display: none !important;
           visibility: hidden !important;
@@ -369,19 +766,21 @@
           overflow: hidden !important;
         }
       `;
-      document.head.appendChild(style);
-      
-      // Hapus elemen dari DOM
-      setTimeout(function() {
-        const supervisorElements = document.querySelectorAll('.supervisor-toggle, .supervisor-menu, #supervisorSubmenu');
-        supervisorElements.forEach(element => {
-          if (element.parentNode) {
-            element.parentNode.removeChild(element);
-          }
-        });
-      }, 100);
-    }
-  });
-</script>
+          document.head.appendChild(style);
+
+          // Hapus elemen dari DOM
+          setTimeout(function () {
+            const supervisorElements = document.querySelectorAll(
+              ".supervisor-toggle, .supervisor-menu, #supervisorSubmenu"
+            );
+            supervisorElements.forEach((element) => {
+              if (element.parentNode) {
+                element.parentNode.removeChild(element);
+              }
+            });
+          }, 100);
+        }
+      });
+    </script>
   </body>
 </html>
