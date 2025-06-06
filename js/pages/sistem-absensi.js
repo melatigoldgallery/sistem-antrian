@@ -2401,7 +2401,7 @@ function hideAlert() {
 function getThresholdTime(employeeType, shift) {
   const thresholds = {
     staff: {
-      morning: new Date("1970-01-01T08:50:00"),
+      morning: new Date("1970-01-01T09:00:00"),
       afternoon: new Date("1970-01-01T14:21:00"),
     },
     ob: {
