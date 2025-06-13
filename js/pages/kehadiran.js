@@ -162,13 +162,10 @@ function isCacheValid(cacheKey) {
 // Fungsi untuk mengompresi data sebelum disimpan ke localStorage
 function compressData(data) {
   try {
-    // Konversi data ke string JSON
-    const jsonString = JSON.stringify(data);
-
-    // Kompresi sederhana dengan menghapus spasi berlebih
-    return jsonString.replace(/\s+/g, "");
+    // Tidak melakukan kompresi, langsung return JSON string
+    return JSON.stringify(data);
   } catch (error) {
-    console.error("Error compressing data:", error);
+    console.error("Error serializing data:", error);
     return JSON.stringify(data);
   }
 }
@@ -183,12 +180,44 @@ function decompressData(compressedData) {
   }
 }
 
+// Tambahkan fungsi untuk menghapus duplikasi di sisi client sebagai safety net
+function removeDuplicatesClientSide(data) {
+  const uniqueMap = new Map();
+  
+  data.forEach(record => {
+    const uniqueKey = `${record.employeeId}_${record.date}`;
+    
+    if (!uniqueMap.has(uniqueKey)) {
+      uniqueMap.set(uniqueKey, record);
+    } else {
+      const existingRecord = uniqueMap.get(uniqueKey);
+      
+      // Prioritaskan record yang memiliki timeOut
+      if (record.timeOut && !existingRecord.timeOut) {
+        uniqueMap.set(uniqueKey, record);
+      }
+      // Jika keduanya memiliki timeOut, ambil yang terbaru
+      else if (record.timeOut && existingRecord.timeOut) {
+        const recordTimeIn = record.timeIn instanceof Date ? record.timeIn : new Date(record.timeIn);
+        const existingTimeIn = existingRecord.timeIn instanceof Date ? existingRecord.timeIn : new Date(existingRecord.timeIn);
+        
+        if (recordTimeIn > existingTimeIn) {
+          uniqueMap.set(uniqueKey, record);
+        }
+      }
+    }
+  });
+  
+  return Array.from(uniqueMap.values());
+}
 
 // Fungsi untuk menampilkan data kehadiran
 function displayAttendanceData(data) {
+  const uniqueData = removeDuplicatesClientSide(data);
+  
   // Simpan data ke variabel global
-  currentAttendanceData = data;
-  filteredData = [...data];
+  currentAttendanceData = uniqueData;
+  filteredData = [...uniqueData];
   
   // Update summary cards
   updateSummaryCards();

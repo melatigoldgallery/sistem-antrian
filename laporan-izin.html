@@ -27,14 +27,109 @@
     <!-- Favicon sederhana -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
     <style>
-      /* Tambahkan di bagian <head> laporan-izin.html */
       #leaveReportTable td:nth-child(5),
       #leaveReportTable td:nth-child(7) {
-        white-space: pre-line !important;
+        white-space: normal !important; /* Ganti dari pre-line ke normal */
         word-break: break-word;
-        max-width: 250px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto; /* Tambahkan hyphenation */
+        max-width: 300px;
+        min-width: 200px;
+        line-height: 1.4; /* Tambahkan line-height untuk readability */
+        padding: 8px 12px; /* Tambahkan padding yang lebih baik */
+      }
+
+      /* Tambahkan CSS baru untuk responsive table */
+      .main-content {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling di mobile */
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+      }
+
+      #leaveReportTable {
+        min-width: 1200px; /* Minimum width untuk memastikan kolom tidak terlalu sempit */
+        margin-bottom: 0;
+      }
+
+      /* Optimasi kolom-kolom lain */
+      #leaveReportTable th:nth-child(1), /* No */
+      #leaveReportTable td:nth-child(1) {
+        width: 25px;
+        min-width: 25px;
+      }
+
+      #leaveReportTable th:nth-child(2), /* ID Staff */
+      #leaveReportTable td:nth-child(2) {
+        width: 50px;
+        min-width: 50px;
+      }
+
+      #leaveReportTable th:nth-child(3), /* Nama */
+      #leaveReportTable td:nth-child(3) {
+        width: 70px;
+        min-width: 70px;
+      }
+
+      #leaveReportTable th:nth-child(4), /* Tanggal Izin */
+      #leaveReportTable td:nth-child(4) {
+        width: 100px;
+        min-width: 100px;
+      }
+
+      #leaveReportTable th:nth-child(5), /* Alasan Izin */
+      #leaveReportTable td:nth-child(5) {
+        width: 500px;
+        min-width: 200px;
+      }
+
+      #leaveReportTable th:nth-child(6), /* Jenis Pengganti */
+      #leaveReportTable td:nth-child(6) {
+        width: 130px;
+        min-width: 130px;
+      }
+
+      #leaveReportTable th:nth-child(7), /* Detail Pengganti */
+      #leaveReportTable td:nth-child(7) {
+        width: 200px;
+        min-width: 200px;
+      }
+
+      #leaveReportTable th:nth-child(8), /* Status */
+      #leaveReportTable td:nth-child(8) {
+        width: 50px;
+        min-width: 50px;
+      }
+
+      #leaveReportTable th:nth-child(9), /* Status Ganti */
+      #leaveReportTable td:nth-child(9) {
+        width: 100px;
+        min-width: 100px;
+      }
+
+      /* Styling untuk header table */
+      #leaveReportTable thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+        border-bottom: 2px solid #dee2e6;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .table-container {
+          margin: 0 -15px; /* Full width di mobile */
+          border-radius: 0;
+        }
+
+        #leaveReportTable {
+          font-size: 0.875rem; /* Sedikit lebih kecil di mobile */
+        }
       }
     </style>
+
     <title>Laporan Izin - Melati Gold Shop</title>
   </head>
   <body>
@@ -392,7 +487,10 @@
                         <th>ID Staff</th>
                         <th>Nama</th>
                         <th>Tanggal Izin</th>
-                        <th>Alasan Izin<!--  --></th>
+                        <th>
+                          Alasan Izin
+                          <!--  -->
+                        </th>
                         <th>Jenis Pengganti</th>
                         <th>Detail Pengganti</th>
                         <th>Status</th>

@@ -4,7 +4,7 @@ import { getFaceDescriptor } from "./services/employee-service.js";
 // Variabel global untuk menyimpan status
 let isFaceApiInitialized = false;
 let videoStream = null;
-let faceMatchThreshold = 0.6; // Nilai threshold untuk pencocokan wajah (0.6 = 60% kecocokan)
+let faceMatchThreshold = 0.5; // Nilai threshold untuk pencocokan wajah (0.5 = 50% kecocokan)
 // Tambahkan cache untuk descriptor wajah
 const faceDescriptorCache = new Map();
 let lastCacheCleanup = Date.now();

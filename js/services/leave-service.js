@@ -255,13 +255,10 @@ export function stopListeningToLeaveRequests() {
 // Fungsi untuk mengompresi data sebelum disimpan ke localStorage
 function compressData(data) {
   try {
-    // Konversi data ke string JSON
-    const jsonString = JSON.stringify(data);
-
-    // Kompresi sederhana dengan menghapus spasi berlebih
-    return jsonString.replace(/\s+/g, "");
+    // Tidak melakukan kompresi, langsung return JSON string
+    return JSON.stringify(data);
   } catch (error) {
-    console.error("Error compressing data:", error);
+    console.error("Error serializing data:", error);
     return JSON.stringify(data);
   }
 }

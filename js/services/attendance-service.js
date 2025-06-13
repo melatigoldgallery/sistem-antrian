@@ -91,6 +91,39 @@ export function syncCacheWithReport(dateKey, data) {
   }
 }
 
+// Tambahkan fungsi utility untuk menghapus duplikasi berdasarkan employeeId dan date
+function removeDuplicatesByEmployeeAndDate(records) {
+  const uniqueMap = new Map();
+  
+  records.forEach(record => {
+    // Buat key unik berdasarkan employeeId dan date
+    const uniqueKey = `${record.employeeId}_${record.date}`;
+    
+    // Jika belum ada record dengan key ini, atau record baru memiliki timeOut yang lebih lengkap
+    if (!uniqueMap.has(uniqueKey)) {
+      uniqueMap.set(uniqueKey, record);
+    } else {
+      const existingRecord = uniqueMap.get(uniqueKey);
+      
+      // Prioritaskan record yang memiliki timeOut (lebih lengkap)
+      if (record.timeOut && !existingRecord.timeOut) {
+        uniqueMap.set(uniqueKey, record);
+      }
+      // Jika keduanya memiliki timeOut, ambil yang terbaru berdasarkan timeIn
+      else if (record.timeOut && existingRecord.timeOut) {
+        const recordTimeIn = record.timeIn instanceof Date ? record.timeIn : new Date(record.timeIn);
+        const existingTimeIn = existingRecord.timeIn instanceof Date ? existingRecord.timeIn : new Date(existingRecord.timeIn);
+        
+        if (recordTimeIn > existingTimeIn) {
+          uniqueMap.set(uniqueKey, record);
+        }
+      }
+    }
+  });
+  
+  return Array.from(uniqueMap.values());
+}
+
 // Tambahkan fungsi untuk validasi integritas data cache
 export function validateCacheIntegrity() {
   try {
@@ -568,22 +601,20 @@ export async function updateAttendanceOut(id, timeOut) {
   }
 }
 
-// Modifikasi getTodayAttendance untuk mencegah duplikasi
 // Modifikasi getTodayAttendance untuk menangani berbagai format data timeIn
 export async function getTodayAttendance() {
   try {
-    // Definisikan variabel today di dalam fungsi
     const today = getLocalDateString();
     
-    // Cek apakah data sudah ada di cache dan masih valid
     if (attendanceCache.has(today) && !shouldUpdateCache(today)) {
       console.log("Using cached attendance data for today");
-      return attendanceCache.get(today);
+      // PERBAIKAN: Pastikan data dari cache tidak duplikat
+      const cachedData = attendanceCache.get(today);
+      return removeDuplicatesByEmployeeAndDate(cachedData);
     }
     
     console.log("Fetching today's attendance from Firestore");
     
-    // Query Firestore untuk data hari ini
     const attendanceCollection = collection(db, "attendance");
     const q = query(
       attendanceCollection, 
@@ -593,54 +624,41 @@ export async function getTodayAttendance() {
     
     const snapshot = await getDocs(q);
     
-    // Konversi snapshot ke array dengan pencegahan duplikasi
+    // PERBAIKAN: Gunakan fungsi utility untuk menghapus duplikasi
     const records = [];
-    const employeeIds = new Set(); // Untuk mencegah duplikasi
-    
     snapshot.forEach(doc => {
       try {
         const data = doc.data();
         
-        // PERBAIKAN: Tangani berbagai format data timeIn dan timeOut
         let timeInDate = null;
         let timeOutDate = null;
         
-        // Cek dan konversi timeIn
+        // Konversi timeIn
         if (data.timeIn) {
           if (typeof data.timeIn.toDate === 'function') {
-            // Ini adalah Firestore Timestamp
             timeInDate = data.timeIn.toDate();
           } else if (data.timeIn instanceof Date) {
-            // Ini sudah berupa Date
             timeInDate = data.timeIn;
-          } else if (data.timeIn._seconds !== undefined && data.timeIn._nanoseconds !== undefined) {
-            // Ini adalah objek Timestamp yang sudah dikonversi ke JSON
+          } else if (data.timeIn._seconds !== undefined) {
             timeInDate = new Date(data.timeIn._seconds * 1000);
           } else if (typeof data.timeIn === 'string') {
-            // Ini adalah string tanggal
             timeInDate = new Date(data.timeIn);
           } else if (typeof data.timeIn === 'number') {
-            // Ini adalah timestamp dalam milidetik
             timeInDate = new Date(data.timeIn);
           }
         }
         
-        // Cek dan konversi timeOut
+        // Konversi timeOut
         if (data.timeOut) {
           if (typeof data.timeOut.toDate === 'function') {
-            // Ini adalah Firestore Timestamp
             timeOutDate = data.timeOut.toDate();
           } else if (data.timeOut instanceof Date) {
-            // Ini sudah berupa Date
             timeOutDate = data.timeOut;
-          } else if (data.timeOut._seconds !== undefined && data.timeOut._nanoseconds !== undefined) {
-            // Ini adalah objek Timestamp yang sudah dikonversi ke JSON
+          } else if (data.timeOut._seconds !== undefined) {
             timeOutDate = new Date(data.timeOut._seconds * 1000);
           } else if (typeof data.timeOut === 'string') {
-            // Ini adalah string tanggal
             timeOutDate = new Date(data.timeOut);
           } else if (typeof data.timeOut === 'number') {
-            // Ini adalah timestamp dalam milidetik
             timeOutDate = new Date(data.timeOut);
           }
         }
@@ -648,41 +666,35 @@ export async function getTodayAttendance() {
         const record = {
           id: doc.id,
           ...data,
-          // Gunakan hasil konversi
           timeIn: timeInDate,
           timeOut: timeOutDate,
         };
         
-        // Cek duplikasi berdasarkan employeeId
-        if (!employeeIds.has(data.employeeId)) {
-          employeeIds.add(data.employeeId);
-          records.push(record);
-        } else {
-          console.warn(`Duplicate attendance record found for employee ${data.employeeId} on ${today}`);
-        }
+        records.push(record);
       } catch (docError) {
         console.error(`Error processing document ${doc.id}:`, docError);
-        // Lanjutkan ke dokumen berikutnya
       }
     });
     
+    // PERBAIKAN: Hapus duplikasi sebelum menyimpan ke cache
+    const uniqueRecords = removeDuplicatesByEmployeeAndDate(records);
+    
     // Store in cache with timestamp
-    attendanceCache.set(today, records);
+    attendanceCache.set(today, uniqueRecords);
     updateCacheTimestamp(today);
     saveAttendanceCacheToStorage();
     
-    saveServiceCache(records);
-  return records;
+    saveServiceCache(uniqueRecords);
+    return uniqueRecords;
   } catch (error) {
     console.error("Error getting today's attendance:", error);
     
-    // Definisikan today di sini juga untuk fallback
     const today = getLocalDateString();
     
-    // Fallback to cache if available
     if (attendanceCache.has(today)) {
       console.log("Using cached data as fallback due to error");
-      return attendanceCache.get(today);
+      const cachedData = attendanceCache.get(today);
+      return removeDuplicatesByEmployeeAndDate(cachedData);
     }
     
     throw error;
@@ -1033,7 +1045,6 @@ async function fetchBatchData(startDate, endDate, shift = null) {
   try {
     console.log(`Fetching batch data from ${startDate} to ${endDate}`);
     
-    // Buat query dasar
     const attendanceCollection = collection(db, "attendance");
     let batchQuery = query(
       attendanceCollection,
@@ -1043,7 +1054,6 @@ async function fetchBatchData(startDate, endDate, shift = null) {
       orderBy("timeIn", "desc")
     );
     
-    // Tambahkan filter shift jika diperlukan
     if (shift && shift !== "all") {
       batchQuery = query(
         attendanceCollection,
@@ -1055,38 +1065,28 @@ async function fetchBatchData(startDate, endDate, shift = null) {
       );
     }
     
-    // Eksekusi query
     const snapshot = await getDocs(batchQuery);
     
-    // Konversi snapshot ke array dengan pencegahan duplikasi
+    // PERBAIKAN: Gunakan fungsi utility untuk menghapus duplikasi
     const attendanceData = [];
-    const employeeIdDateMap = new Map(); // Map untuk mencegah duplikasi (employeeId+date)
-    
     snapshot.docs.forEach((doc) => {
       const data = doc.data();
       const record = {
         id: doc.id,
         ...data,
-        // Convert Firestore Timestamp to JS Date
         timeIn: data.timeIn ? data.timeIn.toDate() : null,
         timeOut: data.timeOut ? data.timeOut.toDate() : null,
       };
       
-      // Buat key unik untuk setiap kombinasi employeeId dan date
-      const uniqueKey = `${data.employeeId}_${data.date}`;
-      
-      // Cek apakah sudah ada record dengan employeeId dan date yang sama
-      if (!employeeIdDateMap.has(uniqueKey)) {
-        employeeIdDateMap.set(uniqueKey, record);
-        attendanceData.push(record);
-      } else {
-        console.warn(`Duplicate record found for ${data.employeeId} on ${data.date}`);
-      }
+      attendanceData.push(record);
     });
+    
+    // PERBAIKAN: Hapus duplikasi berdasarkan employeeId dan date
+    const uniqueData = removeDuplicatesByEmployeeAndDate(attendanceData);
     
     // Update cache untuk setiap tanggal
     const dateMap = {};
-    attendanceData.forEach(record => {
+    uniqueData.forEach(record => {
       const dateKey = record.date;
       if (!dateMap[dateKey]) dateMap[dateKey] = [];
       dateMap[dateKey].push(record);
@@ -1094,23 +1094,26 @@ async function fetchBatchData(startDate, endDate, shift = null) {
     
     // Update individual date caches
     for (const [dateKey, records] of Object.entries(dateMap)) {
-      // Jika sudah ada data di cache untuk tanggal ini, gabungkan
       if (attendanceCache.has(dateKey)) {
         const existingRecords = attendanceCache.get(dateKey);
         const mergedRecords = mergeAttendanceRecords(existingRecords, records);
-        attendanceCache.set(dateKey, mergedRecords);
+        // PERBAIKAN: Hapus duplikasi setelah merge
+        const uniqueMergedRecords = removeDuplicatesByEmployeeAndDate(mergedRecords);
+        attendanceCache.set(dateKey, uniqueMergedRecords);
       } else {
         attendanceCache.set(dateKey, records);
       }
       updateCacheTimestamp(dateKey);
     }
     
-    return attendanceData;
+    return uniqueData;
   } catch (error) {
     console.error(`Error fetching batch data from ${startDate} to ${endDate}:`, error);
     throw error;
   }
 }
+
+
 
 /**
  * Membagi rentang tanggal menjadi batch-batch kecil
@@ -1158,21 +1161,11 @@ function splitDateRange(startDate, endDate, batchSize = 7) {
  * @returns {Array} - Array gabungan tanpa duplikat
  */
 function mergeAttendanceRecords(existingRecords, newRecords) {
-  // Buat map dari record yang sudah ada berdasarkan id
-  const recordMap = new Map();
+  // Gabungkan semua records
+  const allRecords = [...existingRecords, ...newRecords];
   
-  // Tambahkan record yang sudah ada ke map
-  existingRecords.forEach(record => {
-    recordMap.set(record.id, record);
-  });
-  
-  // Tambahkan atau update dengan record baru
-  newRecords.forEach(record => {
-    recordMap.set(record.id, record);
-  });
-  
-  // Konversi kembali ke array
-  return Array.from(recordMap.values());
+  // PERBAIKAN: Gunakan fungsi utility untuk menghapus duplikasi
+  return removeDuplicatesByEmployeeAndDate(allRecords);
 }
 
 /**
