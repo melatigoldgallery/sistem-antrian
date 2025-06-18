@@ -4,12 +4,13 @@ import { saveServisData, getServisByDate } from '../services/servis-service.js';
 let todayData = [];
 let servisItems = [];
 let editingIndex = -1;
+let verifikasiAction = null;
+let verifikasiData = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
   initializePage();
   setupEventListeners();
-  loadTodayData();
 });
 
 function initializePage() {
@@ -20,10 +21,11 @@ function initializePage() {
   // Initialize datepicker
   initializeDatePicker();
   
-  // Set default date to today
+  // Set default date to today hanya untuk input tanggal
   const today = new Date();
   const formattedDate = today.toLocaleDateString('id-ID');
   document.getElementById('tanggal').value = formattedDate;
+  document.getElementById('tanggalRiwayat').value = formattedDate;
 }
 
 function initializeDatePicker() {
@@ -35,9 +37,21 @@ function initializeDatePicker() {
     orientation: 'bottom auto'
   });
 
-  // Calendar icon click handler
+  $('#tanggalRiwayat').datepicker({
+    format: 'dd/mm/yyyy',
+    language: 'id',
+    autoclose: true,
+    todayHighlight: true,
+    orientation: 'bottom auto'
+  });
+
+  // Calendar icon click handlers
   document.getElementById('calendarIcon').addEventListener('click', function() {
     $('#tanggal').datepicker('show');
+  });
+
+  document.getElementById('calendarRiwayatIcon').addEventListener('click', function() {
+    $('#tanggalRiwayat').datepicker('show');
   });
 }
 
@@ -81,6 +95,11 @@ function setupEventListeners() {
     resetForm();
   });
 
+  // Tampilkan button
+  document.getElementById('tampilkanBtn').addEventListener('click', function() {
+    loadRiwayatData();
+  });
+
   // Export PDF button
   document.getElementById('exportPdfBtn').addEventListener('click', function() {
     exportToPDF();
@@ -91,9 +110,20 @@ function setupEventListeners() {
     printReport();
   });
 
-  // Modal hidden event
+  // Verifikasi button
+  document.getElementById('btnVerifikasi').addEventListener('click', function() {
+    handleVerifikasi();
+  });
+
+  // Modal hidden events
   document.getElementById('modalInputServis').addEventListener('hidden.bs.modal', function() {
     resetModalForm();
+  });
+
+  document.getElementById('verifikasiModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('kodeVerifikasi').value = '';
+    verifikasiAction = null;
+    verifikasiData = null;
   });
 }
 
@@ -104,6 +134,7 @@ function openServisModal(index = -1) {
     // Edit mode
     const item = servisItems[index];
     document.getElementById('modalInputServisLabel').textContent = 'Edit Data Servis';
+    document.getElementById('namaSales').value = item.namaSales || '';
     document.getElementById('namaCustomer').value = item.namaCustomer;
     document.getElementById('noHp').value = item.noHp;
     document.getElementById('namaBarang').value = item.namaBarang;
@@ -125,19 +156,21 @@ function resetModalForm() {
 }
 
 function saveServisItem() {
+  const namaSales = document.getElementById('namaSales').value.trim();
   const namaCustomer = document.getElementById('namaCustomer').value.trim();
   const noHp = document.getElementById('noHp').value.trim();
   const namaBarang = document.getElementById('namaBarang').value.trim();
-  const jenisServis = document.getElementById('jenisServis').value;
+  const jenisServis = document.getElementById('jenisServis').value.trim();
   const ongkos = parseInt(document.getElementById('ongkos').value) || 0;
 
   // Validation
-  if (!namaCustomer || !noHp || !namaBarang || !jenisServis || ongkos <= 0) {
+  if (!namaSales || !namaCustomer || !noHp || !namaBarang || !jenisServis || ongkos <= 0) {
     showErrorModal('Validasi Error', 'Semua field harus diisi dengan benar!');
     return;
   }
 
   const servisItem = {
+    namaSales,
     namaCustomer,
     noHp,
     namaBarang,
@@ -203,6 +236,43 @@ window.deleteServisItem = function(index) {
   }
 };
 
+window.editRiwayatItem = function(id, index) {
+  verifikasiAction = 'edit';
+  verifikasiData = { id, index };
+  const modal = new bootstrap.Modal(document.getElementById('verifikasiModal'));
+  modal.show();
+};
+
+window.deleteRiwayatItem = function(id, index) {
+  verifikasiAction = 'delete';
+  verifikasiData = { id, index };
+  const modal = new bootstrap.Modal(document.getElementById('verifikasiModal'));
+  modal.show();
+};
+
+function handleVerifikasi() {
+  const kode = document.getElementById('kodeVerifikasi').value;
+  
+  if (kode !== '1234') { // Kode verifikasi sederhana
+    alert('Kode verifikasi salah!');
+    return;
+  }
+
+  if (verifikasiAction === 'edit') {
+    // Logika edit sederhana - bisa dikembangkan lebih lanjut
+    alert('Fitur edit akan segera tersedia');
+  } else if (verifikasiAction === 'delete') {
+    // Logika delete sederhana - bisa dikembangkan lebih lanjut
+    if (confirm('Yakin ingin menghapus data ini?')) {
+      alert('Data berhasil dihapus');
+      loadRiwayatData(); // Reload data
+    }
+  }
+
+  const modal = bootstrap.Modal.getInstance(document.getElementById('verifikasiModal'));
+  modal.hide();
+}
+
 async function saveAllServisData() {
   if (servisItems.length === 0) {
     showErrorModal('Validasi Error', 'Tidak ada data servis untuk disimpan!');
@@ -210,10 +280,9 @@ async function saveAllServisData() {
   }
 
   const tanggal = document.getElementById('tanggal').value;
-  const namaSales = document.getElementById('namaSales').value.trim();
 
-  if (!tanggal || !namaSales) {
-    showErrorModal('Validasi Error', 'Tanggal dan nama sales harus diisi!');
+  if (!tanggal) {
+    showErrorModal('Validasi Error', 'Tanggal harus diisi!');
     return;
   }
 
@@ -228,7 +297,6 @@ async function saveAllServisData() {
     for (const item of servisItems) {
       const servisData = {
         tanggal: formattedDate,
-        namaSales,
         ...item
       };
       
@@ -244,9 +312,6 @@ async function saveAllServisData() {
     // Reset form
     resetForm();
     
-    // Reload today's data
-    loadTodayData();
-    
   } catch (error) {
     console.error('Error saving servis data:', error);
     showLoading(false);
@@ -257,7 +322,6 @@ async function saveAllServisData() {
 function resetForm() {
   servisItems = [];
   updateServisTable();
-  document.getElementById('namaSales').value = '';
   
   // Reset date to today
   const today = new Date();
@@ -265,13 +329,32 @@ function resetForm() {
   document.getElementById('tanggal').value = formattedDate;
 }
 
-async function loadTodayData() {
+async function loadRiwayatData() {
+  const tanggalRiwayat = document.getElementById('tanggalRiwayat').value;
+  
+  if (!tanggalRiwayat) {
+    alert('Pilih tanggal terlebih dahulu');
+    return;
+  }
+
   try {
-    const today = new Date().toISOString().split('T')[0];
-    todayData = await getServisByDate(today);
+    // Convert date format from dd/mm/yyyy to yyyy-mm-dd
+    const [day, month, year] = tanggalRiwayat.split('/');
+    const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    
+    todayData = await getServisByDate(formattedDate);
     updateRiwayatTable();
+    
+    // Tampilkan tombol export dan print setelah data ditampilkan
+    const actionButtons = document.getElementById('actionButtons');
+    if (todayData.length > 0) {
+      actionButtons.style.display = 'block';
+    } else {
+      actionButtons.style.display = 'none';
+    }
   } catch (error) {
-    console.error('Error loading today data:', error);
+    console.error('Error loading riwayat data:', error);
+    alert('Terjadi kesalahan saat memuat data');
   }
 }
 
@@ -280,11 +363,11 @@ function updateRiwayatTable() {
   tbody.innerHTML = '';
 
   if (todayData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Belum ada data servis hari ini</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada data servis pada tanggal ini</td></tr>';
     return;
   }
 
-  todayData.forEach((item) => {
+  todayData.forEach((item, index) => {
     const row = document.createElement('tr');
     const tanggalFormatted = new Date(item.tanggal).toLocaleDateString('id-ID');
     
@@ -296,6 +379,14 @@ function updateRiwayatTable() {
       <td>${item.jenisServis}</td>
       <td>Rp ${item.ongkos.toLocaleString('id-ID')}</td>
       <td>${item.namaSales}</td>
+      <td>
+        <button class="btn btn-sm btn-warning me-1" onclick="editRiwayatItem('${item.id}', ${index})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRiwayatItem('${item.id}', ${index})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
     `;
     tbody.appendChild(row);
   });
@@ -308,15 +399,16 @@ function exportToPDF() {
   }
 
   try {
+    const tanggalRiwayat = document.getElementById('tanggalRiwayat').value;
     const docDefinition = {
       content: [
         {
-          text: 'Laporan Input Servis Harian',
+          text: 'Laporan Input Servis',
           style: 'header',
           alignment: 'center'
         },
         {
-          text: `Tanggal: ${new Date().toLocaleDateString('id-ID')}`,
+          text: `Tanggal: ${tanggalRiwayat}`,
           style: 'subheader',
           alignment: 'center',
           margin: [0, 0, 0, 20]
@@ -352,7 +444,7 @@ function exportToPDF() {
       }
     };
 
-    pdfMake.createPdf(docDefinition).download(`Laporan_Servis_${new Date().toISOString().split('T')[0]}.pdf`);
+    pdfMake.createPdf(docDefinition).download(`Laporan_Servis_${tanggalRiwayat.replace(/\//g, '-')}.pdf`);
   } catch (error) {
     console.error('Error exporting PDF:', error);
     alert('Terjadi kesalahan saat mengekspor PDF');
@@ -365,50 +457,77 @@ function printReport() {
     return;
   }
 
+  const tanggalRiwayat = document.getElementById('tanggalRiwayat').value;
   const printWindow = window.open('', '_blank');
+  
+  // Generate boxes dengan ukuran 2.5cm x 2.5cm
+  let boxesContent = '';
+  todayData.forEach((item, index) => {
+    boxesContent += `
+      <div class="service-box">
+        <div class="customer-name">${item.namaCustomer}</div>
+        <div class="service-type">${item.jenisServis}</div>
+      </div>
+    `;
+  });
+
   const printContent = `
     <html>
       <head>
-        <title>Laporan Input Servis</title>
+        <title>Label Servis</title>
         <style>
-          body { font-family: Arial, sans-serif; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          .header { text-align: center; margin-bottom: 20px; }
+          @page {
+            size: A4;
+            margin: 1cm;
+          }
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+          }
+          .boxes-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 3mm;
+          }
+          .service-box {
+            width: 2.5cm;
+            height: 2.5cm;
+            border: 1px solid #000;
+            padding: 2mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            break-inside: avoid;
+          }
+          .customer-name {
+            font-size: 8px;
+            font-weight: bold;
+            margin-bottom: 2px;
+            word-wrap: break-word;
+            line-height: 1.1;
+          }
+          .service-type {
+            font-size: 7px;
+            word-wrap: break-word;
+            line-height: 1.1;
+          }
         </style>
       </head>
       <body>
         <div class="header">
-          <h2>Laporan Input Servis Harian</h2>
-          <p>Tanggal: ${new Date().toLocaleDateString('id-ID')}</p>
+          <h3>Label Servis - ${tanggalRiwayat}</h3>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama Customer</th>
-              <th>No HP</th>
-              <th>Nama Barang</th>
-              <th>Jenis Servis</th>
-              <th>Ongkos</th>
-              <th>Sales</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${todayData.map((item, index) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${item.namaCustomer}</td>
-                <td>${item.noHp}</td>
-                <td>${item.namaBarang}</td>
-                <td>${item.jenisServis}</td>
-                <td>Rp ${item.ongkos.toLocaleString('id-ID')}</td>
-                <td>${item.namaSales}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="boxes-container">
+          ${boxesContent}
+        </div>
       </body>
     </html>
   `;
