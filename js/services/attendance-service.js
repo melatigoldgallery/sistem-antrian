@@ -45,6 +45,43 @@ import {
 const CACHE_TTL_STANDARD = 60 * 60 * 1000; // 1 jam
 const CACHE_TTL_TODAY = 5 * 60 * 1000;     // 5 menit untuk data hari ini
 
+export async function updateAttendanceByEmployeeAndDate(employeeId, dateString, updateData) {
+  try {
+    // Query untuk mencari document berdasarkan employeeId dan tanggal
+    const attendanceRef = collection(db, "attendance");
+    const startOfDay = new Date(dateString + "T00:00:00");
+    const endOfDay = new Date(dateString + "T23:59:59");
+    
+    const q = query(
+      attendanceRef,
+      where("employeeId", "==", employeeId),
+      where("timeIn", ">=", startOfDay),
+      where("timeIn", "<=", endOfDay)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      throw new Error(`Data kehadiran untuk ${employeeId} pada tanggal ${dateString} tidak ditemukan`);
+    }
+    
+    if (querySnapshot.size > 1) {
+      throw new Error(`Ditemukan lebih dari 1 record untuk ${employeeId} pada tanggal ${dateString}. Tidak dapat melakukan update.`);
+    }
+    
+    // Update document yang ditemukan
+    const docToUpdate = querySnapshot.docs[0];
+    await updateDoc(docToUpdate.ref, updateData);
+    
+    console.log(`Attendance record updated for ${employeeId} on ${dateString}`);
+    return true;
+    
+  } catch (error) {
+    console.error("Error updating attendance record:", error);
+    throw new Error(`Gagal memperbarui data: ${error.message}`);
+  }
+}
+ 
 // Tambahkan fungsi untuk koordinasi cache dengan report-service
 export function syncCacheWithReport(dateKey, data) {
   try {

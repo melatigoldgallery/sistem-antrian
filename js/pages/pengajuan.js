@@ -114,45 +114,78 @@ function updateLeaveReplacementUI() {
   const endDate = document.getElementById("leaveEndDate")?.value;
   const replacementType = document.getElementById("replacementType")?.value;
   const multiDateWarning = document.getElementById("multiDateWarning");
-  const addMoreDatesBtn = document.getElementById("addMoreDates");
   const container = document.getElementById("replacementDatesContainer");
 
-  // Only proceed if we have both dates and replacement type is libur
-  if (!(startDate && endDate && replacementType === "libur")) {
-    if (multiDateWarning) multiDateWarning.style.display = "none";
-    if (addMoreDatesBtn) addMoreDatesBtn.style.display = "none";
-    return;
-  }
+  // Jika replacement type adalah libur dan ada tanggal, update UI
+  if (startDate && endDate && replacementType === "libur") {
+    const dayCount = calculateDaysBetween(startDate, endDate);
+    
+    // Generate array of leave dates
+    const leaveDates = [];
+    const start = new Date(startDate);
+    for (let i = 0; i < dayCount; i++) {
+      const currentDate = new Date(start);
+      currentDate.setDate(start.getDate() + i);
+      leaveDates.push({
+        date: currentDate.toISOString().split('T')[0],
+        formatted: currentDate.toLocaleDateString("id-ID", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        })
+      });
+    }
 
-  // Reset container to have only one date field
-  if (container) {
+    // Clear and rebuild container
+    if (container) {
+      container.innerHTML = "";
+      
+      leaveDates.forEach((leaveDate, index) => {
+        const dateItem = document.createElement("div");
+        dateItem.className = "mb-3 replacement-date-item";
+        dateItem.innerHTML = `
+          <label for="replacementDate${index}" class="form-label">
+            <strong>Pengganti untuk ${leaveDate.formatted}</strong>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
+            <input type="date" class="form-control replacement-date" id="replacementDate${index}" required/>
+          </div>
+          <div class="form-text text-muted">Pilih tanggal pengganti untuk izin tanggal ${leaveDate.date}</div>
+        `;
+        
+        container.appendChild(dateItem);
+        
+        // Enable date picker for new input
+        const newDateInput = dateItem.querySelector(`#replacementDate${index}`);
+        enableDatePickerOnClick(newDateInput);
+      });
+    }
+
+    if (dayCount > 1) {
+      // Show warning for multiple days
+      if (document.getElementById("totalDaysCount")) {
+        document.getElementById("totalDaysCount").textContent = dayCount;
+      }
+      if (multiDateWarning) multiDateWarning.style.display = "block";
+    } else {
+      // Hide warning for single day
+      if (multiDateWarning) multiDateWarning.style.display = "none";
+    }
+  }
+  // Jika bukan ganti libur, reset container ke default
+  else if (replacementType && replacementType !== "libur" && container) {
     container.innerHTML = `
       <div class="mb-3 replacement-date-item">
         <label for="replacementDate0" class="form-label">Tanggal Ganti Libur 1</label>
         <div class="input-group">
           <span class="input-group-text"><i class="fas fa-calendar-check"></i></span>
-          <input type="date" class="form-control replacement-date" id="replacementDate0" />
+          <input type="date" class="form-control replacement-date" id="replacementDate0" required/>
         </div>
       </div>
     `;
-  }
-
-  const dayCount = calculateDaysBetween(startDate, endDate);
-
-  if (dayCount > 1) {
-    // Show warning and add button for multiple days
-    if (document.getElementById("totalDaysCount")) document.getElementById("totalDaysCount").textContent = dayCount;
-    if (multiDateWarning) multiDateWarning.style.display = "block";
-    if (addMoreDatesBtn) addMoreDatesBtn.style.display = "block";
-
-    // Add date fields for each day (minus one because we already have one field)
-    for (let i = 1; i < dayCount; i++) {
-      addReplacementDateField();
-    }
-  } else {
-    // Hide warning and add button for single day
     if (multiDateWarning) multiDateWarning.style.display = "none";
-    if (addMoreDatesBtn) addMoreDatesBtn.style.display = "none";
   }
 }
 
@@ -380,10 +413,16 @@ document.getElementById("replacementType")?.addEventListener("change", function(
     if (liburSection) liburSection.style.display = "block";
     if (jamSection) jamSection.style.display = "none";
     
-    // Set required untuk tanggal ganti libur
-    document.querySelectorAll(".replacement-date").forEach(input => {
-      input.setAttribute("required", "");
-    });
+    // PANGGIL updateLeaveReplacementUI() SETELAH MEMILIH GANTI LIBUR
+    updateLeaveReplacementUI();
+    
+    // Set required untuk tanggal ganti libur setelah UI diupdate
+    setTimeout(() => {
+      document.querySelectorAll(".replacement-date").forEach(input => {
+        input.setAttribute("required", "");
+      });
+    }, 100);
+    
   } else if (this.value === "jam") {
     if (liburSection) liburSection.style.display = "none";
     if (jamSection) jamSection.style.display = "block";
@@ -398,11 +437,21 @@ document.getElementById("replacementType")?.addEventListener("change", function(
 });
 
 // Add event listeners for date inputs
-document.getElementById("leaveStartDate")?.addEventListener("change", updateLeaveReplacementUI);
-document.getElementById("leaveEndDate")?.addEventListener("change", updateLeaveReplacementUI);
+document.getElementById("leaveStartDate")?.addEventListener("change", function() {
+  // Hanya update jika replacement type sudah dipilih sebagai libur
+  const replacementType = document.getElementById("replacementType")?.value;
+  if (replacementType === "libur") {
+    updateLeaveReplacementUI();
+  }
+});
 
-// Add event listener for the "Add More Dates" button
-document.getElementById("addMoreDates")?.addEventListener("click", addReplacementDateField);
+document.getElementById("leaveEndDate")?.addEventListener("change", function() {
+  // Hanya update jika replacement type sudah dipilih sebagai libur
+  const replacementType = document.getElementById("replacementType")?.value;
+  if (replacementType === "libur") {
+    updateLeaveReplacementUI();
+  }
+});
 
 // Function to compress image before upload
 async function compressImage(file, maxWidth = 1200, quality = 0.7) {
