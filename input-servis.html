@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- jQuery first -->
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <!-- Bootstrap CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Datepicker CSS and JS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.id.min.js"></script>
+    <!-- jsPDF (PDF Export) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/pages/absensi-modern.css" />
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <!-- Animate CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <style>
+      .success-icon,
+      .error-icon {
+        animation: bounceIn 1s;
+      }
+
+      @keyframes bounceIn {
+        0%,
+        20%,
+        40%,
+        60%,
+        80%,
+        100% {
+          transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+        }
+        0% {
+          opacity: 0;
+          transform: scale3d(0.3, 0.3, 0.3);
+        }
+        20% {
+          transform: scale3d(1.1, 1.1, 1.1);
+        }
+        40% {
+          transform: scale3d(0.9, 0.9, 0.9);
+        }
+        60% {
+          opacity: 1;
+          transform: scale3d(1.03, 1.03, 1.03);
+        }
+        80% {
+          transform: scale3d(0.97, 0.97, 0.97);
+        }
+        100% {
+          opacity: 1;
+          transform: scale3d(1, 1, 1);
+        }
+      }
+
+      #successModalContent,
+      #errorModalContent {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .item-list {
+        text-align: left;
+        margin-top: 15px;
+      }
+
+      .item-list .item {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .item-list .item:last-child {
+        border-bottom: none;
+      }
+    </style>
+    <title>Input Servis - Melati Gold Shop</title>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="img/Melati.jfif" alt="Logo" class="logo" />
+          <h1 class="brand-name">Melati Gold Shop</h1>
+        </div>
+        <div class="sidebar-menu">
+          <ul class="nav flex-column" id="sidebarAccordion">
+            <li class="nav-item">
+              <a class="nav-link" href="dashboard.html">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+              </a>
+            </li>
+            <!-- Servis dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#servisSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-tools"></i>
+                <span class="menu-text">Servis</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="servisSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link active" href="input-servis.html">
+                      <i class="fas fa-plus-circle"></i>
+                      <span class="menu-text">Input Servis</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="data-servis.html">
+                      <i class="fas fa-database"></i>
+                      <span class="menu-text">Data Servis</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-servis.html">
+                      <i class="fas fa-chart-line"></i>
+                      <span class="menu-text">Laporan Servis</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="sidebar-footer">
+          <p>© 2025 Melati Gold Shop</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+          <div class="menu-toggle d-md-flex d-none">
+            <i class="fa-solid fa-minimize"></i>
+          </div>
+          <div class="hamburger d-md-none d-flex">
+            <i class="fas fa-bars"></i>
+          </div>
+          <div class="nav-right">
+            <div class="date-time">
+              <div class="current-date" id="current-date"></div>
+              <div class="current-time" id="current-time"></div>
+            </div>
+            <div class="user-profile dropdown">
+              <div class="profile-img" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="user-avatar">M</span>
+              </div>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <button class="dropdown-item" id="logoutBtn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Input Servis</h1>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dashboard.html">Home</a></li>
+                <li class="breadcrumb-item">Servis</li>
+                <li class="breadcrumb-item active" aria-current="page">Input Servis</li>
+              </ol>
+            </nav>
+          </div>
+
+          <div class="content-wrapper">
+            <!-- Form Input Servis -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-plus-circle"></i>
+                  Data Servis
+                </h2>
+              </div>
+              <div class="card-body">
+                <form class="row g-3">
+                  <div class="col-md-3">
+                    <label for="tanggal" class="form-label">Tanggal</label>
+                    <div class="input-group">
+                      <input type="text" class="form-control" id="tanggal" placeholder="Masukkan tanggal" />
+                      <span class="input-group-text bg-primary text-white" id="calendarIcon" style="cursor: pointer">
+                        <i class="fa-solid fa-calendar-days"></i>
+                      </span>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Detail Servis -->
+            <div class="card mb-4">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>
+                  <i class="fas fa-list"></i>
+                  Detail Servis
+                </h2>
+                <button type="button" class="btn btn-primary" id="btnTambahServis">
+                  <i class="fas fa-plus me-2"></i>
+                  Tambah
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="tableInputServis">
+                    <thead class="table-light">
+                      <tr>
+                        <th>No</th>
+                        <th style="width: 20%">Nama Customer</th>
+                        <th style="width: 15%">No HP</th>
+                        <th style="width: 20%">Nama Barang</th>
+                        <th style="width: 15%">Jenis Servis</th>
+                        <th style="width: 15%">Ongkos</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Baris akan ditambahkan oleh JavaScript -->
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th colspan="5" class="text-end">Total Ongkos:</th>
+                        <th id="total-ongkos">Rp 0</th>
+                        <th></th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button class="btn btn-primary" id="btnSimpanData">
+                  <i class="fas fa-save me-2"></i>
+                  Simpan Data
+                </button>
+                <button class="btn btn-secondary" id="btnBatal">
+                  <i class="fas fa-times me-2"></i>
+                  Batal
+                </button>
+              </div>
+            </div>
+
+            <!-- Riwayat Input Servis -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-history"></i>
+                  Riwayat Input Servis Hari Ini
+                </h2>
+                <div class="card-actions">
+                  <button id="exportPdfBtn" class="btn btn-danger me-2">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Export PDF
+                  </button>
+                  <button id="printBtn" class="btn btn-secondary">
+                    <i class="fas fa-print me-2"></i>
+                    Print
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover" id="tableRiwayatServis">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Tanggal</th>
+                        <th>Nama Customer</th>
+                        <th>No HP</th>
+                        <th>Nama Barang</th>
+                        <th>Jenis Servis</th>
+                        <th>Ongkos</th>
+                        <th>Sales</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Data riwayat akan ditampilkan di sini -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Modal Form Input Servis -->
+    <div
+      class="modal fade"
+      id="modalInputServis"
+      tabindex="-1"
+      aria-labelledby="modalInputServisLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalInputServisLabel">Input Data Servis</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formInputServis">
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label for="namaSales" class="form-label">Nama Sales</label>
+                  <input type="text" class="form-control" id="namaSales" placeholder="Masukkan nama" />
+                </div>
+                <div class="col-md-4">
+                  <label for="namaCustomer" class="form-label">Nama Customer</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="namaCustomer"
+                    placeholder="Masukkan nama customer"
+                    required
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="noHp" class="form-label">No HP</label>
+                  <input type="tel" class="form-control" id="noHp" placeholder="Masukkan nomor HP" required />
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label for="namaBarang" class="form-label">Nama Barang</label>
+                  <input type="text" class="form-control" id="namaBarang" placeholder="Masukkan nama barang" required />
+                </div>
+                <div class="col-md-4">
+                  <label for="jenisServis" class="form-label">Jenis Servis</label>
+                  <select class="form-select" id="jenisServis" required>
+                    <option value="">Pilih jenis servis</option>
+                    <option value="Perbaikan">Cuci</option>
+                    <option value="Pembersihan">Pasang Batu</option>
+                    <option value="Penggantian Batu">Patri</option>
+                    <option value="Resize">Resize</option>
+                    <option value="Lainnya">Chrome Perhiasan</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="ongkos" class="form-label">Ongkos</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="ongkos"
+                    placeholder="Masukkan ongkos"
+                    min="0"
+                    required
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary" id="btnSimpanServis">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Notifikasi Sukses -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="successModalLabel">
+              <i class="fas fa-check-circle me-2"></i>
+              Berhasil!
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <div class="success-icon mb-3">
+                <i class="fas fa-check-circle fa-4x text-success"></i>
+              </div>
+              <h4 id="successModalTitle">Data berhasil disimpan</h4>
+            </div>
+            <div id="successModalContent" class="mt-3">
+              <!-- Detail akan diisi oleh JavaScript -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Notifikasi Error -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="errorModalLabel">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Error!
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <div class="error-icon mb-3">
+                <i class="fas fa-exclamation-circle fa-4x text-danger"></i>
+              </div>
+              <h4 id="errorModalTitle">Terjadi Kesalahan</h4>
+            </div>
+            <div id="errorModalContent" class="mt-3">
+              <!-- Detail akan diisi oleh JavaScript -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/melati.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/pages/input-servis.js"></script>
+  </body>
+</html>
