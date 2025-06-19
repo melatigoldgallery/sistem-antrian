@@ -524,6 +524,7 @@ function printReport() {
     boxesContent += `
       <div class="service-box">
         <div class="customer-name">${item.namaCustomer}</div>
+        <div class="nama-brg">${item.namaBarang}</div>
         <div class="service-type">${item.jenisServis}</div>
       </div>
     `;
@@ -569,6 +570,13 @@ function printReport() {
             font-size: 8px;
             font-weight: bold;
             margin-bottom: 2px;
+            word-wrap: break-word;
+            line-height: 1.1;
+          }
+          .nama-brg {
+            font-size: 7px;
+            font-weight: bold;
+            margin: 3px;
             word-wrap: break-word;
             line-height: 1.1;
           }
