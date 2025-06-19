@@ -125,6 +125,14 @@ function setupEventListeners() {
     verifikasiAction = null;
     verifikasiData = null;
   });
+
+    // Enter key handler untuk modal form
+  document.getElementById('formInputServis').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveServisItem();
+    }
+  });
 }
 
 function openServisModal(index = -1) {
@@ -250,23 +258,39 @@ window.deleteRiwayatItem = function(id, index) {
   modal.show();
 };
 
-function handleVerifikasi() {
+async function handleVerifikasi() {
   const kode = document.getElementById('kodeVerifikasi').value;
   
-  if (kode !== '1234') { // Kode verifikasi sederhana
+  if (kode !== '1234') {
     alert('Kode verifikasi salah!');
     return;
   }
 
-  if (verifikasiAction === 'edit') {
-    // Logika edit sederhana - bisa dikembangkan lebih lanjut
-    alert('Fitur edit akan segera tersedia');
-  } else if (verifikasiAction === 'delete') {
-    // Logika delete sederhana - bisa dikembangkan lebih lanjut
-    if (confirm('Yakin ingin menghapus data ini?')) {
+  try {
+    if (verifikasiAction === 'edit') {
+      const item = todayData[verifikasiData.index];
+      // Set data ke form input servis
+      document.getElementById('namaSales').value = item.namaSales;
+      document.getElementById('namaCustomer').value = item.namaCustomer;
+      document.getElementById('noHp').value = item.noHp;
+      document.getElementById('namaBarang').value = item.namaBarang;
+      document.getElementById('jenisServis').value = item.jenisServis;
+      document.getElementById('ongkos').value = item.ongkos;
+      
+      // Buka modal edit
+      const modal = new bootstrap.Modal(document.getElementById('modalInputServis'));
+      modal.show();
+      
+    } else if (verifikasiAction === 'delete') {
+      // Import delete function dari service
+      const { deleteServisData } = await import('../services/servis-service.js');
+      await deleteServisData(verifikasiData.id);
       alert('Data berhasil dihapus');
-      loadRiwayatData(); // Reload data
+      loadRiwayatData();
     }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Terjadi kesalahan: ' + error.message);
   }
 
   const modal = bootstrap.Modal.getInstance(document.getElementById('verifikasiModal'));

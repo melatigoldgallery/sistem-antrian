@@ -5,6 +5,7 @@ import {
   getDocs, 
   doc, 
   updateDoc, 
+  deleteDoc,
   query, 
   where, 
   orderBy, 
@@ -19,6 +20,19 @@ const SERVIS_COLLECTION = 'servis';
 // Cache untuk optimasi reads
 const servisCache = new Map();
 const CACHE_EXPIRATION = 5 * 60 * 1000; // 5 menit
+
+// Tambahkan function ini di file servis-service.js
+export async function deleteServisData(docId) {
+  try {
+    await deleteDoc(doc(db, SERVIS_COLLECTION, docId));
+    // Clear cache setelah delete
+    servisCache.clear();
+    return true;
+  } catch (error) {
+    console.error('Error deleting servis data:', error);
+    throw error;
+  }
+}
 
 // Fungsi untuk menyimpan data servis
 export async function saveServisData(servisData) {
