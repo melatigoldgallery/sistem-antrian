@@ -1,9 +1,31 @@
-import { getServisByDate, searchServis, updateServisStatus, clearServisCache } from '../services/servis-service.js';
+import { getServisByMonth, updateServisStatus, smartServisCache } from '../services/servis-service.js';
 
 // Global variables
 let currentData = [];
 let filteredData = [];
 
+// Local cache system
+const localCache = new Map();
+const CACHE_EXPIRATION = 5 * 60 * 1000; // 5 menit
+
+function getCachedData(key) {
+  const cached = localCache.get(key);
+  if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRATION)) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedData(key, data) {
+  localCache.set(key, {
+    data: data,
+    timestamp: Date.now()
+  });
+}
+
+function clearCacheKey(key) {
+  localCache.delete(key);
+}
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
   initializePage();
@@ -11,13 +33,30 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializePage() {
-  // Set current date and time
   updateDateTime();
   setInterval(updateDateTime, 1000);
   
-  // Set default date to today
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('tanggalFilter').value = today;
+  // Populate year selector dan set default ke bulan/tahun sekarang
+  populateYearSelector();
+  const now = new Date();
+  document.getElementById('monthSelector').value = now.getMonth() + 1;
+  document.getElementById('yearSelector').value = now.getFullYear();
+}
+
+function populateYearSelector() {
+  const yearSelector = document.getElementById('yearSelector');
+  const currentYear = new Date().getFullYear();
+  
+  // Clear existing options
+  yearSelector.innerHTML = '';
+  
+  // Add years (current year and 5 years back)
+  for (let year = currentYear; year >= currentYear - 5; year--) {
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year;
+    yearSelector.appendChild(option);
+  }
 }
 
 function updateDateTime() {
@@ -41,50 +80,61 @@ function updateDateTime() {
 
 function setupEventListeners() {
   // Tampilkan button
-  document.getElementById('tampilkanBtn').addEventListener('click', function() {
-    loadServisData();
-  });
+  const tampilkanBtn = document.getElementById('tampilkanBtn');
+  if (tampilkanBtn) {
+    tampilkanBtn.addEventListener('click', loadServisData);
+  }
 
   // Search input
-  document.getElementById('searchInput').addEventListener('input', function() {
-    filterData();
-  });
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', filterData);
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        filterData();
+      }
+    });
+  }
 
   // Refresh data button
-  document.getElementById('refreshData').addEventListener('click', function() {
-    refreshData();
-  });
+  const refreshBtn = document.getElementById('refreshData');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', refreshData);
+  }
 
   // Save status button
-  document.getElementById('saveStatusBtn').addEventListener('click', function() {
-    saveStatusUpdate();
-  });
-
-  // Enter key on search
-  document.getElementById('searchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      filterData();
-    }
-  });
+  const saveStatusBtn = document.getElementById('saveStatusBtn');
+  if (saveStatusBtn) {
+    saveStatusBtn.addEventListener('click', saveStatusUpdate);
+  }
 }
 
 async function loadServisData() {
   try {
     showLoading(true);
     
-    const tanggal = document.getElementById('tanggalFilter').value;
-    const searchTerm = document.getElementById('searchInput').value.trim();
+    const month = parseInt(document.getElementById('monthSelector').value);
+    const year = parseInt(document.getElementById('yearSelector').value);
+    const cacheKey = `month_${month}_${year}`;
     
-    if (!tanggal && !searchTerm) {
-      showAlert('warning', 'Pilih tanggal atau masukkan kata kunci pencarian');
-      showLoading(false);
-      return;
+    // Check local cache first
+    const cachedData = getCachedData(cacheKey);
+    
+    if (cachedData) {
+      console.log(`Using cached data for ${month}/${year}`);
+      currentData = cachedData;
+      showCacheIndicator(true);
+    } else {
+      console.log(`Fetching fresh data for ${month}/${year}`);
+      currentData = await getServisByMonth(month, year);
+      setCachedData(cacheKey, currentData);
+      showCacheIndicator(false);
     }
     
-    if (tanggal) {
-      currentData = await getServisByDate(tanggal);
-    } else {
-      currentData = await searchServis(searchTerm);
+    // Reset search dan tampilkan semua data - dengan pengecekan element
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.value = '';
     }
     
     filteredData = [...currentData];
@@ -130,10 +180,12 @@ function displayData() {
   
   tbody.innerHTML = '';
   
+  const fragment = document.createDocumentFragment();
+  
   filteredData.forEach((item, index) => {
     const row = document.createElement('tr');
+    const tanggalFormatted = new Date(item.tanggal).toLocaleDateString('id-ID');
     
-    // Status badges
     const statusServisBadge = item.statusServis === 'Sudah Selesai' 
       ? '<span class="badge bg-success">Sudah Selesai</span>'
       : '<span class="badge bg-warning">Belum Selesai</span>';
@@ -144,6 +196,7 @@ function displayData() {
     
     row.innerHTML = `
       <td>${index + 1}</td>
+      <td>${tanggalFormatted}</td>
       <td>${item.namaCustomer}</td>
       <td>${item.noHp}</td>
       <td>${item.namaBarang}</td>
@@ -157,17 +210,12 @@ function displayData() {
       </td>
     `;
     
-    tbody.appendChild(row);
+    fragment.appendChild(row);
   });
   
-  // Hide cache indicator
-  const cacheIndicator = document.getElementById('cacheIndicator');
-  if (cacheIndicator) {
-    cacheIndicator.style.display = 'none';
-  }
+  tbody.appendChild(fragment);
 }
 
-// Global function for button clicks
 window.openUpdateModal = function(servisId, currentStatusServis, currentStatusPengambilan) {
   document.getElementById('updateServisId').value = servisId;
   document.getElementById('statusServis').value = currentStatusServis;
@@ -187,12 +235,15 @@ async function saveStatusUpdate() {
     
     await updateServisStatus(servisId, statusServis, statusPengambilan);
     
+    // Update local data immediately untuk UX yang lebih baik
+    updateLocalData(servisId, statusServis, statusPengambilan);
+    
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('updateStatusModal'));
     modal.hide();
     
-    // Reload data
-    await loadServisData();
+    // Update display immediately
+    displayData();
     
     showAlert('success', 'Status berhasil diperbarui');
     showLoading(false);
@@ -204,19 +255,34 @@ async function saveStatusUpdate() {
   }
 }
 
+function updateLocalData(servisId, statusServis, statusPengambilan) {
+  // Update di currentData
+  const currentIndex = currentData.findIndex(item => item.id === servisId);
+  if (currentIndex !== -1) {
+    currentData[currentIndex].statusServis = statusServis;
+    currentData[currentIndex].statusPengambilan = statusPengambilan;
+  }
+  
+  // Update di filteredData
+  const filteredIndex = filteredData.findIndex(item => item.id === servisId);
+  if (filteredIndex !== -1) {
+    filteredData[filteredIndex].statusServis = statusServis;
+    filteredData[filteredIndex].statusPengambilan = statusPengambilan;
+  }
+}
+
 async function refreshData() {
   try {
-    // Clear cache
-    clearServisCache();
+    const month = parseInt(document.getElementById('monthSelector').value);
+    const year = parseInt(document.getElementById('yearSelector').value);
+    const cacheKey = `month_${month}_${year}`;
     
-    // Show cache indicator
-    const cacheIndicator = document.getElementById('cacheIndicator');
-    if (cacheIndicator) {
-      cacheIndicator.style.display = 'inline-block';
-      cacheIndicator.textContent = 'Refreshing...';
-    }
+    // Clear specific cache untuk periode ini
+    smartServisCache.clearKey(cacheKey);
     
-    // Reload data
+    showCacheIndicator(false, 'Refreshing...');
+    
+    // Reload data fresh dari Firestore
     await loadServisData();
     
     showAlert('info', 'Data berhasil diperbarui dari server');
@@ -254,6 +320,21 @@ function showLoading(show) {
   }
 }
 
+function showCacheIndicator(isCache, customText = null) {
+  const indicator = document.getElementById('cacheIndicator');
+  if (indicator) {
+    if (customText) {
+      indicator.style.display = 'inline-block';
+      indicator.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> ${customText}`;
+    } else {
+      indicator.style.display = isCache ? 'inline-block' : 'none';
+      if (isCache) {
+        indicator.innerHTML = '<i class="fas fa-database me-1"></i> Cache';
+      }
+    }
+  }
+}
+
 function showAlert(type, message) {
   const alertContainer = document.getElementById('alertContainer');
   if (!alertContainer) return;
@@ -268,7 +349,6 @@ function showAlert(type, message) {
 
   alertContainer.style.display = 'block';
 
-  // Auto hide after 5 seconds
   setTimeout(() => {
     const alert = alertContainer.querySelector('.alert');
     if (alert) {
@@ -277,4 +357,3 @@ function showAlert(type, message) {
     }
   }, 5000);
 }
-

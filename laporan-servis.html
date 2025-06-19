@@ -40,8 +40,6 @@
           <ul class="nav flex-column" id="sidebarAccordion">
             <li class="nav-item">
               <a class="nav-link" href="dashboard.html">
-            <li class="nav-item">
-              <a class="nav-link" href="dashboard.html">
                 <i class="fas fa-tachometer-alt"></i>
                 <span class="menu-text">Dashboard</span>
               </a>
@@ -172,9 +170,23 @@
                       </select>
                     </div>
                     <div class="col-md-2">
+                      <label for="statusServisFilter" class="form-label">Status Servis</label>
+                      <select id="statusServisFilter" class="form-select">
+                        <option value="Belum Selesai">Belum Selesai</option>
+                        <option value="Sudah Selesai">Sudah Selesai</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label for="statusPengambilanFilter" class="form-label">Status Pengambilan</label>
+                      <select id="statusPengambilanFilter" class="form-select">
+                        <option value="Belum Diambil">Belum Diambil</option>
+                        <option value="Sudah Diambil">Sudah Diambil</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
                       <button id="generateReportBtn" class="btn btn-primary w-100">
                         <i class="fas fa-sync-alt me-2"></i>
-                        Generate Laporan
+                        Tampilkan
                       </button>
                     </div>
                   </div>
@@ -191,7 +203,7 @@
                   </div>
                   <div class="stat-card-info">
                     <h3 class="summary-value" id="totalServis">0</h3>
-                    <p>Total Servis</p>
+                    <p>Total</p>
                   </div>
                 </div>
               </div>
@@ -241,34 +253,6 @@
               </div>
             </div>
 
-            <!-- Filter Buttons -->
-            <div class="card mb-3" id="filterContainer" style="display: none">
-              <div class="card-body">
-                <div class="btn-group" role="group" aria-label="Filter Status">
-                  <button type="button" class="btn btn-outline-primary filter-btn active" id="filterAll">
-                    <i class="fas fa-list me-1"></i>
-                    Semua
-                  </button>
-                  <button type="button" class="btn btn-outline-success filter-btn" id="filterCompleted">
-                    <i class="fas fa-check-circle me-1"></i>
-                    Selesai
-                  </button>
-                  <button type="button" class="btn btn-outline-warning filter-btn" id="filterPending">
-                    <i class="fas fa-clock me-1"></i>
-                    Pending
-                  </button>
-                  <button type="button" class="btn btn-outline-info filter-btn" id="filterTaken">
-                    <i class="fas fa-hand-holding me-1"></i>
-                    Diambil
-                  </button>
-                  <button type="button" class="btn btn-outline-danger filter-btn" id="filterNotTaken">
-                    <i class="fas fa-times-circle me-1"></i>
-                    Belum Diambil
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <!-- Export & Action Buttons -->
             <div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important">
               <div>
@@ -295,9 +279,9 @@
                   </span>
                 </h2>
                 <div class="card-actions">
-                  <button id="refreshData" class="btn btn-primary">
-                    <i class="fas fa-sync-alt me-1"></i>
-                    Refresh Data
+                  <button id="hapusData" class="btn btn-danger">
+                    <i class="fas fa-trash me-1"></i>
+                    Hapus Data
                   </button>
                 </div>
               </div>
@@ -311,8 +295,8 @@
                         <th>Nama Customer</th>
                         <th>No HP</th>
                         <th>Nama Barang</th>
-                        <th>Jenis Servis</th>
-                        <th>Ongkos</th>
+                        <th>Jenis Servis / Custom</th>
+                        <th>Ongkos / DP</th>
                         <th>Sales</th>
                         <th>Status Servis</th>
                         <th>Status Pengambilan</th>
@@ -334,9 +318,35 @@
       </main>
     </div>
 
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Konfirmasi Hapus Data</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              Apakah Anda yakin ingin menghapus
+              <strong id="deleteCount">0</strong>
+              data servis yang sedang ditampilkan?
+            </p>
+            <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan!</small></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              <i class="fas fa-trash me-2"></i>
+              Ya, Hapus Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/laporan-servis.js"></script>
   </body>
 </html>
-

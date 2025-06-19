@@ -1,8 +1,55 @@
-import { getServisByMonth, clearServisCache } from '../services/servis-service.js';
+import { getServisByMonth, deleteMultipleServisData } from '../services/servis-service.js';
 
 // Global variables
-let currentReportData = [];
-let filteredReportData = [];
+let currentServisData = [];
+let filteredServisData = [];
+
+// Smart cache system
+const smartCache = {
+  data: new Map(),
+  timestamps: new Map(),
+  CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
+  
+  get(key) {
+    const cached = this.data.get(key);
+    const timestamp = this.timestamps.get(key);
+    
+    if (cached && timestamp && (Date.now() - timestamp < this.CACHE_DURATION)) {
+      return cached;
+    }
+    return null;
+  },
+  
+  set(key, value) {
+    this.data.set(key, value);
+    this.timestamps.set(key, Date.now());
+  },
+  
+  updateSpecific(key, updatedItems) {
+    const cached = this.data.get(key);
+    if (cached) {
+      // Update only changed items
+      const updatedCache = cached.map(item => {
+        const updated = updatedItems.find(u => u.id === item.id);
+        return updated || item;
+      });
+      this.set(key, updatedCache);
+    }
+  },
+  
+  removeItems(key, itemIds) {
+    const cached = this.data.get(key);
+    if (cached) {
+      const filteredCache = cached.filter(item => !itemIds.includes(item.id));
+      this.set(key, filteredCache);
+    }
+  },
+  
+  clear() {
+    this.data.clear();
+    this.timestamps.clear();
+  }
+};
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -11,39 +58,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializePage() {
-  // Set current date and time
   updateDateTime();
   setInterval(updateDateTime, 1000);
+  populateYearSelector();
   
-  // Initialize month and year selectors
-  initializeSelectors();
-}
-
-function initializeSelectors() {
-  const monthSelector = document.getElementById('monthSelector');
-  const yearSelector = document.getElementById('yearSelector');
-  
-  // Set current month
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
-  
-  if (monthSelector) {
-    monthSelector.value = currentMonth;
-  }
-  
-  // Populate year selector
-  if (yearSelector) {
-    for (let year = currentYear - 2; year <= currentYear + 1; year++) {
-      const option = document.createElement('option');
-      option.value = year;
-      option.textContent = year;
-      if (year === currentYear) {
-        option.selected = true;
-      }
-      yearSelector.appendChild(option);
-    }
-  }
+  const now = new Date();
+  document.getElementById('monthSelector').value = now.getMonth() + 1;
+  document.getElementById('yearSelector').value = now.getFullYear();
 }
 
 function updateDateTime() {
@@ -65,107 +86,123 @@ function updateDateTime() {
   }
 }
 
+function populateYearSelector() {
+  const yearSelector = document.getElementById('yearSelector');
+  const currentYear = new Date().getFullYear();
+  
+  for (let year = currentYear; year >= currentYear - 5; year--) {
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year;
+    yearSelector.appendChild(option);
+  }
+}
+
 function setupEventListeners() {
-  // Generate report button
-  document.getElementById('generateReportBtn').addEventListener('click', function() {
-    generateReport();
-  });
-
-  // Filter buttons
-  document.getElementById('filterAll').addEventListener('click', function() {
-    filterByStatus('all');
-  });
-
-  document.getElementById('filterCompleted').addEventListener('click', function() {
-    filterByStatus('completed');
-  });
-
-  document.getElementById('filterPending').addEventListener('click', function() {
-    filterByStatus('pending');
-  });
-
-  document.getElementById('filterTaken').addEventListener('click', function() {
-    filterByStatus('taken');
-  });
-
-  document.getElementById('filterNotTaken').addEventListener('click', function() {
-    filterByStatus('not-taken');
-  });
-
-  // Export buttons
-  document.getElementById('exportExcelBtn').addEventListener('click', function() {
-    exportToExcel();
-  });
-
-  document.getElementById('exportPdfBtn').addEventListener('click', function() {
-    exportToPDF();
-  });
-
-  // Refresh data button
-  document.getElementById('refreshData').addEventListener('click', function() {
-    refreshData();
-  });
+  document.getElementById('generateReportBtn')?.addEventListener('click', generateReport);
+  document.getElementById('exportExcelBtn')?.addEventListener('click', exportToExcel);
+  document.getElementById('exportPdfBtn')?.addEventListener('click', exportToPDF);
+  document.getElementById('hapusData')?.addEventListener('click', showDeleteConfirmation);
+  document.getElementById('confirmDeleteBtn')?.addEventListener('click', deleteDisplayedData);
+  document.getElementById('statusServisFilter')?.addEventListener('change', applyFilters);
+  document.getElementById('statusPengambilanFilter')?.addEventListener('change', applyFilters);
 }
 
 async function generateReport() {
   try {
     const month = parseInt(document.getElementById('monthSelector').value);
     const year = parseInt(document.getElementById('yearSelector').value);
+    const cacheKey = `servis_${month}_${year}`;
     
-    if (!month || !year) {
-      showAlert('warning', 'Pilih bulan dan tahun terlebih dahulu');
-      return;
+    showLoadingState(true);
+    
+    // Check smart cache first
+    const cachedData = smartCache.get(cacheKey);
+    if (cachedData) {
+      console.log(`Using cached data for ${month}/${year}`);
+      currentServisData = cachedData;
+      showCacheIndicator(true);
+    } else {
+      console.log(`Fetching fresh data for ${month}/${year}`);
+      currentServisData = await getServisByMonth(month, year);
+      smartCache.set(cacheKey, currentServisData);
+      showCacheIndicator(false);
     }
     
-    showLoading(true);
-    
-    currentReportData = await getServisByMonth(month, year);
-    filteredReportData = [...currentReportData];
-    
-    displayReport();
-    updateSummaryCards();
-    showReportElements();
-    
-    showLoading(false);
+    applyFilters();
+    showLoadingState(false);
     
   } catch (error) {
     console.error('Error generating report:', error);
-    showAlert('danger', 'Terjadi kesalahan saat membuat laporan: ' + error.message);
-    showLoading(false);
+    showAlert('danger', 'Terjadi kesalahan saat memuat data: ' + error.message);
+    showLoadingState(false);
   }
 }
 
-function displayReport() {
-  const tbody = document.getElementById('servisReportList');
-  const tableContainer = document.getElementById('tableContainer');
-  const noDataMessage = document.getElementById('noDataMessage');
+function applyFilters() {
+  const statusServis = document.getElementById('statusServisFilter').value;
+  const statusPengambilan = document.getElementById('statusPengambilanFilter').value;
   
-  if (filteredReportData.length === 0) {
-    tableContainer.style.display = 'none';
-    noDataMessage.style.display = 'block';
-    hideActionButtons();
+  filteredServisData = currentServisData.filter(item => {
+    const matchesStatusServis = !statusServis || item.statusServis === statusServis;
+    const matchesStatusPengambilan = !statusPengambilan || item.statusPengambilan === statusPengambilan;
+    return matchesStatusServis && matchesStatusPengambilan;
+  });
+  
+  updateUI();
+}
+
+function updateUI() {
+  updateSummaryCards();
+  populateServisTable();
+  
+  if (filteredServisData.length > 0) {
+    showReportElements();
+  } else {
+    hideReportElements();
+    document.getElementById('noDataMessage').style.display = 'block';
+  }
+}
+
+function updateSummaryCards() {
+  document.getElementById('totalServis').textContent = filteredServisData.length;
+  
+  const completedCount = filteredServisData.filter(item => 
+    item.statusServis === 'Sudah Selesai').length;
+  document.getElementById('completedServis').textContent = completedCount;
+  
+  const pendingCount = filteredServisData.filter(item => 
+    item.statusServis === 'Belum Selesai').length;
+  document.getElementById('pendingServis').textContent = pendingCount;
+  
+  const takenCount = filteredServisData.filter(item => 
+    item.statusPengambilan === 'Sudah Diambil').length;
+  document.getElementById('takenServis').textContent = takenCount;
+  
+  const totalRevenue = filteredServisData.reduce((sum, item) => sum + (item.ongkos || 0), 0);
+  document.getElementById('totalRevenue').textContent = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
+}
+
+function populateServisTable() {
+  const tableBody = document.getElementById('servisReportList');
+  tableBody.innerHTML = '';
+  
+  if (filteredServisData.length === 0) {
     return;
   }
   
-  tableContainer.style.display = 'block';
-  noDataMessage.style.display = 'none';
-  showActionButtons();
+  const fragment = document.createDocumentFragment();
   
-  tbody.innerHTML = '';
-  
-  filteredReportData.forEach((item, index) => {
+  filteredServisData.forEach((item, index) => {
     const row = document.createElement('tr');
-    
-    // Format tanggal
     const tanggalFormatted = new Date(item.tanggal).toLocaleDateString('id-ID');
     
-    // Status badges
     const statusServisBadge = item.statusServis === 'Sudah Selesai' 
-      ? '<span class="badge bg-success">Selesai</span>'
+      ? '<span class="badge bg-success">Sudah Selesai</span>'
       : '<span class="badge bg-warning">Belum Selesai</span>';
       
     const statusPengambilanBadge = item.statusPengambilan === 'Sudah Diambil'
-      ? '<span class="badge bg-success">Diambil</span>'
+      ? '<span class="badge bg-success">Sudah Diambil</span>'
       : '<span class="badge bg-danger">Belum Diambil</span>';
     
     row.innerHTML = `
@@ -181,112 +218,174 @@ function displayReport() {
       <td>${statusPengambilanBadge}</td>
     `;
     
-    tbody.appendChild(row);
-  });
-}
-
-function updateSummaryCards() {
-  const totalServis = filteredReportData.length;
-  const completedServis = filteredReportData.filter(item => item.statusServis === 'Sudah Selesai').length;
-  const pendingServis = filteredReportData.filter(item => item.statusServis === 'Belum Selesai').length;
-  const takenServis = filteredReportData.filter(item => item.statusPengambilan === 'Sudah Diambil').length;
-  const totalRevenue = filteredReportData.reduce((sum, item) => sum + (item.ongkos || 0), 0);
-
-  // Update summary cards
-  document.getElementById('totalServis').textContent = totalServis;
-  document.getElementById('completedServis').textContent = completedServis;
-  document.getElementById('pendingServis').textContent = pendingServis;
-  document.getElementById('takenServis').textContent = takenServis;
-  document.getElementById('totalRevenue').textContent = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
-}
-
-function filterByStatus(status) {
-  // Remove active class from all filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.remove('active');
+    fragment.appendChild(row);
   });
   
-  // Add active class to clicked button
-  document.getElementById(`filter${status.charAt(0).toUpperCase() + status.slice(1)}`).classList.add('active');
-  
-  // Filter data
-  switch (status) {
-    case 'all':
-      filteredReportData = [...currentReportData];
-      break;
-    case 'completed':
-      filteredReportData = currentReportData.filter(item => item.statusServis === 'Sudah Selesai');
-      break;
-    case 'pending':
-      filteredReportData = currentReportData.filter(item => item.statusServis === 'Belum Selesai');
-      break;
-    case 'taken':
-      filteredReportData = currentReportData.filter(item => item.statusPengambilan === 'Sudah Diambil');
-      break;
-    case 'not-taken':
-      filteredReportData = currentReportData.filter(item => item.statusPengambilan === 'Belum Diambil');
-      break;
+  tableBody.appendChild(fragment);
+}
+
+function showDeleteConfirmation() {
+  if (filteredServisData.length === 0) {
+    showAlert('warning', 'Tidak ada data untuk dihapus');
+    return;
   }
   
-  displayReport();
-  updateSummaryCards();
+  document.getElementById('deleteCount').textContent = filteredServisData.length;
+  const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+  modal.show();
+}
+
+async function deleteDisplayedData() {
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const originalText = confirmBtn.innerHTML;
+  
+  try {
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menghapus...';
+    confirmBtn.disabled = true;
+    
+    const idsToDelete = filteredServisData.map(item => item.id);
+    
+    // Delete from Firestore
+    await deleteMultipleServisData(idsToDelete);
+    
+    // Update smart cache efficiently
+    const month = parseInt(document.getElementById('monthSelector').value);
+    const year = parseInt(document.getElementById('yearSelector').value);
+    const cacheKey = `servis_${month}_${year}`;
+    smartCache.removeItems(cacheKey, idsToDelete);
+    
+    // Update current data
+    currentServisData = currentServisData.filter(item => !idsToDelete.includes(item.id));
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+    modal.hide();
+    
+    // Update UI immediately
+    applyFilters();
+    
+    showAlert('success', `Berhasil menghapus ${idsToDelete.length} data servis`);
+    
+  } catch (error) {
+    console.error('Error deleting data:', error);
+    showAlert('danger', 'Terjadi kesalahan saat menghapus data: ' + error.message);
+  } finally {
+    confirmBtn.innerHTML = originalText;
+    confirmBtn.disabled = false;
+  }
+}
+
+function showLoadingState(show) {
+  const btn = document.getElementById('generateReportBtn');
+  if (show) {
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memuat...';
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Tampilkan';
+    btn.disabled = false;
+  }
+}
+
+function showCacheIndicator(isCache) {
+  const indicator = document.getElementById('cacheIndicator');
+  if (indicator) {
+    indicator.style.display = isCache ? 'inline-block' : 'none';
+  }
+}
+
+function showReportElements() {
+  document.getElementById('tableContainer').style.display = 'block';
+  document.getElementById('summaryCards').style.display = 'flex';
+  document.getElementById('actionButtons').style.display = 'flex';
+  document.getElementById('noDataMessage').style.display = 'none';
+}
+
+function hideReportElements() {
+  document.getElementById('tableContainer').style.display = 'none';
+  document.getElementById('summaryCards').style.display = 'none';
+  document.getElementById('actionButtons').style.display = 'none';
+}
+
+function showAlert(type, message, autoHide = true) {
+  const alertContainer = document.getElementById('alertContainer');
+  if (!alertContainer) return;
+  
+  alertContainer.innerHTML = `
+    <div class="alert alert-${type} alert-dismissible fade show">
+      <i class="fas fa-${getAlertIcon(type)} me-2"></i>
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+  
+  alertContainer.style.display = 'block';
+  
+  if (autoHide) {
+    setTimeout(() => {
+      const alert = alertContainer.querySelector('.alert');
+      if (alert) {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      }
+    }, 5000);
+  }
+}
+
+function getAlertIcon(type) {
+  const icons = {
+    success: 'check-circle',
+    danger: 'exclamation-circle',
+    warning: 'exclamation-triangle',
+    info: 'info-circle'
+  };
+  return icons[type] || 'info-circle';
 }
 
 function exportToExcel() {
-  if (filteredReportData.length === 0) {
+  if (filteredServisData.length === 0) {
     showAlert('warning', 'Tidak ada data untuk diekspor');
     return;
   }
 
   try {
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    
     const month = document.getElementById('monthSelector').value;
     const year = document.getElementById('yearSelector').value;
     const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-    // Prepare data
-    const wsData = [
-      ['Laporan Servis Bulanan'],
-      [`Periode: ${monthNames[month]} ${year}`],
-      [`Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`],
+    
+    const worksheetData = [
+      [`Laporan Servis - ${monthNames[month]} ${year}`],
       [],
-      ['No', 'Tanggal', 'Nama Customer', 'No HP', 'Nama Barang', 'Jenis Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Pengambilan']
-    ];
-
-    filteredReportData.forEach((item, index) => {
-      wsData.push([
+      ['No', 'Tanggal', 'Nama Customer', 'No HP', 'Nama Barang', 'Jenis Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Pengambilan'],
+      ...filteredServisData.map((item, index) => [
         index + 1,
         new Date(item.tanggal).toLocaleDateString('id-ID'),
         item.namaCustomer,
         item.noHp,
         item.namaBarang,
-        item.jenisServis,
+ item.jenisServis,
         item.ongkos,
         item.namaSales,
         item.statusServis,
         item.statusPengambilan
-      ]);
-    });
+      ])
+    ];
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Servis');
-
-    // Export file
-    const fileName = `Laporan_Servis_${monthNames[month]}_${year}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-
-    showAlert('success', 'Data berhasil diekspor ke Excel');
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Servis');
+    
+    XLSX.writeFile(workbook, `Laporan_Servis_${monthNames[month]}_${year}.xlsx`);
+    
+    showAlert('success', 'File Excel berhasil diunduh');
   } catch (error) {
-    console.error('Error exporting to Excel:', error);
-    showAlert('danger', 'Terjadi kesalahan saat mengekspor data');
+    console.error('Error exporting Excel:', error);
+    showAlert('danger', 'Terjadi kesalahan saat mengekspor Excel');
   }
 }
 
 function exportToPDF() {
-  if (filteredReportData.length === 0) {
+  if (filteredServisData.length === 0) {
     showAlert('warning', 'Tidak ada data untuk diekspor');
     return;
   }
@@ -296,7 +395,7 @@ function exportToPDF() {
     const year = document.getElementById('yearSelector').value;
     const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
+    
     const docDefinition = {
       content: [
         {
@@ -305,12 +404,8 @@ function exportToPDF() {
           alignment: 'center'
         },
         {
-          text: `Periode: ${monthNames[month]} ${year}`,
+          text: `${monthNames[month]} ${year}`,
           style: 'subheader',
-          alignment: 'center'
-        },
-        {
-          text: `Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`,
           alignment: 'center',
           margin: [0, 0, 0, 20]
         },
@@ -319,8 +414,8 @@ function exportToPDF() {
             headerRows: 1,
             widths: ['auto', 'auto', '*', 'auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto'],
             body: [
-              ['No', 'Tanggal', 'Customer', 'No HP', 'Barang', 'Jenis', 'Ongkos', 'Sales', 'Status Servis', 'Status Ambil'],
-              ...filteredReportData.map((item, index) => [
+              ['No', 'Tanggal', 'Customer', 'HP', 'Barang', 'Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Ambil'],
+              ...filteredServisData.map((item, index) => [
                 index + 1,
                 new Date(item.tanggal).toLocaleDateString('id-ID'),
                 item.namaCustomer,
@@ -333,8 +428,7 @@ function exportToPDF() {
                 item.statusPengambilan
               ])
             ]
-          },
-          layout: 'lightHorizontalLines'
+          }
         }
       ],
       styles: {
@@ -347,125 +441,14 @@ function exportToPDF() {
           bold: true
         }
       },
-      pageOrientation: 'landscape',
-      pageSize: 'A4'
+      pageOrientation: 'landscape'
     };
 
-    const fileName = `Laporan_Servis_${monthNames[month]}_${year}.pdf`;
-    pdfMake.createPdf(docDefinition).download(fileName);
-
-    showAlert('success', 'Data berhasil diekspor ke PDF');
+    pdfMake.createPdf(docDefinition).download(`Laporan_Servis_${monthNames[month]}_${year}.pdf`);
+    
+    showAlert('success', 'File PDF berhasil diunduh');
   } catch (error) {
-    console.error('Error exporting to PDF:', error);
+    console.error('Error exporting PDF:', error);
     showAlert('danger', 'Terjadi kesalahan saat mengekspor PDF');
   }
 }
-
-async function refreshData() {
-  try {
-    // Clear cache
-    clearServisCache();
-    
-    // Show cache indicator
-    const cacheIndicator = document.getElementById('cacheIndicator');
-    if (cacheIndicator) {
-      cacheIndicator.style.display = 'inline-block';
-      cacheIndicator.textContent = 'Refreshing...';
-    }
-    
-    // Regenerate report
-    await generateReport();
-    
-    showAlert('info', 'Data berhasil diperbarui dari server');
-    
-  } catch (error) {
-    console.error('Error refreshing data:', error);
-    showAlert('danger', 'Terjadi kesalahan saat memperbarui data: ' + error.message);
-  }
-}
-
-function showReportElements() {
-  const summaryCards = document.getElementById('summaryCards');
-  const filterContainer = document.getElementById('filterContainer');
-  const tableContainer = document.getElementById('tableContainer');
-  
-  if (summaryCards) summaryCards.style.display = 'flex';
-  if (filterContainer) filterContainer.style.display = 'block';
-  if (tableContainer) tableContainer.style.display = 'block';
-}
-
-function hideReportElements() {
-  const summaryCards = document.getElementById('summaryCards');
-  const filterContainer = document.getElementById('filterContainer');
-  const tableContainer = document.getElementById('tableContainer');
-  
-  if (summaryCards) summaryCards.style.display = 'none';
-  if (filterContainer) filterContainer.style.display = 'none';
-  if (tableContainer) tableContainer.style.display = 'none';
-}
-
-function showActionButtons() {
-  const actionButtons = document.getElementById('actionButtons');
-  if (actionButtons) {
-    actionButtons.style.display = 'flex';
-  }
-}
-
-function hideActionButtons() {
-  const actionButtons = document.getElementById('actionButtons');
-  if (actionButtons) {
-    actionButtons.style.display = 'none';
-  }
-}
-
-function showLoading(show) {
-  const generateBtn = document.getElementById('generateReportBtn');
-  const refreshBtn = document.getElementById('refreshData');
-  
-  if (show) {
-    document.body.style.cursor = 'wait';
-    if (generateBtn) {
-      generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memproses...';
-      generateBtn.disabled = true;
-    }
-    if (refreshBtn) {
-      refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
-      refreshBtn.disabled = true;
-    }
-  } else {
-    document.body.style.cursor = 'default';
-    if (generateBtn) {
-      generateBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Generate Laporan';
-      generateBtn.disabled = false;
-    }
-    if (refreshBtn) {
-      refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh Data';
-      refreshBtn.disabled = false;
-    }
-  }
-}
-
-function showAlert(type, message) {
-  const alertContainer = document.getElementById('alertContainer');
-  if (!alertContainer) return;
-
-  alertContainer.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show">
-      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  `;
-
-  alertContainer.style.display = 'block';
-
-  // Auto hide after 5 seconds
-  setTimeout(() => {
-    const alert = alertContainer.querySelector('.alert');
-    if (alert) {
-      const bsAlert = new bootstrap.Alert(alert);
-      bsAlert.close();
-    }
-  }, 5000);
-}
-

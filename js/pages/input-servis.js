@@ -6,6 +6,7 @@ let servisItems = [];
 let editingIndex = -1;
 let verifikasiAction = null;
 let verifikasiData = null;
+let editingRiwayatId = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -161,9 +162,11 @@ function openServisModal(index = -1) {
 function resetModalForm() {
   document.getElementById('formInputServis').reset();
   editingIndex = -1;
+  editingRiwayatId = null; // Reset edit riwayat ID
+  document.getElementById('modalInputServisLabel').textContent = 'Input Data Servis';
 }
 
-function saveServisItem() {
+async function saveServisItem() {
   const namaSales = document.getElementById('namaSales').value.trim();
   const namaCustomer = document.getElementById('namaCustomer').value.trim();
   const noHp = document.getElementById('noHp').value.trim();
@@ -186,15 +189,38 @@ function saveServisItem() {
     ongkos
   };
 
-  if (editingIndex >= 0) {
-    // Update existing item
+  // Handle edit riwayat data
+  if (editingRiwayatId) {
+    try {
+      const { updateServisData } = await import('../services/servis-service.js');
+      await updateServisData(editingRiwayatId, servisItem);
+      
+      // Update todayData langsung
+      const itemIndex = todayData.findIndex(item => item.id === editingRiwayatId);
+      if (itemIndex !== -1) {
+        todayData[itemIndex] = { ...todayData[itemIndex], ...servisItem };
+        updateRiwayatTable();
+      }
+      
+      alert('Data berhasil diupdate');
+      editingRiwayatId = null;
+      
+    } catch (error) {
+      console.error('Error updating data:', error);
+      alert('Terjadi kesalahan saat mengupdate data');
+      return;
+    }
+  } 
+  // Handle regular servis items
+  else if (editingIndex >= 0) {
     servisItems[editingIndex] = servisItem;
   } else {
-    // Add new item
     servisItems.push(servisItem);
   }
 
-  updateServisTable();
+  if (!editingRiwayatId) {
+    updateServisTable();
+  }
   
   // Close modal
   const modal = bootstrap.Modal.getInstance(document.getElementById('modalInputServis'));
@@ -269,6 +295,8 @@ async function handleVerifikasi() {
   try {
     if (verifikasiAction === 'edit') {
       const item = todayData[verifikasiData.index];
+      editingRiwayatId = verifikasiData.id; // Set ID untuk edit mode
+      
       // Set data ke form input servis
       document.getElementById('namaSales').value = item.namaSales;
       document.getElementById('namaCustomer').value = item.namaCustomer;
@@ -277,16 +305,22 @@ async function handleVerifikasi() {
       document.getElementById('jenisServis').value = item.jenisServis;
       document.getElementById('ongkos').value = item.ongkos;
       
+      // Update modal title
+      document.getElementById('modalInputServisLabel').textContent = 'Edit Data Riwayat Servis';
+      
       // Buka modal edit
       const modal = new bootstrap.Modal(document.getElementById('modalInputServis'));
       modal.show();
       
     } else if (verifikasiAction === 'delete') {
-      // Import delete function dari service
       const { deleteServisData } = await import('../services/servis-service.js');
       await deleteServisData(verifikasiData.id);
+      
+      // Update UI langsung tanpa reload
+      todayData = todayData.filter(item => item.id !== verifikasiData.id);
+      updateRiwayatTable();
+      
       alert('Data berhasil dihapus');
-      loadRiwayatData();
     }
   } catch (error) {
     console.error('Error:', error);
@@ -442,7 +476,7 @@ function exportToPDF() {
             headerRows: 1,
             widths: ['auto', '*', 'auto', '*', 'auto', 'auto', 'auto'],
             body: [
-              ['No', 'Nama Customer', 'No HP', 'Nama Barang', 'Jenis Servis', 'Ongkos', 'Sales'],
+              ['No', 'Nama Customer', 'No HP', 'Nama Barang', 'Jenis Servis / Custom', 'Ongkos / DP', 'Sales'],
               ...todayData.map((item, index) => [
                 index + 1,
                 item.namaCustomer,
@@ -458,11 +492,11 @@ function exportToPDF() {
       ],
       styles: {
         header: {
-          fontSize: 18,
+          fontSize: 14,
           bold: true
         },
         subheader: {
-          fontSize: 14,
+          fontSize: 11,
           bold: true
         }
       }
