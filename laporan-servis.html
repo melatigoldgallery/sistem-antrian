@@ -143,8 +143,7 @@
                   Filter Laporan
                 </h2>
               </div>
-              <div class="card-body">
-                <div class="report-controls">
+              <div class="card-body"> 
                   <div class="row align-items-end mb-3">
                     <div class="col-md-2">
                       <label for="monthSelector" class="form-label">Bulan</label>
@@ -172,6 +171,7 @@
                     <div class="col-md-2">
                       <label for="statusServisFilter" class="form-label">Status Servis</label>
                       <select id="statusServisFilter" class="form-select">
+                        <option value="">Semua</option>
                         <option value="Belum Selesai">Belum Selesai</option>
                         <option value="Sudah Selesai">Sudah Selesai</option>
                       </select>
@@ -179,6 +179,7 @@
                     <div class="col-md-2">
                       <label for="statusPengambilanFilter" class="form-label">Status Pengambilan</label>
                       <select id="statusPengambilanFilter" class="form-select">
+                        <option value="">Semua</option>
                         <option value="Belum Diambil">Belum Diambil</option>
                         <option value="Sudah Diambil">Sudah Diambil</option>
                       </select>
@@ -191,7 +192,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
 
             <!-- Summary Cards -->
@@ -292,14 +292,16 @@
                       <tr>
                         <th>No</th>
                         <th>Tanggal</th>
+                        <th>Sales</th>
                         <th>Nama Customer</th>
                         <th>No HP</th>
                         <th>Nama Barang</th>
                         <th>Jenis Servis / Custom</th>
                         <th>Ongkos / DP</th>
-                        <th>Sales</th>
                         <th>Status Servis</th>
                         <th>Status Pengambilan</th>
+                        <th>Handle Pengambilan</th>
+                        <th>Waktu Pengambilan</th>
                       </tr>
                     </thead>
                     <tbody id="servisReportList"></tbody>

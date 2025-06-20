@@ -3,6 +3,7 @@ import { getServisByMonth, updateServisStatus, smartServisCache } from '../servi
 // Global variables
 let currentData = [];
 let filteredData = [];
+let isDataLoaded = false;
 
 // Local cache system
 const localCache = new Map();
@@ -26,6 +27,7 @@ function setCachedData(key, data) {
 function clearCacheKey(key) {
   localCache.delete(key);
 }
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
   initializePage();
@@ -85,27 +87,93 @@ function setupEventListeners() {
     tampilkanBtn.addEventListener('click', loadServisData);
   }
 
-  // Search input
-  const searchInput = document.getElementById('searchInput');
+  // Search input dengan ID yang benar
+  const searchInput = document.getElementById('searchInputTable');
   if (searchInput) {
-    searchInput.addEventListener('input', filterData);
+    searchInput.addEventListener('input', applyFilters);
     searchInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        filterData();
+        applyFilters();
       }
     });
   }
 
-  // Refresh data button
-  const refreshBtn = document.getElementById('refreshData');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', refreshData);
+  // Status filters
+const statusServisFilter = document.getElementById('statusServisFilter');
+  const statusPengambilanFilter = document.getElementById('statusPengambilanFilter');
+  
+  if (statusServisFilter) {
+    statusServisFilter.addEventListener('change', function() {
+      handleFilterLogic();
+      // HANYA apply filter jika data sudah loaded
+      if (isDataLoaded) {
+        applyFilters();
+      }
+    });
+  }
+  
+  if (statusPengambilanFilter) {
+    statusPengambilanFilter.addEventListener('change', function() {
+      // HANYA apply filter jika data sudah loaded
+      if (isDataLoaded) {
+        applyFilters();
+      }
+    });
   }
 
   // Save status button
   const saveStatusBtn = document.getElementById('saveStatusBtn');
   if (saveStatusBtn) {
     saveStatusBtn.addEventListener('click', saveStatusUpdate);
+  }
+
+    // Setup modal event listeners
+  setupModalEventListeners();
+}
+
+function setupModalEventListeners() {
+  const statusServisSelect = document.getElementById('statusServis');
+  const statusPengambilanSelect = document.getElementById('statusPengambilan');
+  
+  // Event listener untuk Status Servis
+  if (statusServisSelect) {
+    statusServisSelect.addEventListener('change', function() {
+      const pengambilanForm = document.getElementById('pengambilanForm');
+      
+      if (this.value === 'Belum Selesai') {
+        // Jika belum selesai, paksa status pengambilan ke "Belum Diambil"
+        statusPengambilanSelect.value = 'Belum Diambil';
+        statusPengambilanSelect.disabled = true;
+        pengambilanForm.style.display = 'none';
+        // Reset form pengambilan
+        document.getElementById('stafHandle').value = '';
+        document.getElementById('waktuPengambilan').value = '';
+      } else {
+        // Jika sudah selesai, enable dropdown pengambilan
+        statusPengambilanSelect.disabled = false;
+      }
+    });
+  }
+  
+  // Event listener untuk Status Pengambilan
+  if (statusPengambilanSelect) {
+    statusPengambilanSelect.addEventListener('change', function() {
+      const pengambilanForm = document.getElementById('pengambilanForm');
+      const waktuPengambilan = document.getElementById('waktuPengambilan');
+      
+      if (this.value === 'Sudah Diambil') {
+        pengambilanForm.style.display = 'block';
+        // Set waktu sekarang
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+          .toISOString().slice(0, 16);
+        waktuPengambilan.value = localDateTime;
+      } else {
+        pengambilanForm.style.display = 'none';
+        document.getElementById('stafHandle').value = '';
+        waktuPengambilan.value = '';
+      }
+    });
   }
 }
 
@@ -131,35 +199,51 @@ async function loadServisData() {
       showCacheIndicator(false);
     }
     
-    // Reset search dan tampilkan semua data - dengan pengecekan element
-    const searchInput = document.getElementById('searchInput');
+    // Reset search
+    const searchInput = document.getElementById('searchInputTable');
     if (searchInput) {
       searchInput.value = '';
     }
     
-    filteredData = [...currentData];
-    displayData();
+    // Set flag bahwa data sudah loaded
+    isDataLoaded = true;
+    
+    // Apply filters setelah data loaded
+    applyFilters();
     showLoading(false);
     
   } catch (error) {
     console.error('Error loading servis data:', error);
     showAlert('danger', 'Terjadi kesalahan saat memuat data: ' + error.message);
     showLoading(false);
+    isDataLoaded = false;
   }
 }
 
-function filterData() {
-  const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+function resetFilters() {
+  const searchInput = document.getElementById('searchInputTable');
   
-  if (!searchTerm) {
-    filteredData = [...currentData];
-  } else {
-    filteredData = currentData.filter(item => 
+  if (searchInput) searchInput.value = '';
+}
+
+function applyFilters() {
+  const searchTerm = document.getElementById('searchInputTable')?.value.trim().toLowerCase() || '';
+  const statusServisFilter = document.getElementById('statusServisFilter')?.value || '';
+  const statusPengambilanFilter = document.getElementById('statusPengambilanFilter')?.value || '';
+  
+  filteredData = currentData.filter(item => {
+    // Search filter
+    const matchesSearch = !searchTerm || 
       item.namaCustomer?.toLowerCase().includes(searchTerm) ||
       item.noHp?.includes(searchTerm) ||
-      item.namaBarang?.toLowerCase().includes(searchTerm)
-    );
-  }
+      item.namaBarang?.toLowerCase().includes(searchTerm);
+    
+    // Status filters
+    const matchesStatusServis = !statusServisFilter || item.statusServis === statusServisFilter;
+    const matchesStatusPengambilan = !statusPengambilanFilter || item.statusPengambilan === statusPengambilanFilter;
+    
+    return matchesSearch && matchesStatusServis && matchesStatusPengambilan;
+  });
   
   displayData();
 }
@@ -169,13 +253,29 @@ function displayData() {
   const tableContainer = document.getElementById('tableContainer');
   const noDataMessage = document.getElementById('noDataMessage');
   
-  if (filteredData.length === 0) {
+if (!isDataLoaded) {
     tableContainer.style.display = 'none';
-    noDataMessage.style.display = 'block';
+    noDataMessage.style.display = 'none';
     return;
   }
   
+  // SELALU tampilkan table container (termasuk search section)
   tableContainer.style.display = 'block';
+  
+  if (filteredData.length === 0) {
+    // Kosongkan tbody tapi tetap tampilkan table structure
+    tbody.innerHTML = '';
+    noDataMessage.style.display = 'block';
+    
+    // Pastikan table tetap terlihat dengan header
+    const tableWrapper = document.getElementById('tableWrapper');
+    if (tableWrapper) {
+      tableWrapper.style.display = 'block';
+    }
+    return;
+  }
+  
+  // Ada data - sembunyikan pesan no data
   noDataMessage.style.display = 'none';
   
   tbody.innerHTML = '';
@@ -194,18 +294,25 @@ function displayData() {
       ? '<span class="badge bg-success">Sudah Diambil</span>'
       : '<span class="badge bg-danger">Belum Diambil</span>';
     
+    // Format waktu pengambilan
+    const waktuPengambilan = item.waktuPengambilan 
+      ? new Date(item.waktuPengambilan).toLocaleString('id-ID')
+      : '-';
+    
     row.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${tanggalFormatted}</td>
-      <td>${item.namaCustomer}</td>
-      <td>${item.noHp}</td>
-      <td>${item.namaBarang}</td>
-      <td>${item.jenisServis}</td>
-      <td>${statusServisBadge}</td>
-      <td>${statusPengambilanBadge}</td>
+      <td style="border-right: 2px solid #dee2e6;">${index + 1}</td>
+      <td style="border-right: 2px solid #dee2e6;">${tanggalFormatted}</td>
+      <td style="border-right: 2px solid #dee2e6;">${item.namaCustomer}</td>
+      <td style="border-right: 2px solid #dee2e6;">${item.noHp}</td>
+      <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${item.namaBarang}</td>
+      <td style="border-right: 2px solid #dee2e6;">${item.jenisServis}</td>
+      <td style="border-right: 2px solid #dee2e6;">${statusServisBadge}</td>
+      <td style="border-right: 2px solid #dee2e6;">${statusPengambilanBadge}</td>
+      <td style="border-right: 2px solid #dee2e6;">${item.stafHandle || '-'}</td>
+      <td style="border-right: 2px solid #dee2e6;"><small>${waktuPengambilan}</small></td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="openUpdateModal('${item.id}', '${item.statusServis}', '${item.statusPengambilan}')">
-          <i class="fas fa-edit"></i> Update
+        <button class="btn btn-sm btn-primary" onclick="openUpdateModal('${item.id}', '${item.statusServis}', '${item.statusPengambilan}', '${item.stafHandle || ''}', '${item.waktuPengambilan || ''}')">
+          <i class="fas fa-edit"></i>
         </button>
       </td>
     `;
@@ -216,10 +323,39 @@ function displayData() {
   tbody.appendChild(fragment);
 }
 
-window.openUpdateModal = function(servisId, currentStatusServis, currentStatusPengambilan) {
+// Update openUpdateModal function
+window.openUpdateModal = function(servisId, currentStatusServis, currentStatusPengambilan, stafHandle = '', waktuPengambilan = '') {
   document.getElementById('updateServisId').value = servisId;
   document.getElementById('statusServis').value = currentStatusServis;
   document.getElementById('statusPengambilan').value = currentStatusPengambilan;
+  
+  const statusPengambilanSelect = document.getElementById('statusPengambilan');
+  const pengambilanForm = document.getElementById('pengambilanForm');
+  
+  // Logika disable/enable berdasarkan status servis
+  if (currentStatusServis === 'Belum Selesai') {
+    statusPengambilanSelect.disabled = true;
+    statusPengambilanSelect.value = 'Belum Diambil';
+    pengambilanForm.style.display = 'none';
+  } else {
+    statusPengambilanSelect.disabled = false;
+    
+    // Set data pengambilan jika ada
+    document.getElementById('stafHandle').value = stafHandle;
+    if (waktuPengambilan) {
+      const waktu = new Date(waktuPengambilan);
+      const localDateTime = new Date(waktu.getTime() - waktu.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 16);
+      document.getElementById('waktuPengambilan').value = localDateTime;
+    }
+    
+    // Show/hide pengambilan form
+    if (currentStatusPengambilan === 'Sudah Diambil') {
+      pengambilanForm.style.display = 'block';
+    } else {
+      pengambilanForm.style.display = 'none';
+    }
+  }
   
   const modal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
   modal.show();
@@ -231,19 +367,43 @@ async function saveStatusUpdate() {
     const statusServis = document.getElementById('statusServis').value;
     const statusPengambilan = document.getElementById('statusPengambilan').value;
     
+    let updateData = {
+      statusServis,
+      statusPengambilan
+    };
+    
+    // Tambahkan data pengambilan jika status sudah diambil
+    if (statusPengambilan === 'Sudah Diambil') {
+      const stafHandle = document.getElementById('stafHandle').value.trim();
+      const waktuPengambilan = document.getElementById('waktuPengambilan').value;
+      
+      if (!stafHandle) {
+        showAlert('warning', 'Nama staf handle harus diisi');
+        return;
+      }
+      
+      updateData.stafHandle = stafHandle;
+      updateData.waktuPengambilan = new Date(waktuPengambilan).toISOString();
+    } else {
+      // Reset data pengambilan jika status berubah ke belum diambil
+      updateData.stafHandle = null;
+      updateData.waktuPengambilan = null;
+    }
+    
     showLoading(true);
     
-    await updateServisStatus(servisId, statusServis, statusPengambilan);
+    // Update ke Firestore dengan data lengkap
+    await updateServisStatus(servisId, updateData.statusServis, updateData.statusPengambilan, updateData.stafHandle, updateData.waktuPengambilan);
     
-    // Update local data immediately untuk UX yang lebih baik
-    updateLocalData(servisId, statusServis, statusPengambilan);
+    // Update local data
+    updateLocalData(servisId, updateData);
     
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('updateStatusModal'));
     modal.hide();
     
-    // Update display immediately
-    displayData();
+    // Re-apply filters
+    applyFilters();
     
     showAlert('success', 'Status berhasil diperbarui');
     showLoading(false);
@@ -255,19 +415,17 @@ async function saveStatusUpdate() {
   }
 }
 
-function updateLocalData(servisId, statusServis, statusPengambilan) {
+function updateLocalData(servisId, updateData) {
   // Update di currentData
   const currentIndex = currentData.findIndex(item => item.id === servisId);
   if (currentIndex !== -1) {
-    currentData[currentIndex].statusServis = statusServis;
-    currentData[currentIndex].statusPengambilan = statusPengambilan;
+    Object.assign(currentData[currentIndex], updateData);
   }
   
   // Update di filteredData
   const filteredIndex = filteredData.findIndex(item => item.id === servisId);
   if (filteredIndex !== -1) {
-    filteredData[filteredIndex].statusServis = statusServis;
-    filteredData[filteredIndex].statusPengambilan = statusPengambilan;
+    Object.assign(filteredData[filteredIndex], updateData);
   }
 }
 

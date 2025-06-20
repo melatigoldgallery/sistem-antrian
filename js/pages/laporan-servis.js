@@ -3,6 +3,7 @@ import { getServisByMonth, deleteMultipleServisData } from '../services/servis-s
 // Global variables
 let currentServisData = [];
 let filteredServisData = [];
+let isReportDataLoaded = false;
 
 // Smart cache system
 const smartCache = {
@@ -99,13 +100,101 @@ function populateYearSelector() {
 }
 
 function setupEventListeners() {
-  document.getElementById('generateReportBtn')?.addEventListener('click', generateReport);
-  document.getElementById('exportExcelBtn')?.addEventListener('click', exportToExcel);
-  document.getElementById('exportPdfBtn')?.addEventListener('click', exportToPDF);
-  document.getElementById('hapusData')?.addEventListener('click', showDeleteConfirmation);
-  document.getElementById('confirmDeleteBtn')?.addEventListener('click', deleteDisplayedData);
-  document.getElementById('statusServisFilter')?.addEventListener('change', applyFilters);
-  document.getElementById('statusPengambilanFilter')?.addEventListener('change', applyFilters);
+  // Generate report button
+  document.getElementById("generateReportBtn")?.addEventListener("click", () => {
+    generateReport();
+    isReportDataLoaded = true; // Set flag setelah generate report
+  });
+
+  // Export buttons
+  document.getElementById("exportExcelBtn")?.addEventListener("click", exportToExcel);
+  document.getElementById("exportPdfBtn")?.addEventListener("click", exportToPDF);
+
+  // Delete data button
+  document.getElementById("deleteDataBtn")?.addEventListener("click", showDeleteConfirmation);
+
+  // Confirm delete button in modal
+  document.getElementById("confirmDeleteBtn")?.addEventListener("click", deleteMonthData);
+
+  // Filter by status - HANYA apply jika data sudah loaded
+  document.querySelectorAll("[data-status-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (isReportDataLoaded) {
+        const filter = this.dataset.statusFilter;
+        filterLeaveData("status", filter);
+      }
+    });
+  });
+
+  // Filter by replacement status - HANYA apply jika data sudah loaded
+  document.querySelectorAll("[data-replacement-filter]").forEach((item) => {
+    item.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (isReportDataLoaded) {
+        // Hapus kelas active dari semua item filter
+        document.querySelectorAll("[data-replacement-filter]").forEach((el) => {
+          el.classList.remove("active");
+        });
+
+        // Tambahkan kelas active ke item yang diklik
+        this.classList.add("active");
+
+        const filter = this.dataset.replacementFilter;
+        filterLeaveData("replacement", filter);
+      }
+    });
+  });
+
+  // Load more button
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", loadMoreData);
+  }
+
+  // Replacement type filter - HANYA apply jika data sudah loaded
+  const replacementTypeFilter = document.getElementById("replacementTypeFilter");
+  if (replacementTypeFilter) {
+    replacementTypeFilter.addEventListener("change", function() {
+      if (isReportDataLoaded) {
+        const replacementStatusFilter = document.getElementById("replacementStatusFilter");
+        const statusValue = replacementStatusFilter ? replacementStatusFilter.value : "all";
+        
+        applyFilters(this.value, statusValue);
+      }
+    });
+  }
+
+  // Replacement status filter - HANYA apply jika data sudah loaded
+  const replacementStatusFilter = document.getElementById("replacementStatusFilter");
+  if (replacementStatusFilter) {
+    replacementStatusFilter.addEventListener("change", function() {
+      if (isReportDataLoaded) {
+        const replacementTypeFilter = document.getElementById("replacementTypeFilter");
+        const typeValue = replacementTypeFilter ? replacementTypeFilter.value : "all";
+        
+        applyFilters(typeValue, this.value);
+      }
+    });
+  }
+
+  // Month/Year selector - reset flag saat berubah
+  const monthSelector = document.getElementById("monthSelector");
+  const yearSelector = document.getElementById("yearSelector");
+
+  if (monthSelector) {
+    monthSelector.addEventListener("change", function () {
+      isReportDataLoaded = false; // Reset flag
+      stopListeningToLeaveRequests();
+    });
+  }
+
+  if (yearSelector) {
+    yearSelector.addEventListener("change", function () {
+      isReportDataLoaded = false; // Reset flag
+      stopListeningToLeaveRequests();
+    });
+  }
 }
 
 async function generateReport() {
