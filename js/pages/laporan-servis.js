@@ -294,6 +294,34 @@ function populateServisTable() {
       ? '<span class="badge bg-success">Sudah Diambil</span>'
       : '<span class="badge bg-danger">Belum Diambil</span>';
     
+    // TAMBAHAN: Handle waktu pengambilan dengan proper formatting
+    let waktuPengambilan = '-';
+    if (item.waktuPengambilan) {
+      try {
+        let waktuDate;
+        
+        // Handle berbagai format waktu
+        if (item.waktuPengambilan.toDate) {
+          // Firestore Timestamp
+          waktuDate = item.waktuPengambilan.toDate();
+        } else if (item.waktuPengambilan.seconds) {
+          // Firestore Timestamp object dengan seconds
+          waktuDate = new Date(item.waktuPengambilan.seconds * 1000);
+        } else {
+          // ISO string atau Date object
+          waktuDate = new Date(item.waktuPengambilan);
+        }
+        
+        // Validasi date
+        if (!isNaN(waktuDate.getTime())) {
+          waktuPengambilan = waktuDate.toLocaleString('id-ID');
+        }
+      } catch (error) {
+        console.error('Error formatting waktu pengambilan:', error);
+        waktuPengambilan = '-';
+      }
+    }
+    
     row.innerHTML = `
       <td>${index + 1}</td>
       <td>${tanggalFormatted}</td>
@@ -305,6 +333,8 @@ function populateServisTable() {
       <td>${item.namaSales}</td>
       <td>${statusServisBadge}</td>
       <td>${statusPengambilanBadge}</td>
+      <td>${item.stafHandle || '-'}</td>
+      <td><small>${waktuPengambilan}</small></td>
     `;
     
     fragment.appendChild(row);
@@ -445,19 +475,44 @@ function exportToExcel() {
     const worksheetData = [
       [`Laporan Servis - ${monthNames[month]} ${year}`],
       [],
-      ['No', 'Tanggal', 'Nama Customer', 'No HP', 'Nama Barang', 'Jenis Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Pengambilan'],
-      ...filteredServisData.map((item, index) => [
-        index + 1,
-        new Date(item.tanggal).toLocaleDateString('id-ID'),
-        item.namaCustomer,
-        item.noHp,
-        item.namaBarang,
- item.jenisServis,
-        item.ongkos,
-        item.namaSales,
-        item.statusServis,
-        item.statusPengambilan
-      ])
+      ['No', 'Tanggal', 'Nama Customer', 'No HP', 'Nama Barang', 'Jenis Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Pengambilan', 'Handle Pengambilan', 'Waktu Pengambilan'],
+      ...filteredServisData.map((item, index) => {
+        // TAMBAHAN: Format waktu pengambilan untuk Excel
+        let waktuPengambilan = '-';
+        if (item.waktuPengambilan) {
+          try {
+            let waktuDate;
+            if (item.waktuPengambilan.toDate) {
+              waktuDate = item.waktuPengambilan.toDate();
+            } else if (item.waktuPengambilan.seconds) {
+              waktuDate = new Date(item.waktuPengambilan.seconds * 1000);
+            } else {
+              waktuDate = new Date(item.waktuPengambilan);
+            }
+            
+            if (!isNaN(waktuDate.getTime())) {
+              waktuPengambilan = waktuDate.toLocaleString('id-ID');
+            }
+          } catch (error) {
+            waktuPengambilan = '-';
+          }
+        }
+        
+        return [
+          index + 1,
+          new Date(item.tanggal).toLocaleDateString('id-ID'),
+          item.namaCustomer,
+          item.noHp,
+          item.namaBarang,
+          item.jenisServis,
+          item.ongkos,
+          item.namaSales,
+          item.statusServis,
+          item.statusPengambilan,
+          item.stafHandle || '-',
+          waktuPengambilan
+        ];
+      })
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -501,21 +556,46 @@ function exportToPDF() {
         {
           table: {
             headerRows: 1,
-            widths: ['auto', 'auto', '*', 'auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto'],
+            widths: ['auto', 'auto', '*', 'auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
             body: [
-              ['No', 'Tanggal', 'Customer', 'HP', 'Barang', 'Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Ambil'],
-              ...filteredServisData.map((item, index) => [
-                index + 1,
-                new Date(item.tanggal).toLocaleDateString('id-ID'),
-                item.namaCustomer,
-                item.noHp,
-                item.namaBarang,
-                item.jenisServis,
-                `Rp ${item.ongkos.toLocaleString('id-ID')}`,
-                item.namaSales,
-                item.statusServis,
-                item.statusPengambilan
-              ])
+              ['No', 'Tanggal', 'Customer', 'HP', 'Barang', 'Servis', 'Ongkos', 'Sales', 'Status Servis', 'Status Ambil', 'Handle', 'Waktu Ambil'],
+              ...filteredServisData.map((item, index) => {
+                // TAMBAHAN: Format waktu pengambilan untuk PDF
+                let waktuPengambilan = '-';
+                if (item.waktuPengambilan) {
+                  try {
+                    let waktuDate;
+                    if (item.waktuPengambilan.toDate) {
+                      waktuDate = item.waktuPengambilan.toDate();
+                    } else if (item.waktuPengambilan.seconds) {
+                      waktuDate = new Date(item.waktuPengambilan.seconds * 1000);
+                    } else {
+                      waktuDate = new Date(item.waktuPengambilan);
+                    }
+                    
+                    if (!isNaN(waktuDate.getTime())) {
+                      waktuPengambilan = waktuDate.toLocaleDateString('id-ID') + ' ' + waktuDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    }
+                  } catch (error) {
+                    waktuPengambilan = '-';
+                  }
+                }
+                
+                return [
+                  index + 1,
+                  new Date(item.tanggal).toLocaleDateString('id-ID'),
+                  item.namaCustomer,
+                  item.noHp,
+                  item.namaBarang,
+                  item.jenisServis,
+                  `Rp ${item.ongkos.toLocaleString('id-ID')}`,
+                  item.namaSales,
+                  item.statusServis,
+                  item.statusPengambilan,
+                  item.stafHandle || '-',
+                  waktuPengambilan
+                ];
+              })
             ]
           }
         }
