@@ -209,11 +209,11 @@
               <div class="card-header">
                 <h2>
                   <i class="fas fa-plus-circle"></i>
-                  Data Servis
+                  Input Data Servis
                 </h2>
               </div>
               <div class="card-body">
-                <form class="row g-3">
+                <form class="row g-3 d-flex align-items-end">
                   <div class="col-md-3">
                     <label for="tanggal" class="form-label">Tanggal</label>
                     <div class="input-group">
@@ -223,24 +223,14 @@
                       </span>
                     </div>
                   </div>
+                  <div class="col-md-3">
+                    <button type="button" class="btn btn-primary" id="btnTambahServis">
+                      <i class="fas fa-plus me-2"></i>
+                      Tambah
+                    </button>
+                  </div>
                 </form>
-              </div>
-            </div>
-
-            <!-- Detail Servis -->
-            <div class="card mb-4">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>
-                  <i class="fas fa-list"></i>
-                  Detail Servis
-                </h2>
-                <button type="button" class="btn btn-primary" id="btnTambahServis">
-                  <i class="fas fa-plus me-2"></i>
-                  Tambah
-                </button>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-responsive mt-5">
                   <table class="table table-hover" id="tableInputServis">
                     <thead class="table-light">
                       <tr>
@@ -265,18 +255,20 @@
                     </tfoot>
                   </table>
                 </div>
-              </div>
-              <div class="card-footer">
-                <button class="btn btn-primary" id="btnSimpanData">
-                  <i class="fas fa-save me-2"></i>
-                  Simpan Data
-                </button>
-                <button class="btn btn-secondary" id="btnBatal">
-                  <i class="fas fa-times me-2"></i>
-                  Batal
-                </button>
+                <div class="card-footer">
+                  <button class="btn btn-success" id="btnSimpanData">
+                    <i class="fas fa-save me-2"></i>
+                    Simpan
+                  </button>
+                  <button class="btn btn-danger" id="btnBatal">
+                    <i class="fas fa-times me-2"></i>
+                    Batal
+                  </button>
+                </div>
               </div>
             </div>
+
+
 
             <!-- Riwayat Input Servis -->
             <div class="card mb-4">
@@ -303,7 +295,7 @@
                     </div>
                   </div>
                   <div class="col-md-8 d-flex align-items-end">
-                    <button id="tampilkanBtn" class="btn btn-info me-2">
+                    <button id="tampilkanBtn" class="btn btn-primary me-2">
                       <i class="fas fa-search me-2"></i>
                       Tampilkan
                     </button>
@@ -312,7 +304,7 @@
                         <i class="fas fa-file-pdf me-2"></i>
                         Export PDF
                       </button>
-                      <button id="printBtn" class="btn btn-secondary">
+                      <button id="printBtn" class="btn btn-outline-primary">
                         <i class="fas fa-print me-2"></i>
                         Print
                       </button>
@@ -350,13 +342,7 @@
     </div>
 
     <!-- Modal Form Input Servis -->
-    <div
-      class="modal fade"
-      id="modalInputServis"
-      tabindex="-1"
-      aria-labelledby="modalInputServisLabel"
-      aria-hidden="true"
-    >
+    <div class="modal fade" id="modalInputServis" tabindex="-1" aria-labelledby="modalInputServisLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -374,7 +360,6 @@
                     id="namaSales"
                     placeholder="Masukkan nama sales"
                     required
-                    autofocus
                   />
                 </div>
                 <div class="col-md-4">
@@ -488,13 +473,7 @@
     </div>
 
     <!-- Tambahkan modal verifikasi sebelum closing body tag -->
-    <div
-      class="modal fade"
-      id="verifikasiModal"
-      tabindex="-1"
-      aria-labelledby="verifikasiModalLabel"
-      aria-hidden="true"
-    >
+    <div class="modal fade" id="verifikasiModal" tabindex="-1" aria-labelledby="verifikasiModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-sm">
         <div class="modal-content">
           <div class="modal-header">
@@ -502,8 +481,10 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <label for="kodeVerifikasi" class="form-label">Masukkan Kode Verifikasi:</label>
-            <input type="password" class="form-control" id="kodeVerifikasi" placeholder="Kode verifikasi" />
+            <form id="formVerifikasi">
+              <label for="kodeVerifikasi" class="form-label">Masukkan Kode Verifikasi:</label>
+              <input type="password" class="form-control" id="kodeVerifikasi" placeholder="Kode verifikasi" />
+            </form>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -512,6 +493,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Notifikasi Hapus Berhasil -->
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" aria-labelledby="deleteSuccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="deleteSuccessModalLabel">
+          <i class="fas fa-check-circle me-2"></i>
+          Berhasil Dihapus!
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div class="success-icon mb-3">
+            <i class="fas fa-trash-alt fa-4x text-success"></i>
+          </div>
+          <h4>Data berhasil dihapus</h4>
+          <p class="text-muted mb-0">Data servis telah dihapus dari sistem</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- Scripts -->
     <script type="module" src="js/melati.js"></script>
