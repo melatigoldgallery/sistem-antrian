@@ -157,10 +157,24 @@
                       <option value="12">Desember</option>
                     </select>
                   </div>
-                  <div class="col-md-2">
+                  <div class="col-md-1">
                     <label for="yearSelector" class="form-label">Tahun</label>
                     <select id="yearSelector" class="form-select">
                       <!-- Will be populated with JavaScript -->
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label for="statusServisFilter" class="form-label">Status Servis</label>
+                    <select id="statusServisFilter" class="form-select">
+                      <option value="Belum Selesai">Belum Selesai</option>
+                      <option value="Sudah Selesai">Sudah Selesai</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label for="statusPengambilanFilter" class="form-label">Status Pengambilan</label>
+                    <select id="statusPengambilanFilter" class="form-select">
+                      <option value="Belum Diambil">Belum Diambil</option>
+                      <option value="Sudah Diambil">Sudah Diambil</option>
                     </select>
                   </div>
                   <div class="col-md-2">
@@ -194,19 +208,26 @@
                   </div>
                 </div>
               </div>
-              <div class="card-body">
-                <div class="table-container" id="tableWrapper">
-                  <table class="table table-hover" id="dataServisTable">
-                    <thead>
+              <div class="card-body p-1">
+                <div class="table-responsive" id="tableWrapper">
+                  <table
+                    class="table table-hover table-sm table-bordered mb-0"
+                    id="dataServisTable"  
+                    style="min-width: 1400px;"                 
+                  >
+                    <thead class="table-dark">
                       <tr>
-                        <th>No</th>
-                        <th>Nama Customer</th>
-                        <th>No HP</th>
-                        <th>Nama Barang</th>
-                        <th>Jenis Servis / Custom</th>
-                        <th>Status Servis</th>
-                        <th>Status Pengambilan</th>
-                        <th>Aksi</th>
+                        <th style="width: 50px; border: 2px solid #dee2e6">No</th>
+                        <th style="width: 100px; border: 2px solid #dee2e6">Tanggal</th>
+                        <th style="width: 150px; border: 2px solid #dee2e6">Nama Customer</th>
+                        <th style="width: 120px; border: 2px solid #dee2e6">No HP</th>
+                        <th style="width: 200px; border: 2px solid #dee2e6">Nama Barang</th>
+                        <th style="width: 150px; border: 2px solid #dee2e6">Jenis Servis</th>
+                        <th style="width: 120px; border: 2px solid #dee2e6">Status Servis</th>
+                        <th style="width: 130px; border: 2px solid #dee2e6">Status Pengambilan</th>
+                        <th style="width: 120px; border: 2px solid #dee2e6">Handle Pengambilan</th>
+                        <th style="width: 130px; border: 2px solid #dee2e6">Waktu Pengambilan</th>
+                        <th style="width: 80px; border: 2px solid #dee2e6">Aksi</th>
                       </tr>
                     </thead>
                     <tbody id="dataServisList"></tbody>
@@ -256,6 +277,17 @@
                   <option value="Sudah Diambil">Sudah Diambil</option>
                 </select>
               </div>
+              <!-- Form tambahan untuk pengambilan -->
+              <div id="pengambilanForm" style="display: none">
+                <div class="mb-3">
+                  <label for="stafHandle" class="form-label">Staf Handle Pengambilan</label>
+                  <input type="text" class="form-control" id="stafHandle" placeholder="Nama staf yang menangani" />
+                </div>
+                <div class="mb-3">
+                  <label for="waktuPengambilan" class="form-label">Waktu Pengambilan</label>
+                  <input type="datetime-local" class="form-control" id="waktuPengambilan" readonly />
+                </div>
+              </div>
             </form>
           </div>
           <div class="modal-footer">
@@ -271,6 +303,6 @@
 
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
-    <script type="module" src="js/pages/data-servis.js"></script>
+    <script type="module" src="js/pages/optimizedDs.js"></script>
   </body>
 </html>

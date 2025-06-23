@@ -326,12 +326,12 @@ window.deleteRiwayatItem = function (id, index) {
 };
 
 async function handleVerifikasi() {
-  const kode = document.getElementById("kodeVerifikasi").value;
-
-  if (kode !== "1234") {
-    alert("Kode verifikasi salah!");
-    // Tetap focus pada input setelah error
-    document.getElementById("kodeVerifikasi").focus();
+  const kode = document.getElementById('kodeVerifikasi').value;
+  
+  if (kode !== '1234') {
+    alert('Kode verifikasi salah!');
+        // Tetap focus pada input setelah error
+        document.getElementById("kodeVerifikasi").focus();
     return;
   }
 
@@ -420,11 +420,23 @@ async function saveAllServisData() {
       };
 
       const docId = await saveServisData(servisData);
-      savedItems.push({ ...servisData, id: docId });
+      const savedItem = { ...servisData, id: docId };
+      savedItems.push(savedItem);
     }
 
     showLoading(false);
-
+     // Broadcast each new item
+     savedItems.forEach(item => {
+      const event = {
+        action: 'add',
+        data: item,
+        timestamp: Date.now(),
+        source: 'input-servis'
+      };
+      
+      localStorage.setItem('servisDataChange', JSON.stringify(event));
+      window.dispatchEvent(new CustomEvent('servisDataChanged', { detail: event }));
+    });
     // Show success modal
     showSuccessModal("Data Berhasil Disimpan", `${savedItems.length} data servis berhasil disimpan.`, savedItems);
 

@@ -143,8 +143,7 @@
                   Filter Laporan
                 </h2>
               </div>
-              <div class="card-body">
-                <div class="report-controls">
+              <div class="card-body"> 
                   <div class="row align-items-end mb-3">
                     <div class="col-md-2">
                       <label for="monthSelector" class="form-label">Bulan</label>
@@ -172,6 +171,7 @@
                     <div class="col-md-2">
                       <label for="statusServisFilter" class="form-label">Status Servis</label>
                       <select id="statusServisFilter" class="form-select">
+                        <option value="">Semua</option>
                         <option value="Belum Selesai">Belum Selesai</option>
                         <option value="Sudah Selesai">Sudah Selesai</option>
                       </select>
@@ -179,6 +179,7 @@
                     <div class="col-md-2">
                       <label for="statusPengambilanFilter" class="form-label">Status Pengambilan</label>
                       <select id="statusPengambilanFilter" class="form-select">
+                        <option value="">Semua</option>
                         <option value="Belum Diambil">Belum Diambil</option>
                         <option value="Sudah Diambil">Sudah Diambil</option>
                       </select>
@@ -191,12 +192,11 @@
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
 
             <!-- Summary Cards -->
             <div class="row mb-4" id="summaryCards" style="display: none">
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <div class="stat-card summary-card">
                   <div class="stat-card-icon bg-primary">
                     <i class="fas fa-tools"></i>
@@ -207,7 +207,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <div class="stat-card summary-card">
                   <div class="stat-card-icon bg-success">
                     <i class="fas fa-check-circle"></i>
@@ -218,18 +218,18 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <div class="stat-card summary-card">
                   <div class="stat-card-icon bg-warning">
                     <i class="fas fa-clock"></i>
                   </div>
                   <div class="stat-card-info">
                     <h3 class="summary-value" id="pendingServis">0</h3>
-                    <p>Pending</p>
+                    <p>Belum Selesai</p>
                   </div>
                 </div>
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <div class="stat-card summary-card">
                   <div class="stat-card-icon bg-info">
                     <i class="fas fa-hand-holding"></i>
@@ -240,7 +240,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-4 d-none">
                 <div class="stat-card summary-card">
                   <div class="stat-card-icon bg-dark">
                     <i class="fas fa-money-bill-wave"></i>
@@ -292,14 +292,16 @@
                       <tr>
                         <th>No</th>
                         <th>Tanggal</th>
+                        <th>Sales</th>
                         <th>Nama Customer</th>
                         <th>No HP</th>
                         <th>Nama Barang</th>
                         <th>Jenis Servis / Custom</th>
                         <th>Ongkos / DP</th>
-                        <th>Sales</th>
                         <th>Status Servis</th>
                         <th>Status Pengambilan</th>
+                        <th>Handle Pengambilan</th>
+                        <th>Waktu Pengambilan</th>
                       </tr>
                     </thead>
                     <tbody id="servisReportList"></tbody>
