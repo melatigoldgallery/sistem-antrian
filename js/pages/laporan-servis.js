@@ -4,6 +4,7 @@ import { getServisByMonth, deleteMultipleServisData } from '../services/servis-s
 let currentServisData = [];
 let filteredServisData = [];
 let isReportDataLoaded = false;
+const test = "smlt116";
 
 // Smart cache system
 const smartCache = {
@@ -103,99 +104,109 @@ function setupEventListeners() {
   // Generate report button
   document.getElementById("generateReportBtn")?.addEventListener("click", () => {
     generateReport();
-    isReportDataLoaded = true; // Set flag setelah generate report
+    isReportDataLoaded = true;
   });
 
   // Export buttons
   document.getElementById("exportExcelBtn")?.addEventListener("click", exportToExcel);
   document.getElementById("exportPdfBtn")?.addEventListener("click", exportToPDF);
 
-  // Delete data button
-  document.getElementById("deleteDataBtn")?.addEventListener("click", showDeleteConfirmation);
+  // Delete data button - PERBAIKAN: langsung ke password verification
+  document.getElementById("hapusData")?.addEventListener("click", showPasswordVerification);
 
-  // Confirm delete button in modal
-  document.getElementById("confirmDeleteBtn")?.addEventListener("click", deleteMonthData);
+  // Verify password button
+  document.getElementById("verifyPasswordBtn")?.addEventListener("click", verifyPasswordAndDelete);
 
-  // Filter by status - HANYA apply jika data sudah loaded
-  document.querySelectorAll("[data-status-filter]").forEach((item) => {
-    item.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (isReportDataLoaded) {
-        const filter = this.dataset.statusFilter;
-        filterLeaveData("status", filter);
-      }
-    });
+  // Enter key pada password input
+  document.getElementById("verifyPassword")?.addEventListener("keypress", function(e) {
+    if (e.key === 'Enter') {
+      verifyPasswordAndDelete();
+    }
   });
 
-  // Filter by replacement status - HANYA apply jika data sudah loaded
-  document.querySelectorAll("[data-replacement-filter]").forEach((item) => {
-    item.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (isReportDataLoaded) {
-        // Hapus kelas active dari semua item filter
-        document.querySelectorAll("[data-replacement-filter]").forEach((el) => {
-          el.classList.remove("active");
-        });
-
-        // Tambahkan kelas active ke item yang diklik
-        this.classList.add("active");
-
-        const filter = this.dataset.replacementFilter;
-        filterLeaveData("replacement", filter);
-      }
-    });
+  // Reset password input saat modal ditutup
+  document.getElementById("passwordVerifyModal")?.addEventListener("hidden.bs.modal", function() {
+    document.getElementById("verifyPassword").value = "";
+    document.getElementById("verifyPassword").classList.remove("is-invalid");
+    document.getElementById("passwordError").textContent = "";
   });
 
-  // Load more button
-  const loadMoreBtn = document.getElementById("loadMoreBtn");
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener("click", loadMoreData);
-  }
+  // Status filters
+  const statusServisFilter = document.getElementById('statusServisFilter');
+  const statusPengambilanFilter = document.getElementById('statusPengambilanFilter');
 
-  // Replacement type filter - HANYA apply jika data sudah loaded
-  const replacementTypeFilter = document.getElementById("replacementTypeFilter");
-  if (replacementTypeFilter) {
-    replacementTypeFilter.addEventListener("change", function() {
+  if (statusServisFilter) {
+    statusServisFilter.addEventListener('change', function() {
       if (isReportDataLoaded) {
-        const replacementStatusFilter = document.getElementById("replacementStatusFilter");
-        const statusValue = replacementStatusFilter ? replacementStatusFilter.value : "all";
-        
-        applyFilters(this.value, statusValue);
+        applyFilters();
       }
     });
   }
 
-  // Replacement status filter - HANYA apply jika data sudah loaded
-  const replacementStatusFilter = document.getElementById("replacementStatusFilter");
-  if (replacementStatusFilter) {
-    replacementStatusFilter.addEventListener("change", function() {
+  if (statusPengambilanFilter) {
+    statusPengambilanFilter.addEventListener('change', function() {
       if (isReportDataLoaded) {
-        const replacementTypeFilter = document.getElementById("replacementTypeFilter");
-        const typeValue = replacementTypeFilter ? replacementTypeFilter.value : "all";
-        
-        applyFilters(typeValue, this.value);
+        applyFilters();
       }
     });
   }
 
-  // Month/Year selector - reset flag saat berubah
+  // Month/Year selectors
   const monthSelector = document.getElementById("monthSelector");
   const yearSelector = document.getElementById("yearSelector");
 
   if (monthSelector) {
     monthSelector.addEventListener("change", function () {
-      isReportDataLoaded = false; // Reset flag
-      stopListeningToLeaveRequests();
+      isReportDataLoaded = false;
     });
   }
 
   if (yearSelector) {
     yearSelector.addEventListener("change", function () {
-      isReportDataLoaded = false; // Reset flag
-      stopListeningToLeaveRequests();
+      isReportDataLoaded = false;
     });
   }
 }
+
+function showPasswordVerification() {
+  if (filteredServisData.length === 0) {
+    showAlert('warning', 'Tidak ada data untuk dihapus');
+    return;
+  }
+  
+  // Set jumlah data yang akan dihapus
+  document.getElementById('deleteCount').textContent = filteredServisData.length;
+  
+  // Tampilkan modal password
+  const passwordModal = new bootstrap.Modal(document.getElementById('passwordVerifyModal'));
+  passwordModal.show();
+  
+  // Focus ke input password
+  setTimeout(() => {
+    document.getElementById('verifyPassword').focus();
+  }, 500);
+}
+
+function verifyPasswordAndDelete() {
+  const passwordInput = document.getElementById('verifyPassword');
+  const password = passwordInput.value;
+  const errorDiv = document.getElementById('passwordError');
+  
+  if (password === test) {
+    // Password benar, tutup modal dan hapus data
+    const passwordModal = bootstrap.Modal.getInstance(document.getElementById('passwordVerifyModal'));
+    passwordModal.hide();
+    
+    // Langsung hapus data
+    deleteDisplayedData();
+  } else {
+    // Password salah
+    passwordInput.classList.add('is-invalid');
+    errorDiv.textContent = 'Password salah!';
+    passwordInput.focus();
+  }
+}
+
 
 async function generateReport() {
   try {
@@ -343,19 +354,8 @@ function populateServisTable() {
   tableBody.appendChild(fragment);
 }
 
-function showDeleteConfirmation() {
-  if (filteredServisData.length === 0) {
-    showAlert('warning', 'Tidak ada data untuk dihapus');
-    return;
-  }
-  
-  document.getElementById('deleteCount').textContent = filteredServisData.length;
-  const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-  modal.show();
-}
-
 async function deleteDisplayedData() {
-  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const confirmBtn = document.getElementById('verifyPasswordBtn');
   const originalText = confirmBtn.innerHTML;
   
   try {
@@ -375,10 +375,6 @@ async function deleteDisplayedData() {
     
     // Update current data
     currentServisData = currentServisData.filter(item => !idsToDelete.includes(item.id));
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
-    modal.hide();
     
     // Update UI immediately
     applyFilters();
