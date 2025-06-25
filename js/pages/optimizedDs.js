@@ -7,6 +7,90 @@ let isDataLoaded = false;
 let lastDataCheck = 0;
 let cacheVersion = Date.now();
 
+// TAMBAHAN: WhatsApp utility functions
+const WhatsAppUtils = {
+  // Format nomor HP ke format internasional
+  formatPhoneNumber(phoneNumber) {
+    if (!phoneNumber) return null;
+    
+    // Hapus semua karakter non-digit
+    let cleaned = phoneNumber.toString().replace(/\D/g, '');
+    
+    // Konversi format Indonesia ke internasional
+    if (cleaned.startsWith('08')) {
+      cleaned = '628' + cleaned.substring(2);
+    } else if (cleaned.startsWith('8') && cleaned.length >= 9) {
+      cleaned = '628' + cleaned.substring(1);
+    } else if (cleaned.startsWith('628')) {
+      // Sudah format internasional
+    } else if (cleaned.startsWith('62')) {
+      // Sudah format internasional
+    } else {
+      // Format tidak dikenali, return null
+      return null;
+    }
+    
+    // Validasi panjang nomor (minimal 10 digit setelah 62)
+    if (cleaned.length < 12 || cleaned.length > 15) {
+      return null;
+    }
+    
+    return cleaned;
+  },
+
+  // Generate pesan WhatsApp
+  generateMessage(customerName, itemName) {
+    const shopName = "Melati Gold Shop";
+    return `Halo Kak ${customerName},
+
+Barang servis Kakak sudah selesai:
+ ${itemName}
+Sudah bisa diambil.
+
+Silakan datang ke ${shopName} untuk mengambil barangnya ya kak.
+
+Terima kasih 🙏`;
+  },
+
+  // Buka WhatsApp
+  openWhatsApp(phoneNumber, customerName, itemName) {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phoneNumber);
+      
+      if (!formattedPhone) {
+        alert('Nomor HP tidak valid: ' + phoneNumber);
+        return false;
+      }
+      
+      const message = this.generateMessage(customerName, itemName);
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappURL = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
+      
+      // Buka di tab baru
+      window.open(whatsappURL, '_blank');
+      
+      // Log untuk tracking
+      console.log(`WhatsApp opened for ${customerName} (${formattedPhone})`);
+      
+      return true;
+    } catch (error) {
+      console.error('Error opening WhatsApp:', error);
+      alert('Terjadi kesalahan saat membuka WhatsApp');
+      return false;
+    }
+  },
+
+  // Validasi apakah nomor HP valid
+  isValidPhoneNumber(phoneNumber) {
+    return this.formatPhoneNumber(phoneNumber) !== null;
+  }
+};
+
+// TAMBAHAN: Global function untuk dipanggil dari HTML
+window.contactCustomer = function(phoneNumber, customerName, itemName) {
+  WhatsAppUtils.openWhatsApp(phoneNumber, customerName, itemName);
+};
+
 // Enhanced local cache system with TTL
 const localCache = new Map();
 const cacheMeta = new Map(); // Cache metadata for timestamps
@@ -631,15 +715,30 @@ function displayData() {
     const row = document.createElement('tr');
     const tanggalFormatted = new Date(item.tanggal).toLocaleDateString('id-ID');
     
-    const statusServisBadge = item.statusServis === 'Sudah Selesai' 
-      ? '<span class="badge bg-success">Sudah Selesai</span>'
-      : '<span class="badge bg-warning">Belum Selesai</span>';
+    // PERBAIKAN: Status servis dengan WhatsApp button
+    let statusServisContent = '';
+    if (item.statusServis === 'Sudah Selesai') {
+      statusServisContent = `
+        <span class="badge bg-success">Sudah Selesai</span>
+        <br>
+        ${WhatsAppUtils.isValidPhoneNumber(item.noHp) ? 
+          `<button class="btn whatsapp-btn mt-1" 
+                   onclick="contactCustomer('${item.noHp}', '${item.namaCustomer.replace(/'/g, "\\'")}', '${item.namaBarang.replace(/'/g, "\\'")}')"
+                   title="Hubungi customer via WhatsApp">
+             <i class="fab fa-whatsapp me-1"></i>
+             Hubungi
+           </button>` : 
+          '<small class="text-muted">No HP tidak valid</small>'
+        }`;
+    } else {
+      statusServisContent = '<span class="badge bg-warning">Belum Selesai</span>';
+    }
       
     const statusPengambilanBadge = item.statusPengambilan === 'Sudah Diambil'
       ? '<span class="badge bg-success">Sudah Diambil</span>'
       : '<span class="badge bg-danger">Belum Diambil</span>';
     
-    // PERBAIKAN: Handle waktu pengambilan dengan proper error handling
+    // Handle waktu pengambilan dengan proper error handling
     let waktuPengambilan = '-';
     let waktuForModal = '';
     
@@ -681,7 +780,7 @@ function displayData() {
       <td style="border-right: 2px solid #dee2e6;">${item.noHp}</td>
       <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${item.namaBarang}</td>
       <td style="border-right: 2px solid #dee2e6;">${item.jenisServis}</td>
-      <td style="border-right: 2px solid #dee2e6;">${statusServisBadge}</td>
+      <td style="border-right: 2px solid #dee2e6;" class="status-cell">${statusServisContent}</td>
       <td style="border-right: 2px solid #dee2e6;">${statusPengambilanBadge}</td>
       <td style="border-right: 2px solid #dee2e6;">${item.stafHandle || '-'}</td>
       <td style="border-right: 2px solid #dee2e6;"><small>${waktuPengambilan}</small></td>
@@ -797,10 +896,16 @@ async function saveStatusUpdate() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('updateStatusModal'));
     modal.hide();
     
-    // Re-apply filters
+    // Re-apply filters untuk refresh tampilan (termasuk WhatsApp button)
     applyFilters();
     
-    showAlert('success', 'Status berhasil diperbarui dan disimpan');
+    // TAMBAHAN: Show success message dengan info WhatsApp jika status berubah ke "Sudah Selesai"
+    if (statusServis === 'Sudah Selesai') {
+      showAlert('success', 'Status berhasil diperbarui! Sekarang Anda dapat menghubungi customer via WhatsApp.');
+    } else {
+      showAlert('success', 'Status berhasil diperbarui dan disimpan');
+    }
+    
     showLoading(false);
     
   } catch (error) {

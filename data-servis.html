@@ -21,6 +21,35 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <!-- Favicon -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <!-- Custom CSS untuk WhatsApp button -->
+    <style>
+      .whatsapp-btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        background-color: #25d366;
+        border-color: #25d366;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+      }
+      
+      .whatsapp-btn:hover {
+        background-color: #128c7e;
+        border-color: #128c7e;
+        color: white;
+        transform: translateY(-1px);
+      }
+      
+      .whatsapp-btn:active {
+        transform: translateY(0);
+      }
+      
+      .status-cell {
+        min-width: 180px;
+      }
+    </style>
     <title>Data Servis - Melati Gold Shop</title>
   </head>
   <body>
@@ -157,7 +186,7 @@
                       <option value="12">Desember</option>
                     </select>
                   </div>
-                  <div class="col-md-1">
+                  <div class="col-md-2">
                     <label for="yearSelector" class="form-label">Tahun</label>
                     <select id="yearSelector" class="form-select">
                       <!-- Will be populated with JavaScript -->
@@ -303,6 +332,6 @@
 
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
-    <script type="module" src="js/pages/optimizedDs.js"></script>
+    <script type="module" src="js/pages/data-servis.js"></script>
   </body>
 </html>

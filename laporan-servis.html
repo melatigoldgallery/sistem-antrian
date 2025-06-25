@@ -320,27 +320,27 @@
       </main>
     </div>
 
-    <!-- Modal Konfirmasi Hapus -->
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+      <!-- Modal Password Verifikasi -->
+    <div class="modal fade" id="passwordVerifyModal" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Konfirmasi Hapus Data</h5>
+            <h5 class="modal-title">Verifikasi Password</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <p>
-              Apakah Anda yakin ingin menghapus
-              <strong id="deleteCount">0</strong>
-              data servis yang sedang ditampilkan?
-            </p>
+            <p>Masukkan password untuk menghapus <strong id="deleteCount">0</strong> data servis:</p>
+            <div class="mb-3">
+              <input type="password" class="form-control" id="verifyPassword" placeholder="Password">
+              <div class="invalid-feedback" id="passwordError"></div>
+            </div>
             <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan!</small></p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <button type="button" class="btn btn-danger" id="verifyPasswordBtn">
               <i class="fas fa-trash me-2"></i>
-              Ya, Hapus Data
+              Hapus Data
             </button>
           </div>
         </div>
