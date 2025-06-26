@@ -40,7 +40,13 @@
             </li>
             <!-- Antrian dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#antrianSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-ticket-alt"></i>
                 <span class="menu-text">Antrian</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -60,7 +66,7 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link active" href="analisis.html">
+                    <a class="nav-link" href="analisis.html">
                       <i class="fas fa-chart-bar"></i>
                       <span class="menu-text">Laporan Antrian</span>
                     </a>
@@ -70,7 +76,13 @@
             </li>
             <!-- Absensi dropdown menu -->
             <li class="nav-item">
-              <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#absensiSubmenu" aria-expanded="false">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
                 <i class="fas fa-clipboard-check"></i>
                 <span class="menu-text">Absensi</span>
                 <i class="fas fa-angle-down ms-auto submenu-icon"></i>
@@ -90,12 +102,6 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="tambah-pengguna.html">
-                      <i class="fas fa-user-plus"></i>
-                      <span class="menu-text">Tambah Pengguna</span>
-                    </a>
-                  </li>
-                  <li class="nav-item">
                     <a class="nav-link" href="laporan-kehadiran.html">
                       <i class="fas fa-file-alt"></i>
                       <span class="menu-text">Laporan Kehadiran</span>
@@ -105,6 +111,72 @@
                     <a class="nav-link" href="laporan-izin.html">
                       <i class="fas fa-file-medical"></i>
                       <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
+                  <li class="nav-item">
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
+                      <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
+                    </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#servisSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-tools"></i>
+                <span class="menu-text">Servis</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="servisSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link active" href="input-servis.html">
+                      <i class="fas fa-plus-circle"></i>
+                      <span class="menu-text">Input Servis</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="data-servis.html">
+                      <i class="fas fa-database"></i>
+                      <span class="menu-text">Data Servis</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-servis.html">
+                      <i class="fas fa-chart-line"></i>
+                      <span class="menu-text">Laporan Servis</span>
                     </a>
                   </li>
                 </ul>

@@ -21,33 +21,144 @@
     <link rel="stylesheet" href="css/pages/absensi-modern.css" />
     <!-- Favicon -->
     <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
-    <!-- Custom CSS untuk WhatsApp button -->
+    <!-- Custom CSS untuk WhatsApp button dan Table Container -->
     <style>
       .whatsapp-btn {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.375rem;
         background-color: #25d366;
         border-color: #25d366;
-        color: white;
+        color: black;
         text-decoration: none;
         display: inline-block;
         transition: all 0.2s ease;
       }
-      
+
       .whatsapp-btn:hover {
         background-color: #128c7e;
         border-color: #128c7e;
         color: white;
         transform: translateY(-1px);
       }
-      
+
       .whatsapp-btn:active {
         transform: translateY(0);
       }
-      
+
       .status-cell {
         min-width: 180px;
+      }
+
+      /* CSS Table Container - sama persis seperti laporan-izin.html */
+      #dataServisTable td:nth-child(5) {
+        white-space: normal !important;
+        word-break: break-word;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 300px;
+        min-width: 200px;
+        line-height: 1.4;
+        padding: 8px 12px;
+      }
+
+      .main-content {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+      }
+
+      #dataServisTable {
+        min-width: 1500px;
+        margin-bottom: 0;
+      }
+
+      #dataServisTable th:nth-child(1),
+      #dataServisTable td:nth-child(1) {
+        width: 50px;
+        min-width: 50px;
+      }
+
+      #dataServisTable th:nth-child(2),
+      #dataServisTable td:nth-child(2) {
+        width: 100px;
+        min-width: 100px;
+      }
+
+      #dataServisTable th:nth-child(3),
+      #dataServisTable td:nth-child(3) {
+        width: 150px;
+        min-width: 150px;
+      }
+
+      #dataServisTable th:nth-child(4),
+      #dataServisTable td:nth-child(4) {
+        width: 120px;
+        min-width: 120px;
+      }
+
+      #dataServisTable th:nth-child(6),
+      #dataServisTable td:nth-child(6) {
+        width: 150px;
+        min-width: 150px;
+      }
+
+      #dataServisTable th:nth-child(7),
+      #dataServisTable td:nth-child(7) {
+        width: 120px;
+        min-width: 120px;
+      }
+
+      #dataServisTable th:nth-child(8),
+      #dataServisTable td:nth-child(8) {
+        width: 130px;
+        min-width: 130px;
+      }
+
+      #dataServisTable th:nth-child(9),
+      #dataServisTable td:nth-child(9) {
+        width: 100px;
+        min-width: 100px;
+      }
+
+      /* Update kolom yang bergeser */
+      #dataServisTable th:nth-child(10),
+      #dataServisTable td:nth-child(10) {
+        width: 120px;
+        min-width: 120px;
+      }
+
+      #dataServisTable th:nth-child(11),
+      #dataServisTable td:nth-child(11) {
+        width: 130px;
+        min-width: 130px;
+      }
+
+      #dataServisTable th:nth-child(12),
+      #dataServisTable td:nth-child(12) {
+        width: 80px;
+        min-width: 80px;
+      }
+
+      #dataServisTable thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+        border-bottom: 2px solid #dee2e6;
+      }
+
+      @media (max-width: 768px) {
+        .table-container {
+          margin: 0 -15px;
+          border-radius: 0;
+        }
+
+        #dataServisTable {
+          font-size: 0.875rem;
+        }
       }
     </style>
     <title>Data Servis - Melati Gold Shop</title>
@@ -68,7 +179,115 @@
                 <span class="menu-text">Dashboard</span>
               </a>
             </li>
-            <!-- Servis dropdown menu -->
+            <!-- Antrian dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#antrianSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-ticket-alt"></i>
+                <span class="menu-text">Antrian</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="antrianSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="admin.html">
+                      <i class="fas fa-user-cog"></i>
+                      <span class="menu-text">Admin Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="display.html">
+                      <i class="fas fa-desktop"></i>
+                      <span class="menu-text">Display Antrian</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="analisis.html">
+                      <i class="fas fa-chart-bar"></i>
+                      <span class="menu-text">Laporan Antrian</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            <!-- Absensi dropdown menu -->
+            <li class="nav-item">
+              <a
+                class="nav-link collapsed"
+                href="#"
+                data-bs-toggle="collapse"
+                data-bs-target="#absensiSubmenu"
+                aria-expanded="false"
+              >
+                <i class="fas fa-clipboard-check"></i>
+                <span class="menu-text">Absensi</span>
+                <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+              </a>
+              <div class="collapse" id="absensiSubmenu" data-bs-parent="#sidebarAccordion">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item">
+                    <a class="nav-link" href="sistemAbsensi.html">
+                      <i class="fas fa-user-check"></i>
+                      <span class="menu-text">Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="pengajuan-izin.html">
+                      <i class="fas fa-calendar-plus"></i>
+                      <span class="menu-text">Pengajuan Izin</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-kehadiran.html">
+                      <i class="fas fa-file-alt"></i>
+                      <span class="menu-text">Laporan Kehadiran</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="laporan-izin.html">
+                      <i class="fas fa-file-medical"></i>
+                      <span class="menu-text">Laporan Izin</span>
+                    </a>
+                  </li>
+                  <!-- Ganti seluruh bagian dropdown Supervisor di dalam menu Absensi -->
+                  <li class="nav-item">
+                    <a
+                      class="nav-link collapsed supervisor-toggle"
+                      href="#"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#supervisorSubmenu"
+                      aria-expanded="false"
+                    >
+                      <i class="fas fa-user-tie"></i>
+                      <span class="menu-text">Supervisor</span>
+                      <i class="fas fa-chevron-down submenu-icon"></i>
+                    </a>
+                    <!-- Penting: Hapus data-bs-parent agar tidak tertutup otomatis -->
+                    <div class="collapse supervisor-menu" id="supervisorSubmenu">
+                      <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                          <a class="nav-link" href="supervisor.html">
+                            <i class="fas fa-desktop"></i>
+                            <span class="menu-text">Status Pengajuan Izin</span>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="tambah-pengguna.html">
+                            <i class="fas fa-user-cog"></i>
+                            <span class="menu-text">Tambah Pengguna</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
             <li class="nav-item">
               <a
                 class="nav-link collapsed"
@@ -84,13 +303,13 @@
               <div class="collapse" id="servisSubmenu" data-bs-parent="#sidebarAccordion">
                 <ul class="nav flex-column ms-3">
                   <li class="nav-item">
-                    <a class="nav-link" href="input-servis.html">
+                    <a class="nav-link active" href="input-servis.html">
                       <i class="fas fa-plus-circle"></i>
                       <span class="menu-text">Input Servis</span>
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link active" href="data-servis.html">
+                    <a class="nav-link" href="data-servis.html">
                       <i class="fas fa-database"></i>
                       <span class="menu-text">Data Servis</span>
                     </a>
@@ -237,26 +456,23 @@
                   </div>
                 </div>
               </div>
-              <div class="card-body p-1">
-                <div class="table-responsive" id="tableWrapper">
-                  <table
-                    class="table table-hover table-sm table-bordered mb-0"
-                    id="dataServisTable"  
-                    style="min-width: 1400px;"                 
-                  >
-                    <thead class="table-dark">
+              <div class="card-body">
+                <div class="table-container">
+                  <table class="table table-hover" id="dataServisTable">
+                    <thead>
                       <tr>
-                        <th style="width: 50px; border: 2px solid #dee2e6">No</th>
-                        <th style="width: 100px; border: 2px solid #dee2e6">Tanggal</th>
-                        <th style="width: 150px; border: 2px solid #dee2e6">Nama Customer</th>
-                        <th style="width: 120px; border: 2px solid #dee2e6">No HP</th>
-                        <th style="width: 200px; border: 2px solid #dee2e6">Nama Barang</th>
-                        <th style="width: 150px; border: 2px solid #dee2e6">Jenis Servis</th>
-                        <th style="width: 120px; border: 2px solid #dee2e6">Status Servis</th>
-                        <th style="width: 130px; border: 2px solid #dee2e6">Status Pengambilan</th>
-                        <th style="width: 120px; border: 2px solid #dee2e6">Handle Pengambilan</th>
-                        <th style="width: 130px; border: 2px solid #dee2e6">Waktu Pengambilan</th>
-                        <th style="width: 80px; border: 2px solid #dee2e6">Aksi</th>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Nama Customer</th>
+                        <th>No HP</th>
+                        <th>Nama Barang</th>
+                        <th>Jenis Servis</th>
+                        <th>Status Servis</th>
+                        <th>Status Pengambilan</th>
+                        <th>WhatsApp</th>
+                        <th>Handle Pengambilan</th>
+                        <th>Waktu Pengambilan</th>
+                        <th>Aksi</th>
                       </tr>
                     </thead>
                     <tbody id="dataServisList"></tbody>

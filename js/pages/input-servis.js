@@ -328,7 +328,7 @@ window.deleteRiwayatItem = function (id, index) {
 async function handleVerifikasi() {
   const kode = document.getElementById('kodeVerifikasi').value;
   
-  if (kode !== '1234') {
+  if (kode !== 'smlt116') {
     alert('Kode verifikasi salah!');
         // Tetap focus pada input setelah error
         document.getElementById("kodeVerifikasi").focus();
@@ -535,48 +535,122 @@ function exportToPDF() {
 
   try {
     const tanggalRiwayat = document.getElementById("tanggalRiwayat").value;
+    
+    // Hitung total ongkos
+    const totalOngkos = todayData.reduce((sum, item) => sum + (item.ongkos || 0), 0);
+    
     const docDefinition = {
+      pageOrientation: 'landscape', // Ubah ke landscape
+      pageMargins: [20, 30, 20, 30],
       content: [
         {
-          text: "Laporan Input Servis",
+          text: "LAPORAN INPUT SERVIS",
           style: "header",
           alignment: "center",
+          margin: [0, 0, 0, 10]
         },
         {
           text: `Tanggal: ${tanggalRiwayat}`,
           style: "subheader",
           alignment: "center",
-          margin: [0, 0, 0, 20],
+          margin: [0, 0, 0, 10],
         },
         {
           table: {
             headerRows: 1,
-            widths: ["auto", "*", "auto", "*", "auto", "auto", "auto"],
+            widths: [30, 80, 70, 170, 170, 80, 70],
             body: [
-              ["No", "Nama Customer", "No HP", "Nama Barang", "Jenis Servis / Custom", "Ongkos / DP", "Sales"],
+              [
+                { text: 'No', style: 'tableHeader' },
+                { text: 'Nama Customer', style: 'tableHeader' },
+                { text: 'No HP', style: 'tableHeader' },
+                { text: 'Nama Barang', style: 'tableHeader' },
+                { text: 'Jenis Servis / Custom', style: 'tableHeader' },
+                { text: 'Ongkos / DP', style: 'tableHeader' },
+                { text: 'Sales', style: 'tableHeader' }
+              ],
               ...todayData.map((item, index) => [
-                index + 1,
-                item.namaCustomer,
-                item.noHp,
-                item.namaBarang,
-                item.jenisServis,
-                `Rp ${item.ongkos.toLocaleString("id-ID")}`,
-                item.namaSales,
+                { text: (index + 1).toString(), style: 'tableCell' },
+                { text: item.namaCustomer || '', style: 'tableCell' },
+                { text: item.noHp || '', style: 'tableCell' },
+                { text: item.namaBarang || '', style: 'tableCell' },
+                { text: item.jenisServis || '', style: 'tableCell' },
+                { text: `Rp ${(item.ongkos || 0).toLocaleString("id-ID")}`, style: 'tableCellRight' },
+                { text: item.namaSales || '', style: 'tableCell' }
               ]),
+              // Baris total
+              [
+                { text: '', style: 'tableCell' },
+                { text: '', style: 'tableCell' },
+                { text: '', style: 'tableCell' },
+                { text: '', style: 'tableCell' },
+                { text: 'TOTAL:', style: 'tableCellBold', alignment: 'right' },
+                { text: `Rp ${totalOngkos.toLocaleString("id-ID")}`, style: 'tableCellBoldRight' },
+                { text: '', style: 'tableCell' }
+              ]
             ],
           },
+          layout: {
+            hLineWidth: function (i, node) {
+              return (i === 0 || i === node.table.body.length) ? 2 : 1;
+            },
+            vLineWidth: function (i, node) {
+              return (i === 0 || i === node.table.widths.length) ? 2 : 1;
+            },
+            hLineColor: function (i, node) {
+              return (i === 0 || i === node.table.body.length) ? '#666666' : '#cccccc';
+            },
+            vLineColor: function (i, node) {
+              return (i === 0 || i === node.table.widths.length) ? '#666666' : '#cccccc';
+            },
+            paddingLeft: function(i, node) { return 8; },
+            paddingRight: function(i, node) { return 8; },
+            paddingTop: function(i, node) { return 6; },
+            paddingBottom: function(i, node) { return 6; }
+          }
         },
       ],
       styles: {
         header: {
-          fontSize: 14,
+          fontSize: 16,
           bold: true,
+          color: '#2c3e50'
         },
         subheader: {
-          fontSize: 11,
+          fontSize: 12,
           bold: true,
+          color: '#34495e'
         },
-      },
+        tableHeader: {
+          bold: true,
+          fontSize: 10,
+          color: 'white',
+          fillColor: '#3498db',
+          alignment: 'center'
+        },
+        tableCell: {
+          fontSize: 9,
+          margin: [0, 1, 0, 1]
+        },
+        tableCellRight: {
+          fontSize: 9,
+          alignment: 'right',
+          margin: [0, 1, 0, 1]
+        },
+        tableCellBold: {
+          fontSize: 10,
+          bold: true,
+          fillColor: '#ecf0f1',
+          margin: [0, 1, 0, 1]
+        },
+        tableCellBoldRight: {
+          fontSize: 10,
+          bold: true,
+          alignment: 'right',
+          fillColor: '#ecf0f1',
+          margin: [0, 1, 0, 1]
+        },
+      }
     };
 
     pdfMake.createPdf(docDefinition).download(`Laporan_Servis_${tanggalRiwayat.replace(/\//g, "-")}.pdf`);

@@ -1,4 +1,4 @@
-import { getServisByMonth, updateServisStatus, smartServisCache } from '../services/servis-service.js';
+import { getServisByMonth, updateServisStatus, smartServisCache } from "../services/servis-service.js";
 
 // Global variables
 let currentData = [];
@@ -12,29 +12,29 @@ const WhatsAppUtils = {
   // Format nomor HP ke format internasional
   formatPhoneNumber(phoneNumber) {
     if (!phoneNumber) return null;
-    
+
     // Hapus semua karakter non-digit
-    let cleaned = phoneNumber.toString().replace(/\D/g, '');
-    
+    let cleaned = phoneNumber.toString().replace(/\D/g, "");
+
     // Konversi format Indonesia ke internasional
-    if (cleaned.startsWith('08')) {
-      cleaned = '628' + cleaned.substring(2);
-    } else if (cleaned.startsWith('8') && cleaned.length >= 9) {
-      cleaned = '628' + cleaned.substring(1);
-    } else if (cleaned.startsWith('628')) {
+    if (cleaned.startsWith("08")) {
+      cleaned = "628" + cleaned.substring(2);
+    } else if (cleaned.startsWith("8") && cleaned.length >= 9) {
+      cleaned = "628" + cleaned.substring(1);
+    } else if (cleaned.startsWith("628")) {
       // Sudah format internasional
-    } else if (cleaned.startsWith('62')) {
+    } else if (cleaned.startsWith("62")) {
       // Sudah format internasional
     } else {
       // Format tidak dikenali, return null
       return null;
     }
-    
+
     // Validasi panjang nomor (minimal 10 digit setelah 62)
     if (cleaned.length < 12 || cleaned.length > 15) {
       return null;
     }
-    
+
     return cleaned;
   },
 
@@ -42,40 +42,41 @@ const WhatsAppUtils = {
   generateMessage(customerName, itemName) {
     const shopName = "Melati Gold Shop";
     return `Halo Kak ${customerName},
-
 Barang servis Kakak sudah selesai:
- ${itemName}
-Sudah bisa diambil.
-
-Silakan datang ke ${shopName} untuk mengambil barangnya ya kak.
-
-Terima kasih 🙏`;
+ (${itemName})
+Sudah bisa diambil. Silakan datang ke ${shopName} untuk mengambil barangnya ya kak. Terima kasih 🙏`;
   },
 
   // Buka WhatsApp
   openWhatsApp(phoneNumber, customerName, itemName) {
     try {
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
-      
+
       if (!formattedPhone) {
-        alert('Nomor HP tidak valid: ' + phoneNumber);
+        alert("Nomor HP tidak valid: " + phoneNumber);
         return false;
       }
-      
+
       const message = this.generateMessage(customerName, itemName);
       const encodedMessage = encodeURIComponent(message);
-      const whatsappURL = `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
-      
+
+      // Smart Detection: Deteksi device dan pilih URL yang tepat
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      const whatsappURL = isMobile
+        ? `https://wa.me/${formattedPhone}?text=${encodedMessage}` // Mobile: wa.me
+        : `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`; // Desktop: web.whatsapp.com
+
       // Buka di tab baru
-      window.open(whatsappURL, '_blank');
-      
+      window.open(whatsappURL, "_blank");
+
       // Log untuk tracking
-      console.log(`WhatsApp opened for ${customerName} (${formattedPhone})`);
-      
+      console.log(`WhatsApp opened for ${customerName} (${formattedPhone}) - ${isMobile ? "Mobile" : "Desktop"} mode`);
+
       return true;
     } catch (error) {
-      console.error('Error opening WhatsApp:', error);
-      alert('Terjadi kesalahan saat membuka WhatsApp');
+      console.error("Error opening WhatsApp:", error);
+      alert("Terjadi kesalahan saat membuka WhatsApp");
       return false;
     }
   },
@@ -83,11 +84,11 @@ Terima kasih 🙏`;
   // Validasi apakah nomor HP valid
   isValidPhoneNumber(phoneNumber) {
     return this.formatPhoneNumber(phoneNumber) !== null;
-  }
+  },
 };
 
 // TAMBAHAN: Global function untuk dipanggil dari HTML
-window.contactCustomer = function(phoneNumber, customerName, itemName) {
+window.contactCustomer = function (phoneNumber, customerName, itemName) {
   WhatsAppUtils.openWhatsApp(phoneNumber, customerName, itemName);
 };
 
@@ -106,7 +107,7 @@ let currentMonthYear = null;
 // Cache management functions
 function getCachedData(key) {
   const cached = localCache.get(key);
-  if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRATION)) {
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRATION) {
     return cached.data;
   }
   return null;
@@ -115,9 +116,9 @@ function getCachedData(key) {
 function setCachedData(key, data) {
   localCache.set(key, {
     data: data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
-  
+
   // Update cache metadata
   updateCacheTimestamp(key);
 }
@@ -139,34 +140,34 @@ function updateCacheTimestamp(cacheKey, timestamp = Date.now()) {
 function updateCacheSelectively(action, data) {
   try {
     if (!currentMonthYear) return;
-    
+
     const { month, year } = currentMonthYear;
     const cacheKey = `month_${month}_${year}`;
-    
+
     // Get current cached data
     const cached = localCache.get(cacheKey);
     if (!cached) return;
-    
+
     let updatedData = [...cached.data];
     let dataChanged = false;
-    
+
     switch (action) {
-      case 'add':
+      case "add":
         // Check if data belongs to current month/year
         const dataDate = new Date(data.tanggal);
         if (dataDate.getMonth() + 1 === month && dataDate.getFullYear() === year) {
           updatedData.push(data);
           dataChanged = true;
-          console.log('Added new data to cache:', data.id);
+          console.log("Added new data to cache:", data.id);
         }
         break;
-        
-      case 'update':
-        const updateIndex = updatedData.findIndex(item => item.id === data.id);
+
+      case "update":
+        const updateIndex = updatedData.findIndex((item) => item.id === data.id);
         if (updateIndex !== -1) {
           // PERBAIKAN: Handle Timestamp objects dalam update data
           const updateData = { ...data };
-          
+
           // Convert Timestamp objects untuk konsistensi
           if (updateData.waktuPengambilan && updateData.waktuPengambilan.toDate) {
             updateData.waktuPengambilan = updateData.waktuPengambilan.toDate().toISOString();
@@ -177,81 +178,81 @@ function updateCacheSelectively(action, data) {
           if (updateData.updatedAt && updateData.updatedAt.toDate) {
             updateData.updatedAt = updateData.updatedAt.toDate().toISOString();
           }
-          
+
           // Merge update data with existing data
           updatedData[updateIndex] = { ...updatedData[updateIndex], ...updateData };
           dataChanged = true;
-          console.log('Updated data in cache:', data.id);
+          console.log("Updated data in cache:", data.id);
         }
         break;
-        
-      case 'delete':
-        const deleteIndex = updatedData.findIndex(item => item.id === data.id);
+
+      case "delete":
+        const deleteIndex = updatedData.findIndex((item) => item.id === data.id);
         if (deleteIndex !== -1) {
           updatedData.splice(deleteIndex, 1);
           dataChanged = true;
-          console.log('Removed data from cache:', data.id);
+          console.log("Removed data from cache:", data.id);
         }
         break;
     }
-    
+
     if (dataChanged) {
       // Update cache with new data
       setCachedData(cacheKey, updatedData);
-      
+
       // Update current data if it's the active dataset
       if (isDataLoaded) {
         currentData = updatedData;
-        
+
         // Update filtered data if item was in current filter
-        if (action === 'delete') {
-          filteredData = filteredData.filter(item => item.id !== data.id);
-        } else if (action === 'update') {
-          const filteredIndex = filteredData.findIndex(item => item.id === data.id);
+        if (action === "delete") {
+          filteredData = filteredData.filter((item) => item.id !== data.id);
+        } else if (action === "update") {
+          const filteredIndex = filteredData.findIndex((item) => item.id === data.id);
           if (filteredIndex !== -1) {
             filteredData[filteredIndex] = { ...filteredData[filteredIndex], ...data };
           }
         }
-        
+
         // Re-apply filters to show updated data
         applyFilters();
       }
-      
+
       // Update cache version
       cacheVersion = Date.now();
-      
+
       // Save to localStorage
       saveServisCacheToStorage();
     }
   } catch (error) {
-    console.error('Error updating cache selectively:', error);
+    console.error("Error updating cache selectively:", error);
   }
 }
 
 // Setup event listeners untuk data changes
 function setupDataChangeListeners() {
   // Listen untuk storage events (cross-tab)
-  window.addEventListener('storage', function(e) {
-    if (e.key === 'servisDataChange' && e.newValue) {
+  window.addEventListener("storage", function (e) {
+    if (e.key === "servisDataChange" && e.newValue) {
       try {
         const event = JSON.parse(e.newValue);
-        console.log('Received cross-tab data change:', event);
-        
+        console.log("Received cross-tab data change:", event);
+
         // Update cache selectively
         updateCacheSelectively(event.action, event.data);
-        
+
         // Clean up the event
-        localStorage.removeItem('servisDataChange');
+        localStorage.removeItem("servisDataChange");
       } catch (error) {
-        console.error('Error handling storage event:', error);
+        console.error("Error handling storage event:", error);
       }
     }
   });
-  
+
   // Listen untuk same-tab events
-  window.addEventListener('servisDataChanged', function(e) {
+  window.addEventListener("servisDataChanged", function (e) {
     if (e.detail) {
-      console.log('Received same-tab data change:', e.detail);
+      console.log("Received same-tab data change:", e.detail);
       updateCacheSelectively(e.detail.action, e.detail.data);
     }
   });
@@ -262,23 +263,23 @@ function shouldUpdateCache(cacheKey) {
 
   const lastUpdate = cacheMeta.get(cacheKey);
   const now = Date.now();
-  
+
   // PERBAIKAN: Cek jika ada indikasi data baru dari input-servis
   const hasNewDataIndication = checkForNewDataIndication();
   if (hasNewDataIndication) {
-    console.log('New data indication detected, forcing cache update');
+    console.log("New data indication detected, forcing cache update");
     return true;
   }
-  
+
   // Gunakan TTL yang berbeda berdasarkan jenis data
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const currentMonth = today.substring(0, 7); // YYYY-MM format
-  
+
   if (cacheKey.includes(currentMonth)) {
     // Data bulan ini menggunakan TTL lebih pendek
     return now - lastUpdate > CACHE_TTL_TODAY;
   }
-  
+
   // Data bulan lain menggunakan TTL standar
   return now - lastUpdate > CACHE_TTL_STANDARD;
 }
@@ -287,29 +288,29 @@ function shouldUpdateCache(cacheKey) {
 function checkForNewDataIndication() {
   try {
     // Cek localStorage untuk indikasi data baru dari input-servis
-    const newDataFlag = localStorage.getItem('newServisDataAdded');
-    const lastInputTime = localStorage.getItem('lastServisInputTime');
-    
-    if (newDataFlag === 'true') {
+    const newDataFlag = localStorage.getItem("newServisDataAdded");
+    const lastInputTime = localStorage.getItem("lastServisInputTime");
+
+    if (newDataFlag === "true") {
       // Reset flag
-      localStorage.removeItem('newServisDataAdded');
+      localStorage.removeItem("newServisDataAdded");
       return true;
     }
-    
+
     // Cek berdasarkan timestamp input terakhir
     if (lastInputTime) {
       const inputTime = parseInt(lastInputTime);
       const timeDiff = Date.now() - inputTime;
-      
+
       // Jika input dalam 2 menit terakhir, anggap ada data baru
       if (timeDiff < 2 * 60 * 1000) {
         return true;
       }
     }
-    
+
     return false;
   } catch (error) {
-    console.error('Error checking new data indication:', error);
+    console.error("Error checking new data indication:", error);
     return false;
   }
 }
@@ -318,41 +319,39 @@ function checkForNewDataIndication() {
 async function syncDataIfNeeded(forceSync = false) {
   try {
     if (!isDataLoaded || !currentMonthYear) return;
-    
+
     const { month, year } = currentMonthYear;
     const cacheKey = `month_${month}_${year}`;
-    
+
     // Check if sync is needed
     const needSync = forceSync || checkForNewDataIndication() || shouldUpdateCache(cacheKey);
-    
+
     if (needSync) {
-      console.log('Syncing data due to changes detected');
-      
+      console.log("Syncing data due to changes detected");
+
       // Get fresh data from Firestore
       const freshData = await getServisByMonth(month, year);
-      
+
       // Compare with current data to detect changes
       const hasChanges = JSON.stringify(freshData) !== JSON.stringify(currentData);
-      
+
       if (hasChanges) {
         // Update cache and current data
         currentData = freshData;
         setCachedData(cacheKey, currentData);
         saveServisCacheToStorage();
-        
+
         // Re-apply filters
         applyFilters();
-        
-        console.log('Data synced and updated');
-        showAlert('info', 'Data telah diperbarui dari server');
+
+        console.log("Data synced and updated");
+        showAlert("info", "Data telah diperbarui dari server");
       }
     }
   } catch (error) {
-    console.error('Error syncing data:', error);
+    console.error("Error syncing data:", error);
   }
 }
-
-
 
 // Save cache to localStorage for persistence
 function saveServisCacheToStorage() {
@@ -361,17 +360,17 @@ function saveServisCacheToStorage() {
     for (const [key, value] of localCache.entries()) {
       cacheObj[key] = value;
     }
-    
+
     const compressedData = JSON.stringify(cacheObj);
     localStorage.setItem("servisCache", compressedData);
-    
+
     // Save metadata
     const metaObj = {};
     for (const [key, value] of cacheMeta.entries()) {
       metaObj[key] = value;
     }
     localStorage.setItem("servisCacheMeta", JSON.stringify(metaObj));
-    
+
     console.log("Servis cache saved to localStorage");
     return true;
   } catch (error) {
@@ -388,21 +387,21 @@ function loadServisCacheFromStorage() {
   try {
     const cacheData = localStorage.getItem("servisCache");
     const metaData = localStorage.getItem("servisCacheMeta");
-    
+
     if (cacheData) {
       const cacheObj = JSON.parse(cacheData);
       for (const [key, value] of Object.entries(cacheObj)) {
         localCache.set(key, value);
       }
     }
-    
+
     if (metaData) {
       const metaObj = JSON.parse(metaData);
       for (const [key, value] of Object.entries(metaObj)) {
         cacheMeta.set(key, value);
       }
     }
-    
+
     console.log("Servis cache loaded from localStorage");
   } catch (error) {
     console.error("Error loading servis cache:", error);
@@ -413,14 +412,14 @@ function cleanOldServisCacheEntries() {
   try {
     const now = Date.now();
     const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
-    
+
     for (const [key, timestamp] of cacheMeta.entries()) {
       if (timestamp < threeDaysAgo) {
         cacheMeta.delete(key);
         localCache.delete(key);
       }
     }
-    
+
     console.log("Old servis cache entries cleaned up");
   } catch (error) {
     console.error("Error cleaning old cache entries:", error);
@@ -428,16 +427,16 @@ function cleanOldServisCacheEntries() {
 }
 
 // Update initialization
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener("DOMContentLoaded", function () {
   initializePage();
   setupEventListeners();
-  
+
   // Setup data change listeners
   setupDataChangeListeners();
-  
+
   // Load cache from storage
   loadServisCacheFromStorage();
-  
+
   // Setup periodic sync (reduced frequency)
   setInterval(() => syncDataIfNeeded(), 60 * 1000); // Every 1 minute instead of 30 seconds
 });
@@ -445,24 +444,24 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializePage() {
   updateDateTime();
   setInterval(updateDateTime, 1000);
-  
+
   // Populate year selector dan set default ke bulan/tahun sekarang
   populateYearSelector();
   const now = new Date();
-  document.getElementById('monthSelector').value = now.getMonth() + 1;
-  document.getElementById('yearSelector').value = now.getFullYear();
+  document.getElementById("monthSelector").value = now.getMonth() + 1;
+  document.getElementById("yearSelector").value = now.getFullYear();
 }
 
 function populateYearSelector() {
-  const yearSelector = document.getElementById('yearSelector');
+  const yearSelector = document.getElementById("yearSelector");
   const currentYear = new Date().getFullYear();
-  
+
   // Clear existing options
-  yearSelector.innerHTML = '';
-  
+  yearSelector.innerHTML = "";
+
   // Add years (current year and 5 years back)
   for (let year = currentYear; year >= currentYear - 5; year--) {
-    const option = document.createElement('option');
+    const option = document.createElement("option");
     option.value = year;
     option.textContent = year;
     yearSelector.appendChild(option);
@@ -471,47 +470,47 @@ function populateYearSelector() {
 
 function updateDateTime() {
   const now = new Date();
-  const dateElement = document.getElementById('current-date');
-  const timeElement = document.getElementById('current-time');
+  const dateElement = document.getElementById("current-date");
+  const timeElement = document.getElementById("current-time");
 
   if (dateElement) {
-    dateElement.textContent = now.toLocaleDateString('id-ID', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    dateElement.textContent = now.toLocaleDateString("id-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   }
 
   if (timeElement) {
-    timeElement.textContent = now.toLocaleTimeString('id-ID');
+    timeElement.textContent = now.toLocaleTimeString("id-ID");
   }
 }
 
 function setupEventListeners() {
   // Tampilkan button
-  const tampilkanBtn = document.getElementById('tampilkanBtn');
+  const tampilkanBtn = document.getElementById("tampilkanBtn");
   if (tampilkanBtn) {
-    tampilkanBtn.addEventListener('click', loadServisData);
+    tampilkanBtn.addEventListener("click", loadServisData);
   }
 
   // Search input dengan ID yang benar
-  const searchInput = document.getElementById('searchInputTable');
+  const searchInput = document.getElementById("searchInputTable");
   if (searchInput) {
-    searchInput.addEventListener('input', applyFilters);
-    searchInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
+    searchInput.addEventListener("input", applyFilters);
+    searchInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
         applyFilters();
       }
     });
   }
 
   // Status filters
-  const statusServisFilter = document.getElementById('statusServisFilter');
-  const statusPengambilanFilter = document.getElementById('statusPengambilanFilter');
-  
+  const statusServisFilter = document.getElementById("statusServisFilter");
+  const statusPengambilanFilter = document.getElementById("statusPengambilanFilter");
+
   if (statusServisFilter) {
-    statusServisFilter.addEventListener('change', function() {
+    statusServisFilter.addEventListener("change", function () {
       handleFilterLogic();
       // HANYA apply filter jika data sudah loaded
       if (isDataLoaded) {
@@ -519,9 +518,9 @@ function setupEventListeners() {
       }
     });
   }
-  
+
   if (statusPengambilanFilter) {
-    statusPengambilanFilter.addEventListener('change', function() {
+    statusPengambilanFilter.addEventListener("change", function () {
       // HANYA apply filter jika data sudah loaded
       if (isDataLoaded) {
         applyFilters();
@@ -530,65 +529,63 @@ function setupEventListeners() {
   }
 
   // Save status button
-  const saveStatusBtn = document.getElementById('saveStatusBtn');
+  const saveStatusBtn = document.getElementById("saveStatusBtn");
   if (saveStatusBtn) {
-    saveStatusBtn.addEventListener('click', saveStatusUpdate);
+    saveStatusBtn.addEventListener("click", saveStatusUpdate);
   }
 
   // Setup modal event listeners
   setupModalEventListeners();
-  
+
   // PERBAIKAN: Listen untuk event data baru dari input-servis
-  window.addEventListener('storage', function(e) {
-    if (e.key === 'newServisDataAdded' && e.newValue === 'true') {
-      console.log('New servis data detected from another tab');
+  window.addEventListener("storage", function (e) {
+    if (e.key === "newServisDataAdded" && e.newValue === "true") {
+      console.log("New servis data detected from another tab");
       syncDataIfNeeded();
     }
-    
   });
 }
 
 function setupModalEventListeners() {
-  const statusServisSelect = document.getElementById('statusServis');
-  const statusPengambilanSelect = document.getElementById('statusPengambilan');
-  
+  const statusServisSelect = document.getElementById("statusServis");
+  const statusPengambilanSelect = document.getElementById("statusPengambilan");
+
   // Event listener untuk Status Servis
   if (statusServisSelect) {
-    statusServisSelect.addEventListener('change', function() {
-      const pengambilanForm = document.getElementById('pengambilanForm');
-      
-      if (this.value === 'Belum Selesai') {
+    statusServisSelect.addEventListener("change", function () {
+      const pengambilanForm = document.getElementById("pengambilanForm");
+
+      if (this.value === "Belum Selesai") {
         // Jika belum selesai, paksa status pengambilan ke "Belum Diambil"
-        statusPengambilanSelect.value = 'Belum Diambil';
+        statusPengambilanSelect.value = "Belum Diambil";
         statusPengambilanSelect.disabled = true;
-        pengambilanForm.style.display = 'none';
+        pengambilanForm.style.display = "none";
         // Reset form pengambilan
-        document.getElementById('stafHandle').value = '';
-        document.getElementById('waktuPengambilan').value = '';
+        document.getElementById("stafHandle").value = "";
+        document.getElementById("waktuPengambilan").value = "";
       } else {
         // Jika sudah selesai, enable dropdown pengambilan
         statusPengambilanSelect.disabled = false;
       }
     });
   }
-  
+
   // Event listener untuk Status Pengambilan
   if (statusPengambilanSelect) {
-    statusPengambilanSelect.addEventListener('change', function() {
-      const pengambilanForm = document.getElementById('pengambilanForm');
-      const waktuPengambilan = document.getElementById('waktuPengambilan');
-      
-      if (this.value === 'Sudah Diambil') {
-        pengambilanForm.style.display = 'block';
+    statusPengambilanSelect.addEventListener("change", function () {
+      const pengambilanForm = document.getElementById("pengambilanForm");
+      const waktuPengambilan = document.getElementById("waktuPengambilan");
+
+      if (this.value === "Sudah Diambil") {
+        pengambilanForm.style.display = "block";
         // Set waktu sekarang
         const now = new Date();
-        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-          .toISOString().slice(0, 16);
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
         waktuPengambilan.value = localDateTime;
       } else {
-        pengambilanForm.style.display = 'none';
-        document.getElementById('stafHandle').value = '';
-        waktuPengambilan.value = '';
+        pengambilanForm.style.display = "none";
+        document.getElementById("stafHandle").value = "";
+        waktuPengambilan.value = "";
       }
     });
   }
@@ -597,20 +594,20 @@ function setupModalEventListeners() {
 async function loadServisData() {
   try {
     showLoading(true);
-    
-    const month = parseInt(document.getElementById('monthSelector').value);
-    const year = parseInt(document.getElementById('yearSelector').value);
+
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
     const cacheKey = `month_${month}_${year}`;
-    
+
     // PERBAIKAN: Set current month/year untuk tracking
     currentMonthYear = { month, year };
-    
+
     // Check if cache should be updated
     const shouldUpdate = shouldUpdateCache(cacheKey);
-    
+
     // Check local cache first
     const cachedData = getCachedData(cacheKey);
-    
+
     if (cachedData && !shouldUpdate) {
       console.log(`Using cached data for ${month}/${year}`);
       currentData = cachedData;
@@ -620,132 +617,140 @@ async function loadServisData() {
       currentData = await getServisByMonth(month, year);
       setCachedData(cacheKey, currentData);
       showCacheIndicator(false);
-      
+
       // Save to localStorage
       saveServisCacheToStorage();
     }
-    
+
     // PERBAIKAN: Update tracking data count
     lastKnownDataCount = currentData.length;
-    
+
     // Reset search
-    const searchInput = document.getElementById('searchInputTable');
+    const searchInput = document.getElementById("searchInputTable");
     if (searchInput) {
-      searchInput.value = '';
+      searchInput.value = "";
     }
-    
+
     // Set flag bahwa data sudah loaded
     isDataLoaded = true;
-    
+
     // Apply filters setelah data loaded
     applyFilters();
     showLoading(false);
-    
   } catch (error) {
-    console.error('Error loading servis data:', error);
-    showAlert('danger', 'Terjadi kesalahan saat memuat data: ' + error.message);
+    console.error("Error loading servis data:", error);
+    showAlert("danger", "Terjadi kesalahan saat memuat data: " + error.message);
     showLoading(false);
     isDataLoaded = false;
   }
 }
 
 function resetFilters() {
-  const searchInput = document.getElementById('searchInputTable');
-  
-  if (searchInput) searchInput.value = '';
+  const searchInput = document.getElementById("searchInputTable");
+
+  if (searchInput) searchInput.value = "";
 }
 
 function applyFilters() {
-  const searchTerm = document.getElementById('searchInputTable')?.value.trim().toLowerCase() || '';
-  const statusServisFilter = document.getElementById('statusServisFilter')?.value || '';
-  const statusPengambilanFilter = document.getElementById('statusPengambilanFilter')?.value || '';
-  
-  filteredData = currentData.filter(item => {
+  const searchTerm = document.getElementById("searchInputTable")?.value.trim().toLowerCase() || "";
+  const statusServisFilter = document.getElementById("statusServisFilter")?.value || "";
+  const statusPengambilanFilter = document.getElementById("statusPengambilanFilter")?.value || "";
+
+  filteredData = currentData.filter((item) => {
     // Search filter
-    const matchesSearch = !searchTerm || 
+    const matchesSearch =
+      !searchTerm ||
       item.namaCustomer?.toLowerCase().includes(searchTerm) ||
       item.noHp?.includes(searchTerm) ||
       item.namaBarang?.toLowerCase().includes(searchTerm);
-    
+
     // Status filters
     const matchesStatusServis = !statusServisFilter || item.statusServis === statusServisFilter;
     const matchesStatusPengambilan = !statusPengambilanFilter || item.statusPengambilan === statusPengambilanFilter;
-    
+
     return matchesSearch && matchesStatusServis && matchesStatusPengambilan;
   });
-  
+
   displayData();
 }
 
 function displayData() {
-  const tbody = document.getElementById('dataServisList');
-  const tableContainer = document.getElementById('tableContainer');
-  const noDataMessage = document.getElementById('noDataMessage');
-  
+  const tbody = document.getElementById("dataServisList");
+  const tableContainer = document.getElementById("tableContainer");
+  const noDataMessage = document.getElementById("noDataMessage");
+
   if (!isDataLoaded) {
-    tableContainer.style.display = 'none';
-    noDataMessage.style.display = 'none';
+    tableContainer.style.display = "none";
+    noDataMessage.style.display = "none";
     return;
   }
-  
+
   // SELALU tampilkan table container (termasuk search section)
-  tableContainer.style.display = 'block';
-  
+  tableContainer.style.display = "block";
+
   if (filteredData.length === 0) {
     // Kosongkan tbody tapi tetap tampilkan table structure
-    tbody.innerHTML = '';
-    noDataMessage.style.display = 'block';
-    
+    tbody.innerHTML = "";
+    noDataMessage.style.display = "block";
+
     // Pastikan table tetap terlihat dengan header
-    const tableWrapper = document.getElementById('tableWrapper');
+    const tableWrapper = document.getElementById("tableWrapper");
     if (tableWrapper) {
-      tableWrapper.style.display = 'block';
+      tableWrapper.style.display = "block";
     }
     return;
   }
-  
+
   // Ada data - sembunyikan pesan no data
-  noDataMessage.style.display = 'none';
-  
-  tbody.innerHTML = '';
-  
+  noDataMessage.style.display = "none";
+
+  tbody.innerHTML = "";
+
   const fragment = document.createDocumentFragment();
-  
+
   filteredData.forEach((item, index) => {
-    const row = document.createElement('tr');
-    const tanggalFormatted = new Date(item.tanggal).toLocaleDateString('id-ID');
-    
-    // PERBAIKAN: Status servis dengan WhatsApp button
-    let statusServisContent = '';
-    if (item.statusServis === 'Sudah Selesai') {
-      statusServisContent = `
-        <span class="badge bg-success">Sudah Selesai</span>
-        <br>
-        ${WhatsAppUtils.isValidPhoneNumber(item.noHp) ? 
-          `<button class="btn whatsapp-btn mt-1" 
-                   onclick="contactCustomer('${item.noHp}', '${item.namaCustomer.replace(/'/g, "\\'")}', '${item.namaBarang.replace(/'/g, "\\'")}')"
-                   title="Hubungi customer via WhatsApp">
-             <i class="fab fa-whatsapp me-1"></i>
-             Hubungi
-           </button>` : 
-          '<small class="text-muted">No HP tidak valid</small>'
-        }`;
+    const row = document.createElement("tr");
+    const tanggalFormatted = new Date(item.tanggal).toLocaleDateString("id-ID");
+
+    // PERBAIKAN: Status servis hanya badge (tanpa WhatsApp button)
+    let statusServisContent = "";
+    if (item.statusServis === "Sudah Selesai") {
+      statusServisContent = '<span class="badge bg-success">Sudah Selesai</span>';
     } else {
       statusServisContent = '<span class="badge bg-warning">Belum Selesai</span>';
     }
-      
-    const statusPengambilanBadge = item.statusPengambilan === 'Sudah Diambil'
-      ? '<span class="badge bg-success">Sudah Diambil</span>'
-      : '<span class="badge bg-danger">Belum Diambil</span>';
-    
+
+    // BARU: Kolom WhatsApp terpisah
+    let whatsappContent = "";
+    if (item.statusServis === "Sudah Selesai") {
+      whatsappContent = WhatsAppUtils.isValidPhoneNumber(item.noHp)
+        ? `<button class="btn whatsapp-btn" 
+                 onclick="contactCustomer('${item.noHp}', '${item.namaCustomer.replace(
+            /'/g,
+            "\\'"
+          )}', '${item.namaBarang.replace(/'/g, "\\'")}')"
+                 title="Hubungi customer via WhatsApp">
+           <i class="fab fa-whatsapp me-1"></i>
+           Hubungi
+         </button>`
+        : '<small class="text-muted">No HP tidak valid</small>';
+    } else {
+      whatsappContent = '<small class="text-muted">Belum tersedia</small>';
+    }
+
+    const statusPengambilanBadge =
+      item.statusPengambilan === "Sudah Diambil"
+        ? '<span class="badge bg-success">Sudah Diambil</span>'
+        : '<span class="badge bg-danger">Belum Diambil</span>';
+
     // Handle waktu pengambilan dengan proper error handling
-    let waktuPengambilan = '-';
-    let waktuForModal = '';
-    
+    let waktuPengambilan = "-";
+    let waktuForModal = "";
+
     if (item.waktuPengambilan) {
       try {
         let waktuDate;
-        
+
         // Handle berbagai format waktu
         if (item.waktuPengambilan.toDate) {
           // Firestore Timestamp
@@ -753,78 +758,89 @@ function displayData() {
         } else if (item.waktuPengambilan.seconds) {
           // Firestore Timestamp object dengan seconds
           waktuDate = new Date(item.waktuPengambilan.seconds * 1000);
-        } else if (typeof item.waktuPengambilan === 'string') {
+        } else if (typeof item.waktuPengambilan === "string") {
           // ISO string
           waktuDate = new Date(item.waktuPengambilan);
         } else {
           // Direct Date object
           waktuDate = new Date(item.waktuPengambilan);
         }
-        
+
         // Validasi date
         if (!isNaN(waktuDate.getTime())) {
-          waktuPengambilan = waktuDate.toLocaleString('id-ID');
+          waktuPengambilan = waktuDate.toLocaleString("id-ID");
           waktuForModal = waktuDate.toISOString().slice(0, 16); // Format untuk datetime-local input
         }
       } catch (error) {
-        console.error('Error formatting waktu pengambilan for item:', item.id, error);
-        waktuPengambilan = '-';
-        waktuForModal = '';
+        console.error("Error formatting waktu pengambilan for item:", item.id, error);
+        waktuPengambilan = "-";
+        waktuForModal = "";
       }
     }
-    
+
     row.innerHTML = `
       <td style="border-right: 2px solid #dee2e6;">${index + 1}</td>
       <td style="border-right: 2px solid #dee2e6;">${tanggalFormatted}</td>
       <td style="border-right: 2px solid #dee2e6;">${item.namaCustomer}</td>
       <td style="border-right: 2px solid #dee2e6;">${item.noHp}</td>
-      <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${item.namaBarang}</td>
+      <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${
+        item.namaBarang
+      }</td>
       <td style="border-right: 2px solid #dee2e6;">${item.jenisServis}</td>
-      <td style="border-right: 2px solid #dee2e6;" class="status-cell">${statusServisContent}</td>
+      <td style="border-right: 2px solid #dee2e6;">${statusServisContent}</td>
       <td style="border-right: 2px solid #dee2e6;">${statusPengambilanBadge}</td>
-      <td style="border-right: 2px solid #dee2e6;">${item.stafHandle || '-'}</td>
+      <td style="border-right: 2px solid #dee2e6;" class="status-cell">${whatsappContent}</td>
+      <td style="border-right: 2px solid #dee2e6;">${item.stafHandle || "-"}</td>
       <td style="border-right: 2px solid #dee2e6;"><small>${waktuPengambilan}</small></td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="openUpdateModal('${item.id}', '${item.statusServis}', '${item.statusPengambilan}', '${item.stafHandle || ''}', '${waktuForModal}')">
+        <button class="btn btn-sm btn-primary" onclick="openUpdateModal('${item.id}', '${item.statusServis}', '${
+      item.statusPengambilan
+    }', '${item.stafHandle || ""}', '${waktuForModal}')">
           <i class="fas fa-edit"></i>
         </button>
       </td>
     `;
-    
+
     fragment.appendChild(row);
   });
-  
+
   tbody.appendChild(fragment);
 }
 
 // Update openUpdateModal function
-window.openUpdateModal = function(servisId, currentStatusServis, currentStatusPengambilan, stafHandle = '', waktuPengambilan = '') {
-  document.getElementById('updateServisId').value = servisId;
-  document.getElementById('statusServis').value = currentStatusServis;
-  document.getElementById('statusPengambilan').value = currentStatusPengambilan;
-  
-  const statusPengambilanSelect = document.getElementById('statusPengambilan');
-  const pengambilanForm = document.getElementById('pengambilanForm');
-  
+window.openUpdateModal = function (
+  servisId,
+  currentStatusServis,
+  currentStatusPengambilan,
+  stafHandle = "",
+  waktuPengambilan = ""
+) {
+  document.getElementById("updateServisId").value = servisId;
+  document.getElementById("statusServis").value = currentStatusServis;
+  document.getElementById("statusPengambilan").value = currentStatusPengambilan;
+
+  const statusPengambilanSelect = document.getElementById("statusPengambilan");
+  const pengambilanForm = document.getElementById("pengambilanForm");
+
   // Logika disable/enable berdasarkan status servis
-  if (currentStatusServis === 'Belum Selesai') {
+  if (currentStatusServis === "Belum Selesai") {
     statusPengambilanSelect.disabled = true;
-    statusPengambilanSelect.value = 'Belum Diambil';
-    pengambilanForm.style.display = 'none';
+    statusPengambilanSelect.value = "Belum Diambil";
+    pengambilanForm.style.display = "none";
   } else {
     statusPengambilanSelect.disabled = false;
-    
+
     // Set data pengambilan jika ada
-    document.getElementById('stafHandle').value = stafHandle;
-    
+    document.getElementById("stafHandle").value = stafHandle;
+
     // PERBAIKAN: Handle waktu pengambilan dengan proper validation
-    if (waktuPengambilan && waktuPengambilan !== '' && waktuPengambilan !== 'undefined') {
+    if (waktuPengambilan && waktuPengambilan !== "" && waktuPengambilan !== "undefined") {
       try {
         // Pastikan format datetime-local yang valid
         let formattedWaktu = waktuPengambilan;
-        
+
         // Jika bukan format ISO, convert dulu
-        if (!waktuPengambilan.includes('T')) {
+        if (!waktuPengambilan.includes("T")) {
           const date = new Date(waktuPengambilan);
           if (!isNaN(date.getTime())) {
             formattedWaktu = date.toISOString().slice(0, 16);
@@ -833,84 +849,83 @@ window.openUpdateModal = function(servisId, currentStatusServis, currentStatusPe
           // Pastikan format datetime-local (YYYY-MM-DDTHH:mm)
           formattedWaktu = waktuPengambilan.slice(0, 16);
         }
-        
-        document.getElementById('waktuPengambilan').value = formattedWaktu;
+
+        document.getElementById("waktuPengambilan").value = formattedWaktu;
       } catch (error) {
-        console.error('Error setting waktu pengambilan:', error);
-        document.getElementById('waktuPengambilan').value = '';
+        console.error("Error setting waktu pengambilan:", error);
+        document.getElementById("waktuPengambilan").value = "";
       }
     } else {
-      document.getElementById('waktuPengambilan').value = '';
+      document.getElementById("waktuPengambilan").value = "";
     }
-    
+
     // Show/hide pengambilan form
-    if (currentStatusPengambilan === 'Sudah Diambil') {
-      pengambilanForm.style.display = 'block';
+    if (currentStatusPengambilan === "Sudah Diambil") {
+      pengambilanForm.style.display = "block";
     } else {
-      pengambilanForm.style.display = 'none';
+      pengambilanForm.style.display = "none";
     }
   }
-  
-  const modal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
+
+  const modal = new bootstrap.Modal(document.getElementById("updateStatusModal"));
   modal.show();
 };
 
 async function saveStatusUpdate() {
   try {
-    const servisId = document.getElementById('updateServisId').value;
-    const statusServis = document.getElementById('statusServis').value;
-    const statusPengambilan = document.getElementById('statusPengambilan').value;
-    
+    const servisId = document.getElementById("updateServisId").value;
+    const statusServis = document.getElementById("statusServis").value;
+    const statusPengambilan = document.getElementById("statusPengambilan").value;
+
     let stafHandle = null;
     let waktuPengambilan = null;
-    
+
     // PERBAIKAN: Pastikan data pengambilan disiapkan dengan benar
-    if (statusPengambilan === 'Sudah Diambil') {
-      stafHandle = document.getElementById('stafHandle').value.trim();
-      const waktuInput = document.getElementById('waktuPengambilan').value;
-      
+    if (statusPengambilan === "Sudah Diambil") {
+      stafHandle = document.getElementById("stafHandle").value.trim();
+      const waktuInput = document.getElementById("waktuPengambilan").value;
+
       if (!stafHandle) {
-        showAlert('warning', 'Nama staf handle harus diisi');
+        showAlert("warning", "Nama staf handle harus diisi");
         return;
       }
-      
+
       waktuPengambilan = waktuInput; // Kirim sebagai string ISO
     }
-    
+
     showLoading(true);
-    
+
     // PERBAIKAN: Panggil updateServisStatus dengan parameter lengkap
     await updateServisStatus(servisId, statusServis, statusPengambilan, stafHandle, waktuPengambilan);
-    
+
     // PERBAIKAN: Update local data dengan semua field
     const updateData = {
       statusServis,
       statusPengambilan,
       stafHandle,
-      waktuPengambilan: waktuPengambilan ? new Date(waktuPengambilan).toISOString() : null
+      waktuPengambilan: waktuPengambilan ? new Date(waktuPengambilan).toISOString() : null,
     };
-    
+
     updateLocalDataAndCache(servisId, updateData);
-    
+
     // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('updateStatusModal'));
+    const modal = bootstrap.Modal.getInstance(document.getElementById("updateStatusModal"));
     modal.hide();
-    
+
     // Re-apply filters untuk refresh tampilan (termasuk WhatsApp button)
     applyFilters();
-    
+
     // TAMBAHAN: Show success message dengan info WhatsApp jika status berubah ke "Sudah Selesai"
-    if (statusServis === 'Sudah Selesai') {
-      showAlert('success', 'Status berhasil diperbarui! Sekarang Anda dapat menghubungi customer via WhatsApp.');
+    if (statusServis === "Sudah Selesai") {
+      showAlert("success", "Status berhasil diperbarui! Sekarang Anda dapat menghubungi customer via WhatsApp.");
     } else {
-      showAlert('success', 'Status berhasil diperbarui dan disimpan');
+      showAlert("success", "Status berhasil diperbarui dan disimpan");
     }
-    
+
     showLoading(false);
-    
   } catch (error) {
-    console.error('Error updating status:', error);
-    showAlert('danger', 'Terjadi kesalahan saat memperbarui status: ' + error.message);
+    console.error("Error updating status:", error);
+    showAlert("danger", "Terjadi kesalahan saat memperbarui status: " + error.message);
     showLoading(false);
   }
 }
@@ -919,36 +934,36 @@ async function saveStatusUpdate() {
 function updateLocalDataAndCache(servisId, updateData) {
   try {
     // Update di currentData
-    const currentIndex = currentData.findIndex(item => item.id === servisId);
+    const currentIndex = currentData.findIndex((item) => item.id === servisId);
     if (currentIndex !== -1) {
       Object.assign(currentData[currentIndex], updateData);
     }
-    
+
     // Update di filteredData
-    const filteredIndex = filteredData.findIndex(item => item.id === servisId);
+    const filteredIndex = filteredData.findIndex((item) => item.id === servisId);
     if (filteredIndex !== -1) {
       Object.assign(filteredData[filteredIndex], updateData);
     }
-    
+
     // PERBAIKAN: Update cache dengan data terbaru
     if (currentMonthYear) {
       const { month, year } = currentMonthYear;
       const cacheKey = `month_${month}_${year}`;
       setCachedData(cacheKey, currentData);
     }
-    
+
     // PERBAIKAN: Invalidate cache terkait untuk memastikan konsistensi
     invalidateRelatedCache(servisId);
-    
+
     // Save to localStorage
     saveServisCacheToStorage();
-    
+
     // PERBAIKAN: Trigger event untuk notifikasi update
     notifyServisUpdate(servisId, updateData);
-    
+
     console.log(`Local data and cache updated for servis ID: ${servisId}`);
   } catch (error) {
-    console.error('Error updating local data and cache:', error);
+    console.error("Error updating local data and cache:", error);
   }
 }
 
@@ -956,29 +971,24 @@ function updateLocalDataAndCache(servisId, updateData) {
 function invalidateRelatedCache(servisId) {
   try {
     if (!currentMonthYear) return;
-    
+
     const { month, year } = currentMonthYear;
-    
+
     // Hapus cache untuk laporan yang mungkin terpengaruh
-    const reportCacheKeys = [
-      `report_${month}_${year}`,
-      `report_year_${year}`,
-      `stats_${month}_${year}`
-    ];
-    
+    const reportCacheKeys = [`report_${month}_${year}`, `report_year_${year}`, `stats_${month}_${year}`];
+
     // Hapus cache terkait
-    reportCacheKeys.forEach(key => {
+    reportCacheKeys.forEach((key) => {
       if (localCache.has(key)) {
         console.log(`Invalidating related cache: ${key}`);
         clearCacheKey(key);
       }
     });
-    
+
     // PERBAIKAN: Set timestamp untuk memaksa refresh pada query berikutnya
     updateCacheTimestamp(`month_${month}_${year}`, 0);
-    
   } catch (error) {
-    console.error('Error invalidating related cache:', error);
+    console.error("Error invalidating related cache:", error);
   }
 }
 
@@ -986,58 +996,56 @@ function invalidateRelatedCache(servisId) {
 function notifyServisUpdate(servisId, updateData) {
   try {
     // Trigger custom event untuk notifikasi update
-    const event = new CustomEvent('servisUpdated', {
-      detail: { 
-        servisId: servisId, 
-        updateData: updateData, 
-        timestamp: Date.now() 
-      }
+    const event = new CustomEvent("servisUpdated", {
+      detail: {
+        servisId: servisId,
+        updateData: updateData,
+        timestamp: Date.now(),
+      },
     });
     window.dispatchEvent(event);
-    
+
     // Update localStorage timestamp untuk tracking perubahan
-    localStorage.setItem('lastServisUpdate', Date.now().toString());
-    localStorage.setItem('lastServisUpdateId', servisId);
-    
+    localStorage.setItem("lastServisUpdate", Date.now().toString());
+    localStorage.setItem("lastServisUpdateId", servisId);
   } catch (error) {
-    console.error('Error notifying servis update:', error);
+    console.error("Error notifying servis update:", error);
   }
 }
 
 async function refreshData() {
   try {
     if (!currentMonthYear) return;
-    
+
     const { month, year } = currentMonthYear;
     const cacheKey = `month_${month}_${year}`;
-    
+
     // PERBAIKAN: Clear specific cache untuk periode ini
     clearCacheKey(cacheKey);
-    
+
     // Clear smart cache juga
-    if (typeof smartServisCache !== 'undefined' && smartServisCache.clearKey) {
+    if (typeof smartServisCache !== "undefined" && smartServisCache.clearKey) {
       smartServisCache.clearKey(cacheKey);
     }
-    
-    showCacheIndicator(false, 'Refreshing...');
-    
+
+    showCacheIndicator(false, "Refreshing...");
+
     // Reload data fresh dari Firestore
     await loadServisData();
-    
-    showAlert('info', 'Data berhasil diperbarui dari server');
-    
+
+    showAlert("info", "Data berhasil diperbarui dari server");
   } catch (error) {
-    console.error('Error refreshing data:', error);
-    showAlert('danger', 'Terjadi kesalahan saat memperbarui data: ' + error.message);
+    console.error("Error refreshing data:", error);
+    showAlert("danger", "Terjadi kesalahan saat memperbarui data: " + error.message);
   }
 }
 
 function showLoading(show) {
-  const refreshBtn = document.getElementById('refreshData');
-  const tampilkanBtn = document.getElementById('tampilkanBtn');
-  
+  const refreshBtn = document.getElementById("refreshData");
+  const tampilkanBtn = document.getElementById("tampilkanBtn");
+
   if (show) {
-    document.body.style.cursor = 'wait';
+    document.body.style.cursor = "wait";
     if (refreshBtn) {
       refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
       refreshBtn.disabled = true;
@@ -1047,7 +1055,7 @@ function showLoading(show) {
       tampilkanBtn.disabled = true;
     }
   } else {
-    document.body.style.cursor = 'default';
+    document.body.style.cursor = "default";
     if (refreshBtn) {
       refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh Data';
       refreshBtn.disabled = false;
@@ -1060,13 +1068,13 @@ function showLoading(show) {
 }
 
 function showCacheIndicator(isCache, customText = null) {
-  const indicator = document.getElementById('cacheIndicator');
+  const indicator = document.getElementById("cacheIndicator");
   if (indicator) {
     if (customText) {
-      indicator.style.display = 'inline-block';
+      indicator.style.display = "inline-block";
       indicator.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> ${customText}`;
     } else {
-      indicator.style.display = isCache ? 'inline-block' : 'none';
+      indicator.style.display = isCache ? "inline-block" : "none";
       if (isCache) {
         indicator.innerHTML = '<i class="fas fa-database me-1"></i> Cache';
       }
@@ -1075,21 +1083,29 @@ function showCacheIndicator(isCache, customText = null) {
 }
 
 function showAlert(type, message) {
-  const alertContainer = document.getElementById('alertContainer');
+  const alertContainer = document.getElementById("alertContainer");
   if (!alertContainer) return;
 
   alertContainer.innerHTML = `
     <div class="alert alert-${type} alert-dismissible fade show">
-      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+      <i class="fas fa-${
+        type === "success"
+          ? "check-circle"
+          : type === "warning"
+          ? "exclamation-triangle"
+          : type === "danger"
+          ? "exclamation-circle"
+          : "info-circle"
+      } me-2"></i>
       ${message}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   `;
 
-  alertContainer.style.display = 'block';
+  alertContainer.style.display = "block";
 
   setTimeout(() => {
-    const alert = alertContainer.querySelector('.alert');
+    const alert = alertContainer.querySelector(".alert");
     if (alert) {
       const bsAlert = new bootstrap.Alert(alert);
       bsAlert.close();
@@ -1099,13 +1115,13 @@ function showAlert(type, message) {
 
 // PERBAIKAN: Handle filter logic
 function handleFilterLogic() {
-  const statusServisFilter = document.getElementById('statusServisFilter');
-  const statusPengambilanFilter = document.getElementById('statusPengambilanFilter');
-  
+  const statusServisFilter = document.getElementById("statusServisFilter");
+  const statusPengambilanFilter = document.getElementById("statusPengambilanFilter");
+
   if (statusServisFilter && statusPengambilanFilter) {
     // Jika status servis "Belum Selesai", paksa status pengambilan ke "Belum Diambil"
-    if (statusServisFilter.value === 'Belum Selesai') {
-      statusPengambilanFilter.value = 'Belum Diambil';
+    if (statusServisFilter.value === "Belum Selesai") {
+      statusPengambilanFilter.value = "Belum Diambil";
       statusPengambilanFilter.disabled = true;
     } else {
       statusPengambilanFilter.disabled = false;
@@ -1114,25 +1130,24 @@ function handleFilterLogic() {
 }
 
 // PERBAIKAN: Event listeners untuk sinkronisasi data
-window.addEventListener('servisUpdated', function(event) {
+window.addEventListener("servisUpdated", function (event) {
   if (event.detail && event.detail.servisId) {
-    console.log('Servis updated from another source:', event.detail.servisId);
-    
+    console.log("Servis updated from another source:", event.detail.servisId);
+
     // Refresh data jika diperlukan
-    const lastUpdate = localStorage.getItem('lastServisUpdate');
+    const lastUpdate = localStorage.getItem("lastServisUpdate");
     const currentTime = Date.now();
-    
+
     // Jika update terjadi dalam 30 detik terakhir, refresh data
-    if (lastUpdate && (currentTime - parseInt(lastUpdate)) < 30000) {
-      console.log('Refreshing data due to recent update');
+    if (lastUpdate && currentTime - parseInt(lastUpdate) < 30000) {
+      console.log("Refreshing data due to recent update");
       syncDataIfNeeded();
     }
   }
 });
 
-
 // PERBAIKAN: Cleanup saat window/tab ditutup
-window.addEventListener('beforeunload', function() {
+window.addEventListener("beforeunload", function () {
   // Save cache sebelum halaman ditutup
   saveServisCacheToStorage();
 });
@@ -1146,44 +1161,43 @@ setInterval(() => {
 async function loadServisDataEnhanced() {
   try {
     showLoading(true);
-    
-    const month = parseInt(document.getElementById('monthSelector').value);
-    const year = parseInt(document.getElementById('yearSelector').value);
-    
+
+    const month = parseInt(document.getElementById("monthSelector").value);
+    const year = parseInt(document.getElementById("yearSelector").value);
+
     // Set current month/year untuk tracking
     currentMonthYear = { month, year };
-    
+
     // Load data dengan optimasi cache
     currentData = await getServisDataOptimized(month, year);
-    
+
     // Preload data bulan adjacent di background
     preloadAdjacentMonths(month, year);
-    
+
     // Reset search
-    const searchInput = document.getElementById('searchInputTable');
+    const searchInput = document.getElementById("searchInputTable");
     if (searchInput) {
-      searchInput.value = '';
+      searchInput.value = "";
     }
-    
+
     // Update tracking data count
     lastKnownDataCount = currentData.length;
-    
+
     // Set flag bahwa data sudah loaded
     isDataLoaded = true;
-    
+
     // Apply filters setelah data loaded
     applyFilters();
-    
+
     // Show cache indicator
     const cacheKey = `month_${month}_${year}`;
     const isFromCache = localCache.has(cacheKey) && !shouldUpdateCache(cacheKey);
     showCacheIndicator(isFromCache);
-    
+
     showLoading(false);
-    
   } catch (error) {
-    console.error('Error loading enhanced servis data:', error);
-    showAlert('danger', 'Terjadi kesalahan saat memuat data: ' + error.message);
+    console.error("Error loading enhanced servis data:", error);
+    showAlert("danger", "Terjadi kesalahan saat memuat data: " + error.message);
     showLoading(false);
     isDataLoaded = false;
   }
@@ -1193,30 +1207,30 @@ async function loadServisDataEnhanced() {
 async function getServisDataOptimized(month, year, forceRefresh = false) {
   try {
     const cacheKey = `month_${month}_${year}`;
-    
+
     // Cek apakah perlu refresh berdasarkan TTL atau forceRefresh
     const needRefresh = forceRefresh || shouldUpdateCache(cacheKey);
-    
+
     // Jika tidak perlu refresh dan data ada di cache, gunakan cache
     if (!needRefresh && localCache.has(cacheKey)) {
       console.log(`Using optimized cache for ${month}/${year}`);
       const cached = localCache.get(cacheKey);
       return cached.data;
     }
-    
+
     // Fetch data dari Firestore
     console.log(`Fetching optimized data for ${month}/${year}`);
     const data = await getServisByMonth(month, year);
-    
+
     // Update cache
     setCachedData(cacheKey, data);
-    
+
     // Save to localStorage
     saveServisCacheToStorage();
-    
+
     return data;
   } catch (error) {
-    console.error('Error getting optimized servis data:', error);
+    console.error("Error getting optimized servis data:", error);
     throw error;
   }
 }
@@ -1225,7 +1239,7 @@ async function getServisDataOptimized(month, year, forceRefresh = false) {
 async function preloadAdjacentMonths(currentMonth, currentYear) {
   try {
     const adjacentMonths = [];
-    
+
     // Bulan sebelumnya
     let prevMonth = currentMonth - 1;
     let prevYear = currentYear;
@@ -1234,7 +1248,7 @@ async function preloadAdjacentMonths(currentMonth, currentYear) {
       prevYear--;
     }
     adjacentMonths.push({ month: prevMonth, year: prevYear });
-    
+
     // Bulan selanjutnya
     let nextMonth = currentMonth + 1;
     let nextYear = currentYear;
@@ -1243,7 +1257,7 @@ async function preloadAdjacentMonths(currentMonth, currentYear) {
       nextYear++;
     }
     adjacentMonths.push({ month: nextMonth, year: nextYear });
-    
+
     // Preload data di background
     adjacentMonths.forEach(async ({ month, year }) => {
       const cacheKey = `month_${month}_${year}`;
@@ -1258,29 +1272,29 @@ async function preloadAdjacentMonths(currentMonth, currentYear) {
       }
     });
   } catch (error) {
-    console.error('Error preloading adjacent months:', error);
+    console.error("Error preloading adjacent months:", error);
   }
 }
 
 // PERBAIKAN: Monitor untuk data baru dari input-servis
 function setupNewDataMonitoring() {
   // Listen untuk perubahan di localStorage yang menandakan data baru
-  window.addEventListener('storage', function(e) {
-    if (e.key === 'newServisDataAdded' && e.newValue === 'true') {
-      console.log('New servis data detected from input-servis');
-      
+  window.addEventListener("storage", function (e) {
+    if (e.key === "newServisDataAdded" && e.newValue === "true") {
+      console.log("New servis data detected from input-servis");
+
       // Reset flag
-      localStorage.removeItem('newServisDataAdded');
-      
+      localStorage.removeItem("newServisDataAdded");
+
       // Sync data jika sedang menampilkan data
       if (isDataLoaded && currentMonthYear) {
         syncDataIfNeeded();
       }
     }
-    
-    if (e.key === 'lastServisInputTime') {
-      console.log('New servis input detected');
-      
+
+    if (e.key === "lastServisInputTime") {
+      console.log("New servis input detected");
+
       // Sync data dengan delay untuk memastikan data sudah tersimpan
       setTimeout(() => {
         if (isDataLoaded && currentMonthYear) {
@@ -1289,18 +1303,18 @@ function setupNewDataMonitoring() {
       }, 2000); // Delay 2 detik
     }
   });
-  
+
   // Periodic check untuk data baru (fallback)
   setInterval(() => {
     if (isDataLoaded && currentMonthYear) {
-      const lastInputTime = localStorage.getItem('lastServisInputTime');
+      const lastInputTime = localStorage.getItem("lastServisInputTime");
       if (lastInputTime) {
         const inputTime = parseInt(lastInputTime);
         const timeDiff = Date.now() - inputTime;
-        
+
         // Jika ada input dalam 1 menit terakhir dan belum di-sync
         if (timeDiff < 60 * 1000 && timeDiff > lastDataCheck) {
-          console.log('Periodic sync triggered by recent input');
+          console.log("Periodic sync triggered by recent input");
           syncDataIfNeeded();
           lastDataCheck = Date.now();
         }
@@ -1309,40 +1323,33 @@ function setupNewDataMonitoring() {
   }, 30 * 1000); // Check setiap 30 detik
 }
 
-
 // PERBAIKAN: Debug functions untuk development
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-  window.debugServisCache = function() {
-    console.group('Servis Cache Debug Information');
-    console.log('Local Cache Size:', localCache.size);
-    console.log('Cache Meta Size:', cacheMeta.size);
-    console.log('Cache Keys:', Array.from(localCache.keys()));
-    console.log('Current Data Count:', currentData.length);
-    console.log('Last Known Data Count:', lastKnownDataCount);
-    console.log('Current Month/Year:', currentMonthYear);
-    console.log('Is Data Loaded:', isDataLoaded);
+if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+  window.debugServisCache = function () {
+    console.group("Servis Cache Debug Information");
+    console.log("Local Cache Size:", localCache.size);
+    console.log("Cache Meta Size:", cacheMeta.size);
+    console.log("Cache Keys:", Array.from(localCache.keys()));
+    console.log("Current Data Count:", currentData.length);
+    console.log("Last Known Data Count:", lastKnownDataCount);
+    console.log("Current Month/Year:", currentMonthYear);
+    console.log("Is Data Loaded:", isDataLoaded);
     console.groupEnd();
   };
-  
-  window.forceDataSync = function() {
-    console.log('Forcing data sync...');
+
+  window.forceDataSync = function () {
+    console.log("Forcing data sync...");
     syncDataIfNeeded();
   };
-  
-  window.clearAllServisCache = function() {
+
+  window.clearAllServisCache = function () {
     localCache.clear();
     cacheMeta.clear();
-    localStorage.removeItem('servisCache');
-    localStorage.removeItem('servisCacheMeta');
-    console.log('All servis cache cleared');
+    localStorage.removeItem("servisCache");
+    localStorage.removeItem("servisCacheMeta");
+    console.log("All servis cache cleared");
   };
 }
 
 // Export functions yang mungkin diperlukan
-export { 
-  loadServisDataEnhanced as loadServisData,
-  syncDataIfNeeded,
-  getCachedData,
-  setCachedData,
-  clearCacheKey
-};
+export { loadServisDataEnhanced as loadServisData, syncDataIfNeeded, getCachedData, setCachedData, clearCacheKey };
