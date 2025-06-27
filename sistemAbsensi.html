@@ -18,6 +18,7 @@
     <!-- Tambahkan Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js" type="module"></script>
     <!-- jQuery first -->
     <script src="js/jquery-3.6.3.min.js"></script>
     <!-- Bootstrap CSS and JS -->
@@ -70,6 +71,176 @@
 
       .text-info {
         color: #17a2b8;
+      }
+
+      /* Tambahan CSS untuk Info Realtime */
+      .info-realtime-section {
+        margin-top: 30px;
+      }
+
+      .info-panel {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 25px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .mode-toggle {
+        display: flex;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 25px;
+        padding: 5px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(10px);
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 10px 20px;
+        border: none;
+        background: transparent;
+        color: white;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .mode-btn.active {
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .info-btn {
+        padding: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+      }
+
+      .info-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .info-btn:active {
+        transform: translateY(0);
+      }
+
+      .info-btn.gojek {
+        background: linear-gradient(135deg, #00aa13 0%, #00d4aa 100%);
+      }
+
+      .info-btn.servis {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+      }
+
+      .admin-panel {
+        display: none;
+      }
+
+      .admin-panel.active {
+        display: block;
+      }
+
+      .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #dc3545;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.connected {
+        background: #28a745;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .notification-log {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        max-height: 200px;
+        overflow-y: auto;
+        backdrop-filter: blur(10px);
+      }
+
+      .log-item {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 14px;
+      }
+
+      .log-item:last-child {
+        border-bottom: none;
+      }
+
+      .log-time {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+      }
+
+      .audio-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .volume-control {
+        flex: 1;
+      }
+
+      .volume-slider {
+        width: 100%;
+        height: 5px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.3);
+        outline: none;
+      }
+
+      .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: white;
+        cursor: pointer;
       }
     </style>
 
@@ -425,7 +596,7 @@
                   </button>
                 </div>
               </div>
-              
+
               <div class="alert alert-info m-2">
                 <div class="d-flex align-items-center">
                   <i class="fas fa-calendar-day me-2"></i>
@@ -544,6 +715,80 @@
                 </div>
               </div>
             </div>
+            <div class="info-realtime-section">
+              <div class="card">
+                <div class="card-header">
+                  <h2>
+                    <i class="fas fa-broadcast-tower"></i>
+                    Sistem Info Realtime
+                  </h2>
+                </div>
+                <div class="card-body p-0">
+                  <div class="info-panel">
+                    <!-- Mode Toggle -->
+                    <div class="mode-toggle">
+                      <button class="mode-btn active" id="buttonModeBtn">
+                        <i class="fas fa-hand-pointer"></i>
+                        Mode Tombol
+                      </button>
+                      <button class="mode-btn" id="adminModeBtn">
+                        <i class="fas fa-desktop"></i>
+                        Mode Admin
+                      </button>
+                    </div>
+
+                    <!-- Button Panel -->
+                    <div class="button-panel" id="buttonPanel">
+                      <div class="info-buttons">
+                        <button class="info-btn gojek" id="gojekBtn">
+                          <i class="fab fa-google"></i>
+                          <div>Info Gojek</div>
+                          <small>Klik untuk panggil admin</small>
+                        </button>
+                        <button class="info-btn servis" id="servisBtn">
+                          <i class="fas fa-tools"></i>
+                          <div>Ambil Barang Servis</div>
+                          <small>Klik untuk panggil admin</small>
+                        </button>
+                      </div>
+                      <div class="connection-status">
+                        <div class="status-dot" id="connectionDot"></div>
+                        <span id="connectionText">Menghubungkan...</span>
+                      </div>
+                    </div>
+
+                    <!-- Admin Panel -->
+                    <div class="admin-panel" id="adminPanel">
+                      <div class="connection-status">
+                        <div class="status-dot" id="adminConnectionDot"></div>
+                        <span id="adminConnectionText">Menghubungkan...</span>
+                      </div>
+
+                      <div class="audio-controls">
+                        <i class="fas fa-volume-up"></i>
+                        <div class="volume-control">
+                          <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" />
+                        </div>
+                        <span id="volumeValue">80%</span>
+                      </div>
+
+                      <div class="notification-log">
+                        <h6>
+                          <i class="fas fa-history"></i>
+                          Log Notifikasi
+                        </h6>
+                        <div id="notificationLog">
+                          <div class="log-item">
+                            <div>Sistem siap menerima notifikasi</div>
+                            <div class="log-time" id="systemStartTime"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -585,7 +830,7 @@
         </div>
       </div>
     </div>
-
+    <script type="module" src="js/pages/info-realtime.js"></script>
     <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pages/sistem-absensi.js"></script>
