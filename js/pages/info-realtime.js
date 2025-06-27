@@ -21,12 +21,12 @@ const database = getDatabase(app);
 
 class InfoRealtimeSystem {
   constructor() {
-    this.currentMode = 'button';
+    this.currentMode = 'admin';
     this.isConnected = false;
-    this.audioVolume = 0.8;
+    this.audioVolume = 0.9;
     this.notificationSounds = {
-      gojek: 'Halo admin, ada Gojek ya',
-      servis: 'Halo admin, tolong ambilkan barang servisan ya'
+      gojek: 'Halo admin, ada Gojek',
+      servis: 'Halo admin, tolong ambilkan barang servisan'
     };
     
     this.init();
