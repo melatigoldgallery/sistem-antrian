@@ -19,50 +19,31 @@ import {
 import { leaveCache, leaveMonthCache, updateCacheTimestamp,clearLeaveCache } from "./leave-service.js";
 
 // Perbarui fungsi untuk menyertakan filter shift
-export async function getAttendanceByDateRange(startDate, endDate, lastDoc = null, itemLimit = 1000, shift = null) {
+export async function getAttendanceByDateRange(startDate, endDate, lastDoc = null, itemLimit = 1000, shift = null, status = "all") {
   try {
-    // Konversi string tanggal ke objek Date
     const start = new Date(startDate);
     const end = new Date(endDate);
     
-    // Set waktu ke 00:00:00 untuk tanggal mulai
     start.setHours(0, 0, 0, 0);
-    
-    // Set waktu ke 23:59:59 untuk tanggal akhir
     end.setHours(23, 59, 59, 999);
     
-    // Buat referensi ke koleksi attendance
     const attendanceRef = collection(db, "attendance");
     
-    // Buat query dengan filter tanggal
+    // Simplified query - hanya filter berdasarkan tanggal
     let queryConstraints = [
       where("date", ">=", startDate),
       where("date", "<=", endDate),
       orderBy("date", "desc"),
-      orderBy("timeIn", "desc"),
-      limit(itemLimit)
+      limit(itemLimit * 2) // Ambil lebih banyak data untuk antisipasi filtering
     ];
     
-    // Jika shift dipilih (bukan "all" atau null), tambahkan filter shift
-    if (shift && shift !== "all") {
-      // Karena keterbatasan Firestore, kita tidak bisa menggabungkan where dengan orderBy pada field yang sama
-      // Jadi kita akan filter hasil query secara manual
-      console.log(`Filtering by shift: ${shift}`);
-    }
-    
-    // Buat query
     let q = query(attendanceRef, ...queryConstraints);
-    
-    // Ambil data
     const snapshot = await getDocs(q);
     
-    console.log(`Found ${snapshot.docs.length} attendance records`);
+    console.log(`Found ${snapshot.docs.length} attendance records before filtering`);
     
-    // Konversi dokumen ke array objek
     let attendanceRecords = snapshot.docs.map((doc) => {
       const data = doc.data();
-      
-      // Konversi timestamp ke objek Date
       const timeIn = data.timeIn ? new Date(data.timeIn.seconds * 1000) : null;
       const timeOut = data.timeOut ? new Date(data.timeOut.seconds * 1000) : null;
       
@@ -80,16 +61,31 @@ export async function getAttendanceByDateRange(startDate, endDate, lastDoc = nul
       };
     });
     
-    // Filter berdasarkan shift jika diperlukan
+    // Filter berdasarkan shift
     if (shift && shift !== "all") {
       attendanceRecords = attendanceRecords.filter(record => record.shift === shift);
       console.log(`After shift filtering: ${attendanceRecords.length} records`);
     }
     
+    // Filter berdasarkan status - PERBAIKAN INI
+    if (status && status !== "all") {
+      const originalCount = attendanceRecords.length;
+      attendanceRecords = attendanceRecords.filter(record => {
+        const recordStatus = record.status || "Tepat Waktu";
+        return recordStatus === status;
+      });
+      console.log(`After status filtering (${status}): ${attendanceRecords.length} records (from ${originalCount})`);
+    }
+    
+    // Limit hasil akhir
+    if (attendanceRecords.length > itemLimit) {
+      attendanceRecords = attendanceRecords.slice(0, itemLimit);
+    }
+    
     return {
       attendanceRecords: attendanceRecords,
-      lastDoc: null, // Tidak perlu lastDoc karena kita mengambil semua data
-      hasMore: false // Tidak perlu hasMore karena kita mengambil semua data
+      lastDoc: null,
+      hasMore: false
     };
     
   } catch (error) {
@@ -97,7 +93,6 @@ export async function getAttendanceByDateRange(startDate, endDate, lastDoc = nul
     throw error;
   }
 }
-
 
 
 // Modifikasi deleteAttendanceByDateRange untuk membersihkan cache

@@ -93,23 +93,19 @@ function showLoading(show) {
 }
 
 // Tambahkan fungsi untuk mengambil data dalam batch
-async function getAttendanceInBatches(startDate, endDate, shift) {
-  const batchSize = 7; // 7 hari per batch
+async function getAttendanceInBatches(startDate, endDate, shift, status = "all") {
+  const batchSize = 7;
   const batches = [];
 
-  // Bagi rentang tanggal menjadi batch-batch kecil
   let currentDate = new Date(startDate);
   const endDateObj = new Date(endDate);
 
   while (currentDate <= endDateObj) {
     const batchStart = new Date(currentDate);
-
-    // Hitung tanggal akhir batch (maksimal 7 hari atau sampai endDate)
     currentDate.setDate(currentDate.getDate() + batchSize - 1);
     if (currentDate > endDateObj) {
       currentDate = new Date(endDateObj);
     }
-
     const batchEnd = new Date(currentDate);
 
     batches.push({
@@ -117,22 +113,15 @@ async function getAttendanceInBatches(startDate, endDate, shift) {
       end: formatDateForAPI(batchEnd),
     });
 
-    // Pindah ke batch berikutnya
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  // Ambil data untuk setiap batch
   const allData = [];
   for (const batch of batches) {
-    const batchData = await getAttendanceByDateRange(batch.start, batch.end);
+    const batchData = await getAttendanceByDateRange(batch.start, batch.end, null, 1000, shift, status);
     if (Array.isArray(batchData)) {
       allData.push(...batchData);
     }
-  }
-
-  // Filter berdasarkan shift jika diperlukan
-  if (shift !== "all") {
-    return allData.filter((record) => record.shift === shift);
   }
 
   return allData;
@@ -506,8 +495,9 @@ async function loadAttendanceData(forceRefresh = false) {
     const startDateInput = document.getElementById("startDate");
     const endDateInput = document.getElementById("endDate");
     const shiftFilterEl = document.getElementById("shiftFilter");
+    const statusFilterEl = document.getElementById("statusFilter"); // TAMBAH INI
 
-    if (!startDateInput || !endDateInput || !shiftFilterEl) {
+    if (!startDateInput || !endDateInput || !shiftFilterEl || !statusFilterEl) {
       console.error("Required inputs not found");
       return;
     }
@@ -515,13 +505,13 @@ async function loadAttendanceData(forceRefresh = false) {
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
     const selectedShift = shiftFilterEl.value;
+    const selectedStatus = statusFilterEl.value; // TAMBAH INI
 
     if (!startDate || !endDate) {
       showAlert("warning", "Silakan pilih rentang tanggal terlebih dahulu");
       return;
     }
 
-    // Validasi shift - harus dipilih
     if (!selectedShift) {
       showAlert("warning", "Mohon pilih shift terlebih dahulu");
       shiftFilterEl.classList.add("is-invalid");
@@ -530,104 +520,74 @@ async function loadAttendanceData(forceRefresh = false) {
       shiftFilterEl.classList.remove("is-invalid");
     }
 
-    // Buat kunci cache dengan shift
-    const cacheKey = `range_${startDate}_${endDate}_${selectedShift}`;
+    // Update cache key dengan status
+    const cacheKey = `range_${startDate}_${endDate}_${selectedShift}_${selectedStatus}`;
 
-    // PERBAIKAN: Cek apakah rentang tanggal mencakup hari ini
     const today = getLocalDateString();
     const includesCurrentDay = startDate <= today && today <= endDate;
 
-    // PERBAIKAN: Hanya refresh data jika dipaksa atau jika data mencakup hari ini dan cache sudah kedaluwarsa
     const needsRefresh =
       forceRefresh || (includesCurrentDay && shouldUpdateAttendanceCache(cacheKey)) || !attendanceCache.has(cacheKey);
 
     if (!needsRefresh) {
       console.log(`Using cached attendance data for range ${startDate} to ${endDate}`);
-
-      // Tampilkan indikator cache di UI
       const cacheIndicator = document.getElementById("cacheIndicator");
       if (cacheIndicator) {
         cacheIndicator.textContent = "Menggunakan data cache";
         cacheIndicator.style.display = "inline-block";
       }
-
-      // Ambil data dari cache
       const cachedData = attendanceCache.get(cacheKey);
-
-      // Tampilkan data
       displayAttendanceData(cachedData);
       return;
     }
 
-    // Tampilkan indikator loading
     showLoading(true);
 
-    // PERBAIKAN: Gunakan batch loading untuk mengurangi jumlah reads
-    // Hanya ambil data dari server jika benar-benar diperlukan
     let result;
-
-    // PERBAIKAN: Jika rentang tanggal pendek (<=7 hari), ambil sekaligus
-    // Jika panjang, gunakan batch loading
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
     const dayDiff = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
 
     if (dayDiff <= 7) {
-      // Ambil data sekaligus untuk rentang pendek
-      result = await getAttendanceByDateRange(startDate, endDate, null, 1000, selectedShift);
+      // Pass status parameter ke service
+      result = await getAttendanceByDateRange(startDate, endDate, null, 1000, selectedShift, selectedStatus);
     } else {
-      // Gunakan batch loading untuk rentang panjang
-      const batchData = await getAttendanceInBatches(startDate, endDate, selectedShift);
+      const batchData = await getAttendanceInBatches(startDate, endDate, selectedShift, selectedStatus);
       result = { attendanceRecords: batchData };
     }
 
-    // Update data
     currentAttendanceData = result.attendanceRecords || [];
-
-    // PERBAIKAN: Simpan data ke cache dengan deep copy untuk menghindari referensi
     attendanceCache.set(cacheKey, JSON.parse(JSON.stringify(currentAttendanceData)));
     updateAttendanceCacheTimestamp(cacheKey);
     saveAttendanceCacheToStorage();
 
-    // Sembunyikan indikator loading
     showLoading(false);
-
-    // Sembunyikan indikator cache di UI
     const cacheIndicator = document.getElementById("cacheIndicator");
     if (cacheIndicator) {
       cacheIndicator.style.display = "none";
     }
 
-    // Tampilkan data
     displayAttendanceData(currentAttendanceData);
   } catch (error) {
     console.error("Error loading attendance data:", error);
-
-    // Coba gunakan cache sebagai fallback jika terjadi error
+    // Fallback logic tetap sama
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
     const selectedShift = document.getElementById("shiftFilter").value;
-    const cacheKey = `range_${startDate}_${endDate}_${selectedShift}`;
+    const selectedStatus = document.getElementById("statusFilter").value; // TAMBAH INI
+    const cacheKey = `range_${startDate}_${endDate}_${selectedShift}_${selectedStatus}`;
 
     if (attendanceCache.has(cacheKey)) {
       console.log(`Fallback to cached data for range ${startDate} to ${endDate} due to error`);
-      // Tampilkan pesan error tapi tetap tampilkan data
       showAlert("warning", "Terjadi kesalahan saat mengambil data terbaru. Menampilkan data dari cache.");
-
-      // Tampilkan indikator cache di UI
       const cacheIndicator = document.getElementById("cacheIndicator");
       if (cacheIndicator) {
         cacheIndicator.textContent = "Menggunakan data cache (fallback)";
         cacheIndicator.style.display = "inline-block";
       }
-
-      // Ambil data dari cache
       const cachedData = attendanceCache.get(cacheKey);
-
-      // Tampilkan data
       displayAttendanceData(cachedData);
     } else {
-      // Tidak ada cache, tampilkan pesan error
       showAlert("danger", "Terjadi kesalahan saat memuat data kehadiran: " + error.message);
       showLoading(false);
     }
@@ -777,12 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Sembunyikan elemen laporan lainnya
   hideReportElements();
-
-  // Tambahkan event listeners untuk tombol filter
-  document.getElementById("filterAll")?.addEventListener("click", () => filterAttendanceByStatus("all"));
-  document.getElementById("filterOnTime")?.addEventListener("click", () => filterAttendanceByStatus("ontime"));
-  document.getElementById("filterLate")?.addEventListener("click", () => filterAttendanceByStatus("late"));
-
+  
   // Password toggle
   document.getElementById("togglePassword")?.addEventListener("click", function () {
     const passwordInput = document.getElementById("adminPassword");
@@ -898,6 +853,27 @@ function setupEventListeners() {
     exportPdfBtn.addEventListener("click", exportToPDF);
   }
 
+  document.getElementById("statusFilter")?.addEventListener("change", function () {
+    if (this.value) {
+      this.classList.remove("is-invalid");
+    }
+    // Auto-reload data ketika status berubah jika sudah ada data
+    if (currentAttendanceData.length > 0) {
+      loadAttendanceData(false);
+    }
+  });
+
+    // Tambahkan juga untuk shift filter agar konsisten
+    document.getElementById("shiftFilter")?.addEventListener("change", function () {
+      if (this.value) {
+        this.classList.remove("is-invalid");
+      }
+      // Auto-reload data ketika shift berubah jika sudah ada data
+      if (currentAttendanceData.length > 0) {
+        loadAttendanceData(false);
+      }
+    });
+
   // Delete data button
   const deleteDataBtn = document.getElementById("deleteDataBtn");
   if (deleteDataBtn) {
@@ -919,15 +895,6 @@ function setupEventListeners() {
   } else {
     console.error("Confirm delete button not found");
   }
-
-  // Filter status dropdown
-  document.querySelectorAll("[data-status-filter]").forEach((item) => {
-    item.addEventListener("click", function (e) {
-      e.preventDefault();
-      const status = this.getAttribute("data-status-filter");
-      filterAttendanceByStatus(status);
-    });
-  });
 
   // Filter tipe karyawan dropdown
   document.querySelectorAll("[data-employee-filter]").forEach((item) => {
@@ -1083,86 +1050,49 @@ async function deleteAttendanceData() {
 // Fungsi untuk menghasilkan laporan kehadiran
 async function generateReport(forceRefresh = false) {
   try {
-    // Validasi input
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
     const selectedShift = document.getElementById("shiftFilter").value;
+    const selectedStatus = document.getElementById("statusFilter").value || "all"; // TAMBAH INI
 
     if (!startDate || !endDate) {
       showAlert("warning", "Pilih rentang tanggal terlebih dahulu");
       return;
     }
 
-    // Validasi rentang tanggal
     if (new Date(startDate) > new Date(endDate)) {
       showAlert("warning", "Tanggal mulai tidak boleh lebih besar dari tanggal akhir");
       return;
     }
 
-    // Create cache key
-    const cacheKey = `range_${startDate}_${endDate}_${selectedShift}`;
+    // Include status in cache key - PERBAIKAN INI
+    const cacheKey = `range_${startDate}_${endDate}_${selectedShift}_${selectedStatus}`;
 
-    // Show loading state
     showAlert("info", '<i class="fas fa-spinner fa-spin me-2"></i> Memuat data kehadiran...', false);
 
-    // Cek apakah rentang tanggal mencakup hari ini
     const today = getLocalDateString();
     const includesCurrentDay = startDate <= today && today <= endDate;
 
-    // Cek apakah ada update kehadiran sejak terakhir kali cache dibuat
-    const lastAttendanceUpdate = localStorage.getItem("lastAttendanceScanTime");
-    const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
-
-    // Tentukan apakah perlu refresh
-    // PERUBAHAN: Gunakan attendanceCache alih-alih attendanceDataCache
     let needsRefresh = forceRefresh || !attendanceCache.has(cacheKey);
 
-    // Jika mencakup hari ini atau ada update kehadiran baru, refresh data
-    if (includesCurrentDay && lastAttendanceUpdate && cacheTimestamp) {
-      needsRefresh = needsRefresh || parseInt(lastAttendanceUpdate) > parseInt(cacheTimestamp);
-    }
-
-    // Cek juga apakah ada data yang dihapus yang mempengaruhi rentang ini
-    const deletedDataTimestamp = localStorage.getItem("attendanceDataDeletedTime");
-    const deletedDataRange = localStorage.getItem("attendanceDataDeletedRange");
-
-    if (deletedDataTimestamp && cacheTimestamp && deletedDataRange) {
-      try {
-        const deletedRange = JSON.parse(deletedDataRange);
-        // Jika rentang yang dihapus tumpang tindih dengan rentang yang diminta
-        if (deletedRange.startDate <= endDate && deletedRange.endDate >= startDate) {
-          // Dan penghapusan terjadi setelah cache dibuat
-          if (parseInt(deletedDataTimestamp) > parseInt(cacheTimestamp)) {
-            needsRefresh = true;
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing deleted data range:", e);
-      }
-    }
-
-    // TAMBAHAN: Cek juga apakah cache perlu diperbarui berdasarkan TTL
-    if (!needsRefresh && shouldUpdateAttendanceCache(cacheKey)) {
+    if (includesCurrentDay && shouldUpdateAttendanceCache(cacheKey)) {
       needsRefresh = true;
     }
 
     let attendanceData = [];
 
     if (needsRefresh) {
-      console.log(`Fetching fresh data for range ${startDate} to ${endDate}, shift: ${selectedShift}`);
+      console.log(`Fetching fresh data for range ${startDate} to ${endDate}, shift: ${selectedShift}, status: ${selectedStatus}`);
 
-      // Sembunyikan indikator cache di UI
       const cacheIndicator = document.getElementById("cacheIndicator");
       if (cacheIndicator) {
         cacheIndicator.style.display = "none";
       }
 
       try {
-        // Fetch from Firestore
-        const result = await getAttendanceByDateRange(startDate, endDate);
+        // Pass status parameter - PERBAIKAN INI
+        const result = await getAttendanceByDateRange(startDate, endDate, null, 1000, selectedShift, selectedStatus);
 
-        // PERBAIKAN: Periksa format hasil yang dikembalikan
-        // Jika result adalah objek dengan property attendanceRecords, gunakan itu
         if (result && typeof result === "object") {
           if (Array.isArray(result)) {
             attendanceData = result;
@@ -1179,146 +1109,72 @@ async function generateReport(forceRefresh = false) {
           attendanceData = [];
         }
 
-        // Filter berdasarkan shift jika diperlukan
-        if (selectedShift !== "all" && Array.isArray(attendanceData)) {
-          attendanceData = attendanceData.filter((record) => record.shift === selectedShift);
-        }
-
-        // PERUBAHAN: Gunakan attendanceCache dan fungsi dari attendance-service.js
+        // Cache the filtered data
         attendanceCache.set(cacheKey, [...attendanceData]);
         updateAttendanceCacheTimestamp(cacheKey);
         saveAttendanceCacheToStorage();
 
-        // Hide loading message
         hideAlert();
       } catch (error) {
         console.error("Error fetching attendance data:", error);
 
-        // Jika gagal dan ada cache, gunakan cache sebagai fallback
-        // PERUBAHAN: Gunakan attendanceCache alih-alih attendanceDataCache
         if (attendanceCache.has(cacheKey)) {
           console.log("Using cached data as fallback due to fetch error");
           attendanceData = attendanceCache.get(cacheKey);
           showAlert("warning", "Gagal mengambil data terbaru. Menggunakan data cache sebagai fallback.");
         } else {
-          // Jika tidak ada cache, set attendanceData ke array kosong
           attendanceData = [];
           showAlert("danger", `Gagal mengambil data: ${error.message}`);
         }
       }
     } else {
-      console.log(`Using cached attendance data for range ${startDate} to ${endDate}, shift: ${selectedShift}`);
+      console.log(`Using cached attendance data for range ${startDate} to ${endDate}, shift: ${selectedShift}, status: ${selectedStatus}`);
 
-      // Tampilkan indikator cache di UI jika ada
       const cacheIndicator = document.getElementById("cacheIndicator");
       if (cacheIndicator) {
-        const cacheTime = new Date(parseInt(cacheTimestamp));
-        const formattedTime = cacheTime.toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        cacheIndicator.textContent = `Menggunakan data cache (${formattedTime})`;
-        cacheIndicator.style.display = "inline-block";
+        const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
+        if (cacheTimestamp) {
+          const cacheTime = new Date(parseInt(cacheTimestamp));
+          const formattedTime = cacheTime.toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          cacheIndicator.textContent = `Menggunakan data cache (${formattedTime})`;
+          cacheIndicator.style.display = "inline-block";
+        }
       }
 
-      // PERUBAHAN: Ambil data dari attendanceCache alih-alih attendanceDataCache
       attendanceData = attendanceCache.get(cacheKey) || [];
-
-      // Hide loading message
       hideAlert();
     }
 
-    // PERBAIKAN: Pastikan attendanceData adalah array
     if (!Array.isArray(attendanceData)) {
       console.error("attendanceData is not an array:", attendanceData);
       attendanceData = [];
     }
 
-    // Update global data
+    // Update global data - TIDAK PERLU FILTERING LAGI karena sudah difilter di service
     currentAttendanceData = attendanceData;
     filteredData = [...attendanceData];
 
-    // Jika tidak ada data, tampilkan pesan
+    // Rest of the function remains the same...
     if (!attendanceData || attendanceData.length === 0) {
-      // PERBAIKAN: Periksa apakah elemen ada sebelum mengubah propertinya
       const noDataMessage = document.getElementById("noDataMessage");
       if (noDataMessage) {
         noDataMessage.style.display = "block";
-      } else {
-        // Jika elemen tidak ada, buat dan tampilkan pesan
-        const reportContainer = document.querySelector(".report-container");
-        if (reportContainer) {
-          const noDataDiv = document.createElement("div");
-          noDataDiv.id = "noDataMessage";
-          noDataDiv.className = "text-center my-5";
-          noDataDiv.innerHTML = `
-            <i class="fas fa-search fa-3x text-muted mb-3"></i>
-            <h4 class="text-muted">Tidak ada data kehadiran</h4>
-            <p class="text-muted">Tidak ada data kehadiran untuk periode yang dipilih.</p>
-          `;
-          reportContainer.appendChild(noDataDiv);
-        }
       }
 
-      // Periksa apakah elemen-elemen ini ada sebelum mencoba mengubah propertinya
-      const attendanceTable = document.getElementById("attendanceTable");
-      const exportBtn = document.getElementById("exportBtn");
-      const printBtn = document.getElementById("printBtn");
-      const deleteDataBtn = document.getElementById("deleteDataBtn");
-      const reportSummary = document.getElementById("reportSummary");
-      const filterContainer = document.getElementById("filterContainer");
-
-      if (attendanceTable) attendanceTable.style.display = "none";
-      if (exportBtn) exportBtn.style.display = "none";
-      if (printBtn) printBtn.style.display = "none";
-      if (deleteDataBtn) deleteDataBtn.style.display = "none";
-      if (reportSummary) reportSummary.style.display = "none";
-      if (filterContainer) filterContainer.style.display = "none";
-
-      // PERBAIKAN: Tampilkan alert untuk memberi tahu user
-      showAlert(
-        "info",
-        '<i class="fas fa-info-circle me-2"></i> Tidak ada data kehadiran untuk periode yang dipilih',
-        true
-      );
-
+      hideReportElements();
+      showAlert("info", '<i class="fas fa-info-circle me-2"></i> Tidak ada data kehadiran untuk filter yang dipilih', true);
       return;
     }
 
-    // Tampilkan data
-    const noDataMessage = document.getElementById("noDataMessage");
-    const attendanceTable = document.getElementById("attendanceTable");
-    const exportBtn = document.getElementById("exportBtn");
-    const printBtn = document.getElementById("printBtn");
-    const deleteDataBtn = document.getElementById("deleteDataBtn");
-    const reportSummary = document.getElementById("reportSummary");
-    const filterContainer = document.getElementById("filterContainer");
+    // Show data
+    showReportElements();
+    displayAttendanceData(filteredData);
+    updateSummaryCards();
 
-    if (noDataMessage) noDataMessage.style.display = "none";
-    if (attendanceTable) attendanceTable.style.display = "table";
-    if (exportBtn) exportBtn.style.display = "inline-block";
-    if (printBtn) printBtn.style.display = "inline-block";
-    if (deleteDataBtn) deleteDataBtn.style.display = "inline-block";
-    if (reportSummary) reportSummary.style.display = "block";
-    if (filterContainer) filterContainer.style.display = "block";
-
-    // Render tabel
-    if (typeof renderAttendanceTable === "function") {
-      renderAttendanceTable(filteredData);
-    } else {
-      // Fallback jika fungsi renderAttendanceTable tidak tersedia
-      displayAttendanceData(filteredData);
-    }
-
-    // Hitung dan tampilkan statistik
-    if (typeof calculateStats === "function") {
-      calculateStats(filteredData);
-    } else {
-      // Fallback jika fungsi calculateStats tidak tersedia
-      updateSummaryCards();
-    }
-
-    // Tampilkan rentang tanggal yang dipilih
+    // Show date range info
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
@@ -1344,98 +1200,17 @@ async function generateReport(forceRefresh = false) {
     const dateRangeInfo = document.getElementById("dateRangeInfo");
     if (dateRangeInfo) dateRangeInfo.textContent = dateRangeText;
 
-    // Tampilkan informasi shift
-    const shiftText =
-      selectedShift === "all" ? "Semua Shift" : selectedShift === "morning" ? "Shift Pagi" : "Shift Sore";
+    // Show shift and status info
+    const shiftText = selectedShift === "all" ? "Semua Shift" : selectedShift === "morning" ? "Shift Pagi" : "Shift Sore";
+    const statusText = selectedStatus === "all" ? "Semua Status" : selectedStatus;
 
     const shiftInfo = document.getElementById("shiftInfo");
-    if (shiftInfo) shiftInfo.textContent = `Shift: ${shiftText}`;
+    if (shiftInfo) shiftInfo.textContent = `Shift: ${shiftText} | Status: ${statusText}`;
 
-    // Scroll ke tabel
-    if (attendanceTable) attendanceTable.scrollIntoView({ behavior: "smooth" });
-
-    // PERBAIKAN: Setup filter listeners
-    setupFilterListeners();
   } catch (error) {
     console.error("Error generating report:", error);
     showAlert("danger", `<i class="fas fa-exclamation-circle me-2"></i> Terjadi kesalahan: ${error.message}`);
   }
-}
-
-// Fungsi untuk setup filter listeners
-function setupFilterListeners() {
-  // Filter status
-  const statusFilterItems = document.querySelectorAll("[data-status-filter]");
-  statusFilterItems.forEach((item) => {
-    item.addEventListener("click", function (e) {
-      e.preventDefault();
-      const status = this.getAttribute("data-status-filter");
-
-      // Update UI untuk menunjukkan filter aktif
-      statusFilterItems.forEach((el) => el.classList.remove("active"));
-      this.classList.add("active");
-
-      // Filter data
-      if (status === "all") {
-        filteredData = [...currentAttendanceData];
-      } else if (status === "ontime") {
-        filteredData = currentAttendanceData.filter((record) => record.status === "Tepat Waktu");
-      } else if (status === "late") {
-        filteredData = currentAttendanceData.filter((record) => record.status === "Terlambat");
-      } else if (status === "latepermission") {
-        filteredData = currentAttendanceData.filter((record) => record.status === "Izin Terlambat");
-      }
-
-      // Update UI
-      updateSummaryCards();
-      displayAllData();
-
-      // Update dropdown button text
-      const statusFilterDropdown = document.getElementById("statusFilterDropdown");
-      if (statusFilterDropdown) {
-        const statusText =
-          status === "all"
-            ? "Status"
-            : status === "ontime"
-            ? "Tepat Waktu"
-            : status === "late"
-            ? "Terlambat"
-            : "Izin Terlambat";
-        statusFilterDropdown.innerHTML = `<i class="fas fa-filter"></i> ${statusText}`;
-      }
-    });
-  });
-
-  // Filter tipe karyawan
-  const employeeFilterItems = document.querySelectorAll("[data-employee-filter]");
-  employeeFilterItems.forEach((item) => {
-    item.addEventListener("click", function (e) {
-      e.preventDefault();
-      const type = this.getAttribute("data-employee-filter");
-
-      // Update UI untuk menunjukkan filter aktif
-      employeeFilterItems.forEach((el) => el.classList.remove("active"));
-      this.classList.add("active");
-
-      // Filter data
-      if (type === "all") {
-        filteredData = [...currentAttendanceData];
-      } else {
-        filteredData = currentAttendanceData.filter((record) => record.type === type);
-      }
-
-      // Update UI
-      displayAllData();
-      calculateStats(filteredData);
-
-      // Update dropdown button text
-      const employeeFilterDropdown = document.getElementById("employeeFilterDropdown");
-      if (employeeFilterDropdown) {
-        const typeText = type === "all" ? "Tipe Karyawan" : type === "staff" ? "Staff" : "Office Boy";
-        employeeFilterDropdown.innerHTML = `<i class="fas fa-users"></i> ${typeText}`;
-      }
-    });
-  });
 }
 
 // Tambahkan fungsi untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD

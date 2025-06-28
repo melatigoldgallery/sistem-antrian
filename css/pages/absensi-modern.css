@@ -216,7 +216,7 @@ body {
   }
   
  /* Perbaikan: Menggunakan selector atribut untuk menu Buyback dan Antrian */
-.sidebar-menu .nav-item a[href="buyback.html"], /* Buyback */
+.sidebar-menu .nav-item a[data-bs-target="#servisSubmenu"], /* Buyback */
 .sidebar-menu .nav-item a[data-bs-target="#antrianSubmenu"] /* Antrian */ {
   display: none;
 }
