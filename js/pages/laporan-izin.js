@@ -36,11 +36,9 @@ const cacheTimestamps = new Map(); // Untuk menyimpan waktu cache
 // Fungsi untuk mengompresi data sebelum disimpan ke localStorage
 function compressData(data) {
   try {
-    // Konversi data ke string JSON
-    const jsonString = JSON.stringify(data);
-
-    // Kompresi sederhana dengan menghapus spasi berlebih
-    return jsonString.replace(/\s+/g, "");
+    // Konversi data ke string JSON dengan format minimal (tanpa pretty printing)
+    // Ini sudah cukup untuk menghemat ruang tanpa menghapus spasi dalam nilai data
+    return JSON.stringify(data);
   } catch (error) {
     console.error("Error compressing data:", error);
     return JSON.stringify(data);
@@ -50,7 +48,7 @@ function compressData(data) {
 // Fungsi untuk mendekompresi data dari localStorage
 function decompressData(compressedData) {
   try {
-    // Parse string JSON yang telah dikompresi
+    // Parse string JSON
     return JSON.parse(compressedData);
   } catch (error) {
     console.error("Error decompressing data:", error);

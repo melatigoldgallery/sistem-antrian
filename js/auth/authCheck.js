@@ -3,7 +3,6 @@ export async function checkAuth() {
     try {
         const currentUser = await authService.getCurrentUser();
         if (!currentUser) {
-            // Redirect ke halaman login jika tidak ada user yang login
             window.location.href = 'index.html';
             return false;
         }

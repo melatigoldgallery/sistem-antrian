@@ -38,8 +38,8 @@
         overflow: hidden;
         position: relative;
         flex: 1;
-        min-width: 200px;
-        max-width: 280px;
+        min-width: 300px;
+        max-width: 380px;
         padding: 1rem;
         display: flex;
         align-items: center;
@@ -125,7 +125,7 @@
       }
 
       .stat-card-info p {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         color: #6c757d;
         margin-bottom: 0;
         line-height: 1.4;
@@ -145,7 +145,7 @@
       }
 
       .stat-card-success p {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         color: #6c757d;
         margin-bottom: 0;
         line-height: 1.4;
@@ -193,22 +193,22 @@
       }
 
       .page-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
+        background: linear-gradient(135deg, #ffffff 0%, #e9e9e9 100%);
+        color: black;
+        padding: 1.5rem;
         border-radius: 16px;
         margin-bottom: 2rem;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       }
 
       .header-content .page-title {
-        font-size: 2.5rem;
+        font-size: 2rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
       }
 
       .header-content .page-subtitle {
-        font-size: 1.1rem;
+        font-size: 1rem;
         opacity: 0.9;
         margin-bottom: 0;
       }
@@ -232,7 +232,7 @@
       }
 
       .welcome-title {
-        font-size: 1.8rem;
+        font-size: 1.7rem;
         font-weight: 600;
         color: #2c3e50;
         margin-bottom: 0.5rem;
@@ -240,12 +240,12 @@
 
       .welcome-text {
         color: #6c757d;
-        font-size: 1.1rem;
+        font-size: 1rem;
         margin-bottom: 0;
       }
 
       .welcome-icon {
-        font-size: 4rem;
+        font-size: 3rem;
         color: #667eea;
         opacity: 0.3;
       }
@@ -255,11 +255,11 @@
       }
 
       .quick-access-item {
-        height: 100%;
+        height: 90%;
       }
 
       .quick-btn {
-        height: 100%;
+        height: 90%;
         border: 2px solid;
         border-radius: 12px;
         transition: all 0.3s ease;
@@ -276,22 +276,17 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.1rem;
       }
 
       .quick-btn-icon {
         font-size: 2rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.1rem;
       }
 
       .quick-btn-text {
         font-weight: 600;
-        font-size: 1rem;
-      }
-
-      .quick-btn-desc {
-        font-size: 0.85rem;
-        opacity: 0.7;
+        font-size: 0.9rem;
       }
 
       .status-indicator {
@@ -323,7 +318,7 @@
         }
 
         .header-content .page-title {
-          font-size: 2rem;
+          font-size: 1.5rem;
         }
 
         .welcome-section {
@@ -495,7 +490,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link collapsed"
+                class="nav-link collapsed d-none"
                 href="#"
                 data-bs-toggle="collapse"
                 data-bs-target="#promosiSubmenu"
@@ -615,10 +610,9 @@
                     <div class="col-lg-3 col-md-6">
                       <div class="quick-access-item">
                         <a href="admin.html" class="btn btn-primary w-100 py-3 quick-btn">
-                          <div class="quick-btn-content">
+                          <div class="quick-btn-content text-dark">
                             <i class="fas fa-user-cog quick-btn-icon"></i>
                             <span class="quick-btn-text">Admin Antrian</span>
-                            <small class="quick-btn-desc">Kelola sistem antrian</small>
                           </div>
                         </a>
                       </div>
@@ -626,10 +620,9 @@
                     <div class="col-lg-3 col-md-6">
                       <div class="quick-access-item">
                         <a href="sistemAbsensi.html" class="btn btn-warning w-100 py-3 quick-btn border-0">
-                          <div class="quick-btn-content">
+                          <div class="quick-btn-content text-dark">
                             <i class="fas fa-user-check quick-btn-icon"></i>
                             <span class="quick-btn-text">Absensi</span>
-                            <small class="quick-btn-desc">Sistem kehadiran</small>
                           </div>
                         </a>
                       </div>
@@ -637,10 +630,9 @@
                     <div class="col-lg-3 col-md-6">
                       <div class="quick-access-item">
                         <a href="input-servis.html" class="btn btn-success w-100 py-3 quick-btn">
-                          <div class="quick-btn-content">
+                          <div class="quick-btn-content text-dark">
                             <i class="fas fa-chart-bar quick-btn-icon"></i>
                             <span class="quick-btn-text">Input Service</span>
-                            <small class="quick-btn-desc">Pencatatan Servis</small>
                           </div>
                         </a>
                       </div>
@@ -648,10 +640,9 @@
                     <div class="col-lg-3 col-md-6">
                       <div class="quick-access-item">
                         <a href="display.html" class="btn btn-info w-100 py-3 quick-btn border-0">
-                          <div class="quick-btn-content">
+                          <div class="quick-btn-content text-dark">
                             <i class="fas fa-desktop quick-btn-icon"></i>
                             <span class="quick-btn-text">Display Antrian</span>
-                            <small class="quick-btn-desc">Tampilan antrian</small>
                           </div>
                         </a>
                       </div>
@@ -661,7 +652,7 @@
               </div>
 
               <!-- System Status -->
-              <div class="row mt-4">
+              <div class="row mt-4 d-none">
                 <div class="col-md-6">
                   <div class="card shadow-sm border-0 h-100">
                     <div class="card-header bg-light">
@@ -789,8 +780,6 @@
         </div>
       </main>
     </div>
-    <!-- Scripts -->
-    <script type="module" src="js/melati.js"></script>
     <script type="module" src="js/main.js"></script>
     <!-- Kontrol akses menu -->
     <script type="module" src="js/menuControl.js"></script>
