@@ -27,7 +27,7 @@ const database = getDatabase(app);
 
 class InfoRealtimeSystem {
   constructor() {
-    this.currentMode = "button";
+    this.currentMode = "admin";
     this.isConnected = false;
     this.audioVolume = 1;
     this.notificationSounds = {
@@ -75,14 +75,15 @@ class InfoRealtimeSystem {
       this.updateConnectionStatus();
     });
 
-    // Listen for new notifications
+    // Listen for new notifications - PERBAIKAN: untuk semua mode
     onValue(notificationsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const notifications = Object.values(data);
         const latestNotification = notifications[notifications.length - 1];
 
-        if (this.currentMode === "admin" && latestNotification) {
+        // PERBAIKAN: Handle notification di semua mode
+        if (latestNotification) {
           this.handleNotification(latestNotification);
         }
       }
@@ -96,9 +97,9 @@ class InfoRealtimeSystem {
     document.getElementById("buttonModeBtn").classList.toggle("active", mode === "button");
     document.getElementById("adminModeBtn").classList.toggle("active", mode === "admin");
 
-    // Show/hide panels
+    // Show/hide panels - PERBAIKAN LOGIC
     document.getElementById("buttonPanel").style.display = mode === "button" ? "block" : "none";
-    document.getElementById("adminPanel").classList.toggle("active", mode === "admin");
+    document.getElementById("adminPanel").style.display = mode === "admin" ? "block" : "none";
   }
 
   async sendNotification(type) {
@@ -116,7 +117,6 @@ class InfoRealtimeSystem {
         status: "sent",
       });
 
-      this.showAlert(`Notifikasi ${type} berhasil dikirim`, "success");
       this.animateButton(type);
     } catch (error) {
       console.error("Error sending notification:", error);
@@ -125,10 +125,45 @@ class InfoRealtimeSystem {
   }
 
   handleNotification(notification) {
-    if (notification.timestamp && Date.now() - notification.timestamp < 5000) {
+    // PERBAIKAN: Perpanjang waktu validasi dan tambah fallback
+    const now = Date.now();
+    const notifTime = notification.timestamp || now;
+    const timeDiff = now - notifTime;
+
+    // Perpanjang dari 5 detik ke 30 detik
+    if (timeDiff < 30000) {
       this.playNotificationSound(notification.message);
       this.addToLog(notification);
+
+      // Tambah visual feedback
+      this.showNotificationAlert(notification);
     }
+  }
+
+  showNotificationAlert(notification) {
+    // Tambah alert visual untuk semua mode
+    const alertDiv = document.createElement("div");
+    alertDiv.className = "alert alert-info alert-dismissible fade show position-fixed";
+    alertDiv.style.cssText = `
+    top: 20px; 
+    right: 20px; 
+    z-index: 9999; 
+    min-width: 300px;
+  `;
+    alertDiv.innerHTML = `
+    <strong>Notifikasi Baru!</strong><br>
+    ${notification.message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto remove setelah 5 detik
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
   }
 
   playNotificationSound(message) {
@@ -197,7 +232,7 @@ class InfoRealtimeSystem {
     volumeSlider.value = 100;
     volumeValue.textContent = "100%";
     this.audioVolume = 1;
-    
+
     volumeSlider.addEventListener("input", (e) => {
       this.audioVolume = e.target.value / 100;
       volumeValue.textContent = e.target.value + "%";

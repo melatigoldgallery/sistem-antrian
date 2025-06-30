@@ -786,7 +786,7 @@ function displayData() {
       <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${
         item.namaBarang
       }</td>
-      <td style="border-right: 2px solid #dee2e6;">${item.jenisServis}</td>
+      <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${item.jenisServis}</td>
       <td style="border-right: 2px solid #dee2e6;">${statusServisContent}</td>
       <td style="border-right: 2px solid #dee2e6;">${statusPengambilanBadge}</td>
       <td style="border-right: 2px solid #dee2e6;" class="status-cell">${whatsappContent}</td>

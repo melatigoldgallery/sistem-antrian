@@ -336,12 +336,12 @@ function populateServisTable() {
     row.innerHTML = `
       <td>${index + 1}</td>
       <td>${tanggalFormatted}</td>
+      <td>${item.namaSales}</td>
       <td>${item.namaCustomer}</td>
       <td>${item.noHp}</td>
       <td>${item.namaBarang}</td>
       <td>${item.jenisServis}</td>
       <td>Rp ${item.ongkos.toLocaleString('id-ID')}</td>
-      <td>${item.namaSales}</td>
       <td>${statusServisBadge}</td>
       <td>${statusPengambilanBadge}</td>
       <td>${item.stafHandle || '-'}</td>

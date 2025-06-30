@@ -116,6 +116,11 @@ function setupEventListeners() {
     handleVerifikasi();
   });
 
+  // Status pembayaran change handler
+  document.getElementById("statusPembayaran").addEventListener("change", function () {
+    handleStatusPembayaranChange();
+  });
+
   // Modal hidden events
   document.getElementById("modalInputServis").addEventListener("hidden.bs.modal", function () {
     resetModalForm();
@@ -149,6 +154,31 @@ function setupEventListeners() {
   });
 }
 
+function handleStatusPembayaranChange() {
+  const statusPembayaran = document.getElementById("statusPembayaran").value;
+  const ongkosInput = document.getElementById("ongkos");
+  const ongkosLabel = document.getElementById("ongkosLabel");
+
+  if (statusPembayaran === "free") {
+    ongkosInput.value = 0;
+    ongkosInput.disabled = true;
+    ongkosInput.required = false;
+    ongkosLabel.textContent = "Ongkos / DP";
+  } else if (statusPembayaran === "custom") {
+    ongkosInput.disabled = false;
+    ongkosInput.required = true;
+    ongkosLabel.textContent = "DP (Down Payment)";
+  } else {
+    ongkosInput.disabled = false;
+    ongkosLabel.textContent = "Ongkos / DP";
+    if (statusPembayaran === "nominal") {
+      ongkosInput.required = true;
+    } else if (statusPembayaran === "belum_lunas") {
+      ongkosInput.required = false;
+    }
+  }
+}
+
 function openServisModal(index = -1) {
   editingIndex = index;
 
@@ -161,7 +191,11 @@ function openServisModal(index = -1) {
     document.getElementById("noHp").value = item.noHp;
     document.getElementById("namaBarang").value = item.namaBarang;
     document.getElementById("jenisServis").value = item.jenisServis;
+    document.getElementById("statusPembayaran").value = item.statusPembayaran || "nominal";
     document.getElementById("ongkos").value = item.ongkos;
+    
+    // Trigger status change untuk set proper state
+    handleStatusPembayaranChange();
   } else {
     // Add mode
     document.getElementById("modalInputServisLabel").textContent = "Input Data Servis";
@@ -177,34 +211,13 @@ function openServisModal(index = -1) {
   }, { once: true });
 }
 
-window.editRiwayatItem = function (id, index) {
-  verifikasiAction = "edit";
-  verifikasiData = { id, index };
-  const modal = new bootstrap.Modal(document.getElementById("verifikasiModal"));
-  modal.show();
-
-  // Auto focus pada input kode verifikasi setelah modal terbuka
-  document.getElementById("verifikasiModal").addEventListener("shown.bs.modal", function () {
-    document.getElementById("kodeVerifikasi").focus();
-  }, { once: true });
-};
-
-window.deleteRiwayatItem = function (id, index) {
-  verifikasiAction = "delete";
-  verifikasiData = { id, index };
-  const modal = new bootstrap.Modal(document.getElementById("verifikasiModal"));
-  modal.show();
-
-  // Auto focus pada input kode verifikasi setelah modal terbuka
-  document.getElementById("verifikasiModal").addEventListener("shown.bs.modal", function () {
-    document.getElementById("kodeVerifikasi").focus();
-  }, { once: true });
-};
-
 function resetModalForm() {
   document.getElementById("formInputServis").reset();
+  document.getElementById("ongkos").disabled = false;
+  document.getElementById("ongkos").required = true;
+  document.getElementById("ongkosLabel").textContent = "Ongkos / DP";
   editingIndex = -1;
-  editingRiwayatId = null; // Reset edit riwayat ID
+  editingRiwayatId = null;
   document.getElementById("modalInputServisLabel").textContent = "Input Data Servis";
 }
 
@@ -214,11 +227,19 @@ async function saveServisItem() {
   const noHp = document.getElementById("noHp").value.trim();
   const namaBarang = document.getElementById("namaBarang").value.trim();
   const jenisServis = document.getElementById("jenisServis").value.trim();
+  const statusPembayaran = document.getElementById("statusPembayaran").value;
   const ongkos = parseInt(document.getElementById("ongkos").value) || 0;
 
   // Validation
-  if (!namaSales || !namaCustomer || !noHp || !namaBarang || !jenisServis || ongkos <= 0) {
+  if (!namaSales || !namaCustomer || !noHp || !namaBarang || !jenisServis || !statusPembayaran) {
     showErrorModal("Validasi Error", "Semua field harus diisi dengan benar!");
+    return;
+  }
+
+  // Validasi ongkos berdasarkan status
+  if ((statusPembayaran === 'nominal' || statusPembayaran === 'custom') && ongkos <= 0) {
+    const labelText = statusPembayaran === 'custom' ? 'DP' : 'Ongkos';
+    showErrorModal("Validasi Error", `${labelText} harus diisi untuk status ${statusPembayaran}!`);
     return;
   }
 
@@ -228,7 +249,8 @@ async function saveServisItem() {
     noHp,
     namaBarang,
     jenisServis,
-    ongkos,
+    ongkos: statusPembayaran === 'free' ? 0 : ongkos,
+    statusPembayaran,
   };
 
   // Handle edit riwayat data
@@ -276,13 +298,25 @@ function updateServisTable() {
 
   servisItems.forEach((item, index) => {
     const row = document.createElement("tr");
+    const statusPembayaran = item.statusPembayaran || 'nominal';
+    
+    // Hitung total untuk status nominal dan custom
+    if (statusPembayaran === 'nominal' || statusPembayaran === 'custom') {
+      totalOngkos += item.ongkos;
+    }
+
     row.innerHTML = `
       <td>${index + 1}</td>
       <td>${item.namaCustomer}</td>
       <td>${item.noHp}</td>
       <td>${item.namaBarang}</td>
       <td>${item.jenisServis}</td>
-      <td>Rp ${item.ongkos.toLocaleString("id-ID")}</td>
+      <td>${getOngkosDisplay(item)}</td>
+      <td>
+        <span class="badge bg-${getStatusBadgeColor(statusPembayaran)}">
+          ${getStatusLabel(statusPembayaran)}
+        </span>
+      </td>
       <td>
         <button class="btn btn-sm btn-warning me-1" onclick="editServisItem(${index})">
           <i class="fas fa-edit"></i>
@@ -293,10 +327,43 @@ function updateServisTable() {
       </td>
     `;
     tbody.appendChild(row);
-    totalOngkos += item.ongkos;
   });
 
   document.getElementById("total-ongkos").textContent = `Rp ${totalOngkos.toLocaleString("id-ID")}`;
+}
+
+function getOngkosDisplay(item) {
+  const statusPembayaran = item.statusPembayaran || 'nominal';
+  
+  if (statusPembayaran === 'free') {
+    return 'GRATIS';
+  } else if (statusPembayaran === 'belum_lunas') {
+    return item.ongkos > 0 ? `Rp ${item.ongkos.toLocaleString("id-ID")}` : 'BELUM LUNAS';
+  } else if (statusPembayaran === 'custom') {
+    return `DP: Rp ${item.ongkos.toLocaleString("id-ID")}`;
+  } else {
+    return `Rp ${item.ongkos.toLocaleString("id-ID")}`;
+  }
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    'nominal': 'LUNAS',
+    'free': 'GRATIS',
+    'belum_lunas': 'BELUM LUNAS',
+    'custom': 'CUSTOM'
+  };
+  return labels[status] || 'LUNAS';
+}
+
+function getStatusBadgeColor(status) {
+  const colors = {
+    'nominal': 'success',
+    'free': 'info',
+    'belum_lunas': 'warning',
+    'custom': 'secondary'
+  };
+  return colors[status] || 'success';
 }
 
 // Global functions for button clicks
@@ -316,6 +383,11 @@ window.editRiwayatItem = function (id, index) {
   verifikasiData = { id, index };
   const modal = new bootstrap.Modal(document.getElementById("verifikasiModal"));
   modal.show();
+
+  // Auto focus pada input kode verifikasi setelah modal terbuka
+  document.getElementById("verifikasiModal").addEventListener("shown.bs.modal", function () {
+    document.getElementById("kodeVerifikasi").focus();
+  }, { once: true });
 };
 
 window.deleteRiwayatItem = function (id, index) {
@@ -323,6 +395,11 @@ window.deleteRiwayatItem = function (id, index) {
   verifikasiData = { id, index };
   const modal = new bootstrap.Modal(document.getElementById("verifikasiModal"));
   modal.show();
+
+  // Auto focus pada input kode verifikasi setelah modal terbuka
+  document.getElementById("verifikasiModal").addEventListener("shown.bs.modal", function () {
+    document.getElementById("kodeVerifikasi").focus();
+  }, { once: true });
 };
 
 async function handleVerifikasi() {
@@ -330,8 +407,8 @@ async function handleVerifikasi() {
   
   if (kode !== 'smlt116') {
     alert('Kode verifikasi salah!');
-        // Tetap focus pada input setelah error
-        document.getElementById("kodeVerifikasi").focus();
+    // Tetap focus pada input setelah error
+    document.getElementById("kodeVerifikasi").focus();
     return;
   }
 
@@ -346,7 +423,11 @@ async function handleVerifikasi() {
       document.getElementById("noHp").value = item.noHp;
       document.getElementById("namaBarang").value = item.namaBarang;
       document.getElementById("jenisServis").value = item.jenisServis;
+      document.getElementById("statusPembayaran").value = item.statusPembayaran || 'nominal';
       document.getElementById("ongkos").value = item.ongkos;
+
+      // Trigger status change untuk set proper state dan label
+      handleStatusPembayaranChange();
 
       // Update modal title
       document.getElementById("modalInputServisLabel").textContent = "Edit Data Riwayat Servis";
@@ -425,8 +506,8 @@ async function saveAllServisData() {
     }
 
     showLoading(false);
-     // Broadcast each new item
-     savedItems.forEach(item => {
+    // Broadcast each new item
+    savedItems.forEach(item => {
       const event = {
         action: 'add',
         data: item,
@@ -437,6 +518,7 @@ async function saveAllServisData() {
       localStorage.setItem('servisDataChange', JSON.stringify(event));
       window.dispatchEvent(new CustomEvent('servisDataChanged', { detail: event }));
     });
+    
     // Show success modal
     showSuccessModal("Data Berhasil Disimpan", `${savedItems.length} data servis berhasil disimpan.`, savedItems);
 
@@ -492,39 +574,208 @@ function updateRiwayatTable() {
   const tbody = document.querySelector("#tableRiwayatServis tbody");
   tbody.innerHTML = "";
 
+  let totalOngkos = 0;
+
   if (todayData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada data servis pada tanggal ini</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Belum ada data servis pada tanggal ini</td></tr>';
+    document.getElementById("total-riwayat-ongkos").textContent = "Rp 0";
     return;
   }
 
   todayData.forEach((item, index) => {
     const row = document.createElement("tr");
     const tanggalFormatted = new Date(item.tanggal).toLocaleDateString("id-ID");
+    const statusPembayaran = item.statusPembayaran || 'nominal';
+    
+    // Hitung total untuk status nominal dan custom
+    if (statusPembayaran === 'nominal' || statusPembayaran === 'custom') {
+      totalOngkos += item.ongkos || 0;
+    }
 
     row.innerHTML = `
+      <td>${index + 1}</td>
       <td>${tanggalFormatted}</td>
       <td>${item.namaCustomer}</td>
       <td>${item.noHp}</td>
       <td>${item.namaBarang}</td>
       <td>${item.jenisServis}</td>
-      <td>Rp ${item.ongkos.toLocaleString("id-ID")}</td>
+      <td>
+        ${getOngkosDisplay(item)}
+        <br>
+        <span class="badge bg-${getStatusBadgeColor(statusPembayaran)} mt-1">
+          ${getStatusLabel(statusPembayaran)}
+        </span>
+      </td>
       <td>${item.namaSales}</td>
       <td>
-        <button class="btn btn-sm btn-warning me-1 m-1" style="font-size: 14px; padding: 2px 5px;" onclick="editRiwayatItem('${
+        <button class="btn btn-sm btn-warning me-1 mb-1" style="font-size: 12px; padding: 2px 5px;" onclick="editRiwayatItem('${
           item.id
-        }', ${index})">
+        }', ${index})" title="Edit">
           <i class="fas fa-edit"></i>
         </button>
         <button 
-          class="btn btn-sm btn-danger m-1" 
-          style="font-size: 14px; padding: 2px 5px;"
-          onclick="deleteRiwayatItem('${item.id}', ${index})">
+          class="btn btn-sm btn-danger me-1 mb-1" 
+          style="font-size: 12px; padding: 2px 5px;"
+          onclick="deleteRiwayatItem('${item.id}', ${index})" title="Hapus">
           <i class="fas fa-trash"></i>
+        </button>
+        <button 
+          class="btn btn-sm btn-info mb-1" 
+          style="font-size: 12px; padding: 2px 5px;"
+          onclick="printSingleItem('${item.id}', ${index})" title="Print Label">
+          <i class="fas fa-print"></i>
         </button>
       </td>
     `;
     tbody.appendChild(row);
   });
+
+  document.getElementById("total-riwayat-ongkos").textContent = `Rp ${totalOngkos.toLocaleString("id-ID")}`;
+}
+
+// Create shared function for generating print box HTML
+function generatePrintBox(item) {
+  const statusPembayaran = item.statusPembayaran || 'nominal';
+  let statusText = getStatusLabel(statusPembayaran);
+
+  return `
+    <div class="print-service-box">
+      <div class="print-customer-name">${item.namaCustomer}</div>
+      <div class="print-nama-brg">${item.namaBarang}</div>
+      <div class="print-service-type">${item.jenisServis}</div>
+      <div class="print-status">${statusText}</div>
+    </div>
+  `;
+}
+
+// Create shared print styles function
+function getPrintStyles() {
+  return `
+    <style>
+      @page {
+        size: A4;
+        margin: 1cm;
+      }
+      body { 
+        font-family: Arial, sans-serif; 
+        margin: 0;
+        padding: 0;
+      }
+      .header { 
+        text-align: center; 
+        margin-bottom: 20px; 
+      }
+      .boxes-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 3mm;
+      }
+      .print-service-box {
+        width: 2.7cm;
+        height: 2.7cm;
+        border: 1px solid #000;
+        padding: 2mm;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        break-inside: avoid;
+      }
+      .print-customer-name {
+        font-size: 8px;
+        font-weight: bold;
+        margin-bottom: 1px;
+        word-wrap: break-word;
+        line-height: 1.1;
+      }
+      .print-nama-brg {
+        font-size: 8px;
+        margin: 1px;
+        word-wrap: break-word;
+        line-height: 1.1;
+        margin-top: 2px;
+      }
+      .print-service-type {
+        font-size: 8px;
+        font-weight: bold;
+        word-wrap: break-word;
+        line-height: 1.1;
+        margin-top: 2px;
+      }
+      .print-status {
+        font-size: 7px;
+        font-weight: bold;
+        margin-top: 2px;
+        color: #666;
+      }
+    </style>
+  `;
+}
+
+// Completely rewrite printSingleItem to match printReport format
+window.printSingleItem = function (id, index) {
+  const item = todayData[index];
+  if (!item) {
+    alert("Data tidak ditemukan");
+    return;
+  }
+
+  const printWindow = window.open("", "_blank");
+  const tanggalFormatted = new Date(item.tanggal).toLocaleDateString("id-ID");
+
+  const printContent = `
+    <html>
+      <head>
+        <title>Label Servis - ${item.namaCustomer}</title>
+        ${getPrintStyles()}
+      </head>
+      <body>
+        <div class="boxes-container">
+          ${generatePrintBox(item)}
+        </div>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.print();
+};
+
+function printReport() {
+  if (todayData.length === 0) {
+    alert("Tidak ada data untuk dicetak");
+    return;
+  }
+
+  const tanggalRiwayat = document.getElementById("tanggalRiwayat").value;
+  const printWindow = window.open("", "_blank");
+
+  // Generate boxes menggunakan shared function
+  let boxesContent = "";
+  todayData.forEach((item) => {
+    boxesContent += generatePrintBox(item);
+  });
+
+  const printContent = `
+    <html>
+      <head>
+        <title>Label Servis</title>
+        ${getPrintStyles()}
+      </head>
+      <body>
+        <div class="boxes-container">
+          ${boxesContent}
+        </div>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.print();
 }
 
 function exportToPDF() {
@@ -536,29 +787,32 @@ function exportToPDF() {
   try {
     const tanggalRiwayat = document.getElementById("tanggalRiwayat").value;
     
-    // Hitung total ongkos
-    const totalOngkos = todayData.reduce((sum, item) => sum + (item.ongkos || 0), 0);
+    // Hitung total ongkos untuk status nominal dan custom
+    const totalOngkos = todayData.reduce((sum, item) => {
+      const statusPembayaran = item.statusPembayaran || 'nominal';
+      return (statusPembayaran === 'nominal' || statusPembayaran === 'custom') ? sum + (item.ongkos || 0) : sum;
+    }, 0);
     
     const docDefinition = {
-      pageOrientation: 'landscape', // Ubah ke landscape
+      pageOrientation: 'landscape',
       pageMargins: [20, 30, 20, 30],
       content: [
         {
           text: "LAPORAN INPUT SERVIS",
           style: "header",
           alignment: "center",
-          margin: [0, 0, 0, 10]
+          margin: [0, 0, 0, 8]
         },
         {
           text: `Tanggal: ${tanggalRiwayat}`,
           style: "subheader",
           alignment: "center",
-          margin: [0, 0, 0, 10],
+          margin: [0, 0, 0, 8],
         },
         {
           table: {
             headerRows: 1,
-            widths: [30, 80, 70, 170, 170, 80, 70],
+            widths: [20, 80, 70, 170, 200, 80, 60, 60],
             body: [
               [
                 { text: 'No', style: 'tableHeader' },
@@ -567,25 +821,43 @@ function exportToPDF() {
                 { text: 'Nama Barang', style: 'tableHeader' },
                 { text: 'Jenis Servis / Custom', style: 'tableHeader' },
                 { text: 'Ongkos / DP', style: 'tableHeader' },
+                { text: 'Status', style: 'tableHeader' },
                 { text: 'Sales', style: 'tableHeader' }
               ],
-              ...todayData.map((item, index) => [
-                { text: (index + 1).toString(), style: 'tableCell' },
-                { text: item.namaCustomer || '', style: 'tableCell' },
-                { text: item.noHp || '', style: 'tableCell' },
-                { text: item.namaBarang || '', style: 'tableCell' },
-                { text: item.jenisServis || '', style: 'tableCell' },
-                { text: `Rp ${(item.ongkos || 0).toLocaleString("id-ID")}`, style: 'tableCellRight' },
-                { text: item.namaSales || '', style: 'tableCell' }
-              ]),
+              ...todayData.map((item, index) => {
+                const statusPembayaran = item.statusPembayaran || 'nominal';
+                let ongkosText = '';
+                
+                if (statusPembayaran === 'free') {
+                  ongkosText = 'GRATIS';
+                } else if (statusPembayaran === 'belum_lunas') {
+                  ongkosText = item.ongkos > 0 ? `Rp ${(item.ongkos || 0).toLocaleString("id-ID")}` : 'BELUM LUNAS';
+                } else if (statusPembayaran === 'custom') {
+                  ongkosText = `DP: Rp ${(item.ongkos || 0).toLocaleString("id-ID")}`;
+                } else {
+                  ongkosText = `Rp ${(item.ongkos || 0).toLocaleString("id-ID")}`;
+                }
+                
+                return [
+                  { text: (index + 1).toString(), style: 'tableCell' },
+                  { text: item.namaCustomer || '', style: 'tableCell' },
+                  { text: item.noHp || '', style: 'tableCell' },
+                  { text: item.namaBarang || '', style: 'tableCell' },
+                  { text: item.jenisServis || '', style: 'tableCell' },
+                  { text: ongkosText, style: 'tableCellRight' },
+                  { text: getStatusLabel(statusPembayaran), style: 'tableCell' },
+                  { text: item.namaSales || '', style: 'tableCell' }
+                ];
+              }),
               // Baris total
               [
                 { text: '', style: 'tableCell' },
                 { text: '', style: 'tableCell' },
                 { text: '', style: 'tableCell' },
                 { text: '', style: 'tableCell' },
-                { text: 'TOTAL:', style: 'tableCellBold', alignment: 'right' },
+                { text: 'TOTAL NOMINAL:', style: 'tableCellBold', alignment: 'right' },
                 { text: `Rp ${totalOngkos.toLocaleString("id-ID")}`, style: 'tableCellBoldRight' },
+                { text: '', style: 'tableCell' },
                 { text: '', style: 'tableCell' }
               ]
             ],
@@ -603,12 +875,19 @@ function exportToPDF() {
             vLineColor: function (i, node) {
               return (i === 0 || i === node.table.widths.length) ? '#666666' : '#cccccc';
             },
-            paddingLeft: function(i, node) { return 8; },
-            paddingRight: function(i, node) { return 8; },
-            paddingTop: function(i, node) { return 6; },
-            paddingBottom: function(i, node) { return 6; }
+            paddingLeft: function(i, node) { return 3; },
+            paddingRight: function(i, node) { return 3; },
+            paddingTop: function(i, node) { return 2; },
+            paddingBottom: function(i, node) { return 1; }
           }
         },
+        // Tambahkan keterangan di bawah tabel
+        {
+          text: "Keterangan: Total Nominal mencakup status LUNAS dan CUSTOM",
+          style: "footnote",
+          alignment: "left",
+          margin: [0, 7, 0, 0]
+        }
       ],
       styles: {
         header: {
@@ -629,27 +908,32 @@ function exportToPDF() {
           alignment: 'center'
         },
         tableCell: {
-          fontSize: 9,
+          fontSize: 8,
           margin: [0, 1, 0, 1]
         },
         tableCellRight: {
-          fontSize: 9,
+          fontSize: 8,
           alignment: 'right',
           margin: [0, 1, 0, 1]
         },
         tableCellBold: {
-          fontSize: 10,
+          fontSize: 8,
           bold: true,
           fillColor: '#ecf0f1',
           margin: [0, 1, 0, 1]
         },
         tableCellBoldRight: {
-          fontSize: 10,
+          fontSize: 8,
           bold: true,
           alignment: 'right',
           fillColor: '#ecf0f1',
           margin: [0, 1, 0, 1]
         },
+        footnote: {
+          fontSize: 8,
+          italics: true,
+          color: '#666666'
+        }
       }
     };
 
@@ -658,100 +942,6 @@ function exportToPDF() {
     console.error("Error exporting PDF:", error);
     alert("Terjadi kesalahan saat mengekspor PDF");
   }
-}
-
-function printReport() {
-  if (todayData.length === 0) {
-    alert("Tidak ada data untuk dicetak");
-    return;
-  }
-
-  const tanggalRiwayat = document.getElementById("tanggalRiwayat").value;
-  const printWindow = window.open("", "_blank");
-
-  // Generate boxes dengan ukuran 2.5cm x 2.5cm
-  let boxesContent = "";
-  todayData.forEach((item, index) => {
-    boxesContent += `
-      <div class="service-box">
-        <div class="customer-name">${item.namaCustomer}</div>
-        <div class="nama-brg">${item.namaBarang}</div>
-        <div class="service-type">${item.jenisServis}</div>
-      </div>
-    `;
-  });
-
-  const printContent = `
-    <html>
-      <head>
-        <title>Label Servis</title>
-        <style>
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 0;
-            padding: 0;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 20px; 
-          }
-          .boxes-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-start;
-            gap: 3mm;
-          }
-          .service-box {
-            width: 2.5cm;
-            height: 2.5cm;
-            border: 1px solid #000;
-            padding: 2mm;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            text-align: center;
-            break-inside: avoid;
-          }
-          .customer-name {
-            font-size: 9px;
-            font-weight: bold;
-            margin-bottom: 2px;
-            word-wrap: break-word;
-            line-height: 1.1;
-          }
-          .nama-brg {
-            font-size: 9px;
-            font-weight: bold;
-            margin: 3px;
-            word-wrap: break-word;
-            line-height: 1.1;
-          }
-          .service-type {
-            font-size: 9px;
-            word-wrap: break-word;
-            line-height: 1.1;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h3>Label Servis - ${tanggalRiwayat}</h3>
-        </div>
-        <div class="boxes-container">
-          ${boxesContent}
-        </div>
-      </body>
-    </html>
-  `;
-
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  printWindow.print();
 }
 
 function showLoading(show) {
@@ -770,11 +960,17 @@ function showSuccessModal(title, message, items = []) {
   if (items.length > 0) {
     content += '<div class="item-list">';
     items.forEach((item, index) => {
+      const statusPembayaran = item.statusPembayaran || 'nominal';
+      let ongkosText = getOngkosDisplay(item);
+      
       content += `
         <div class="item">
           <strong>${index + 1}. ${item.namaCustomer}</strong><br>
           Barang: ${item.namaBarang} - ${item.jenisServis}<br>
-          Ongkos: Rp ${item.ongkos.toLocaleString("id-ID")}
+          Ongkos: ${ongkosText}
+          <span class="badge bg-${getStatusBadgeColor(statusPembayaran)} ms-2">
+            ${getStatusLabel(statusPembayaran)}
+          </span>
         </div>
       `;
     });
@@ -794,3 +990,5 @@ function showErrorModal(title, message) {
   const modal = new bootstrap.Modal(document.getElementById("errorModal"));
   modal.show();
 }
+
+

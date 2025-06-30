@@ -150,10 +150,6 @@
         background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
       }
 
-      .admin-panel {
-        display: none;
-      }
-
       .admin-panel.active {
         display: block;
       }
@@ -715,6 +711,7 @@
                 </div>
               </div>
             </div>
+
             <div class="info-realtime-section">
               <div class="card">
                 <div class="card-header">
@@ -738,7 +735,7 @@
                     </div>
 
                     <!-- Button Panel -->
-                    <div class="button-panel" id="buttonPanel" style="display: none;">
+                    <div class="button-panel" id="buttonPanel" style="display: none">
                       <div class="info-buttons">
                         <button class="info-btn gojek" id="gojekBtn">
                           <i class="fab fa-google"></i>
@@ -758,7 +755,7 @@
                     </div>
 
                     <!-- Admin Panel -->
-                    <div class="admin-panel active" id="adminPanel">
+                    <div class="admin-panel" id="adminPanel" style="display: block">
                       <div class="connection-status">
                         <div class="status-dot" id="adminConnectionDot"></div>
                         <span id="adminConnectionText">Menghubungkan...</span>
@@ -769,7 +766,7 @@
                         <div class="volume-control">
                           <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" />
                         </div>
-                        <span id="volumeValue">80%</span>
+                        <span id="volumeValue">100%</span>
                       </div>
 
                       <div class="notification-log">
