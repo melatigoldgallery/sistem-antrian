@@ -718,21 +718,21 @@ function printReport() {
             break-inside: avoid;
           }
           .customer-name {
-            font-size: 8px;
+            font-size: 9px;
             font-weight: bold;
             margin-bottom: 2px;
             word-wrap: break-word;
             line-height: 1.1;
           }
           .nama-brg {
-            font-size: 7px;
+            font-size: 9px;
             font-weight: bold;
             margin: 3px;
             word-wrap: break-word;
             line-height: 1.1;
           }
           .service-type {
-            font-size: 7px;
+            font-size: 9px;
             word-wrap: break-word;
             line-height: 1.1;
           }
