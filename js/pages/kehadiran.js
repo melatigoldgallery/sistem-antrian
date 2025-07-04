@@ -392,6 +392,7 @@ function toggleLateMinutesContainer(status) {
 }
 
 // Fungsi untuk menyimpan perubahan (update di memory saja)
+// Fungsi untuk menyimpan perubahan (update di memory saja)
 async function saveAttendanceEdit() {
   const recordIndex = currentEditRecord.index;
   const newTimeIn = document.getElementById('editTimeIn').value;
@@ -468,16 +469,29 @@ async function saveAttendanceEdit() {
     const editModal = bootstrap.Modal.getInstance(document.getElementById('editAttendanceModal'));
     editModal.hide();
     
+    // PERBAIKAN: Pastikan loading overlay dihilangkan
+    showLoading(false);
+    
     showAlert('success', `<i class="fas fa-check-circle me-2"></i>Data kehadiran berhasil diperbarui!`);
     
   } catch (error) {
     console.error('Error updating attendance:', error);
+    
+    // PERBAIKAN: Pastikan loading overlay dihilangkan saat error
+    showLoading(false);
+    
     showAlert('danger', `<i class="fas fa-exclamation-circle me-2"></i>Gagal memperbarui data: ${error.message}`);
   } finally {
     saveBtn.innerHTML = originalBtnText;
     saveBtn.disabled = false;
+    
+    // PERBAIKAN: Tambahan safety net untuk memastikan loading overlay dihilangkan
+    setTimeout(() => {
+      showLoading(false);
+    }, 100);
   }
 }
+
 
 // Helper function untuk format tanggal ke API format
 function formatDateForAPI(dateTime) {
