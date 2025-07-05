@@ -31,7 +31,7 @@ async function setupMenuVisibility() {
         // Pendekatan 1: Tambahkan CSS dengan !important
         const style = document.createElement('style');
         style.textContent = `
-            .supervisor-toggle, .supervisor-menu, #supervisorSubmenu, .edit-btn, #exportExcelBtn, #exportPdfBtn, #deleteDataBtn {
+            .supervisor-toggle, .supervisor-menu, #supervisorSubmenu, .edit-btn, #exportExcelBtn, #deleteDataBtn, #hapusData {
                 display: none !important;
                 visibility: hidden !important;
                 height: 0 !important;

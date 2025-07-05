@@ -46,6 +46,15 @@ function initializeDatePicker() {
     orientation: "bottom auto",
   });
 
+    // Tambahkan datepicker untuk field tanggal edit
+  $("#tanggalEdit").datepicker({
+    format: "dd/mm/yyyy",
+    language: "id",
+    autoclose: true,
+    todayHighlight: true,
+    orientation: "bottom auto",
+  });
+
   // Calendar icon click handlers
   document.getElementById("calendarIcon").addEventListener("click", function () {
     $("#tanggal").datepicker("show");
@@ -53,6 +62,10 @@ function initializeDatePicker() {
 
   document.getElementById("calendarRiwayatIcon").addEventListener("click", function () {
     $("#tanggalRiwayat").datepicker("show");
+  });
+
+  document.getElementById("calendarEditIcon").addEventListener("click", function () {
+    $("#tanggalEdit").datepicker("show");
   });
 }
 
@@ -219,6 +232,9 @@ function resetModalForm() {
   editingIndex = -1;
   editingRiwayatId = null;
   document.getElementById("modalInputServisLabel").textContent = "Input Data Servis";
+  
+  // Sembunyikan field tanggal edit
+  document.getElementById("tanggalEditRow").style.display = "none";
 }
 
 async function saveServisItem() {
@@ -256,6 +272,15 @@ async function saveServisItem() {
   // Handle edit riwayat data
   if (editingRiwayatId) {
     try {
+      // Ambil tanggal dari field edit jika sedang edit riwayat
+      const tanggalEdit = document.getElementById("tanggalEdit").value;
+      if (tanggalEdit) {
+        // Convert date format from dd/mm/yyyy to yyyy-mm-dd
+        const [day, month, year] = tanggalEdit.split("/");
+        const formattedDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        servisItem.tanggal = formattedDate;
+      }
+
       const { updateServisData } = await import("../services/servis-service.js");
       await updateServisData(editingRiwayatId, servisItem);
 
@@ -407,7 +432,6 @@ async function handleVerifikasi() {
   
   if (kode !== 'smlt116') {
     alert('Kode verifikasi salah!');
-    // Tetap focus pada input setelah error
     document.getElementById("kodeVerifikasi").focus();
     return;
   }
@@ -415,7 +439,7 @@ async function handleVerifikasi() {
   try {
     if (verifikasiAction === "edit") {
       const item = todayData[verifikasiData.index];
-      editingRiwayatId = verifikasiData.id; // Set ID untuk edit mode
+      editingRiwayatId = verifikasiData.id;
 
       // Set data ke form input servis
       document.getElementById("namaSales").value = item.namaSales;
@@ -426,37 +450,35 @@ async function handleVerifikasi() {
       document.getElementById("statusPembayaran").value = item.statusPembayaran || 'nominal';
       document.getElementById("ongkos").value = item.ongkos;
 
-      // Trigger status change untuk set proper state dan label
-      handleStatusPembayaranChange();
+      // Tampilkan dan isi field tanggal edit
+      document.getElementById("tanggalEditRow").style.display = "block";
+      const tanggalFormatted = new Date(item.tanggal).toLocaleDateString("id-ID");
+      document.getElementById("tanggalEdit").value = tanggalFormatted;
 
-      // Update modal title
+      handleStatusPembayaranChange();
       document.getElementById("modalInputServisLabel").textContent = "Edit Data Riwayat Servis";
 
-      // Close verifikasi modal first
       const verifikasiModal = bootstrap.Modal.getInstance(document.getElementById("verifikasiModal"));
       verifikasiModal.hide();
 
-      // Buka modal edit dengan delay untuk memastikan modal verifikasi tertutup
       setTimeout(() => {
         const modal = new bootstrap.Modal(document.getElementById("modalInputServis"));
         modal.show();
 
-        // Auto focus pada nama sales setelah modal edit terbuka
         document.getElementById("modalInputServis").addEventListener("shown.bs.modal", function () {
           document.getElementById("namaSales").focus();
         }, { once: true });
       }, 300);
 
-      return; // Exit early untuk edit case
+      return;
     } else if (verifikasiAction === "delete") {
+      // Delete logic remains the same
       const { deleteServisData } = await import("../services/servis-service.js");
       await deleteServisData(verifikasiData.id);
 
-      // Update UI langsung tanpa reload
       todayData = todayData.filter((item) => item.id !== verifikasiData.id);
       updateRiwayatTable();
 
-      // Show delete success modal
       showDeleteSuccessModal();
     }
   } catch (error) {

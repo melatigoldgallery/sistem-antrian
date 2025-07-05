@@ -41,10 +41,9 @@ const WhatsAppUtils = {
   // Generate pesan WhatsApp
   generateMessage(customerName, itemName) {
     const shopName = "Melati Gold Shop";
-    return `Halo Kak ${customerName},
-Barang servis Kakak sudah selesai:
- (${itemName})
-Sudah bisa diambil. Silakan datang ke ${shopName} untuk mengambil barangnya ya kak. Terima kasih 🙏`;
+    return `Halo Kak ${customerName}, Barang servis Kakak sudah selesai:
+(${itemName}) Sudah bisa diambil.
+ Silakan datang ke ${shopName} untuk mengambil barangnya ya kak. Terima kasih 🙏`;
   },
 
   // Buka WhatsApp
@@ -60,19 +59,23 @@ Sudah bisa diambil. Silakan datang ke ${shopName} untuk mengambil barangnya ya k
       const message = this.generateMessage(customerName, itemName);
       const encodedMessage = encodeURIComponent(message);
 
-      // Smart Detection: Deteksi device dan pilih URL yang tepat
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      // SOLUSI SIMPEL: Gunakan whatsapp:// protocol untuk membuka app
+      const whatsappAppURL = `whatsapp://send?phone=${formattedPhone}&text=${encodedMessage}`;
 
-      const whatsappURL = isMobile
-        ? `https://wa.me/${formattedPhone}?text=${encodedMessage}` // Mobile: wa.me
-        : `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`; // Desktop: web.whatsapp.com
+      // Fallback ke web jika app tidak tersedia
+      const whatsappWebURL = `https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
 
-      // Buka di tab baru
-      window.open(whatsappURL, "_blank");
+      // Coba buka app dulu
+      const tempLink = document.createElement("a");
+      tempLink.href = whatsappAppURL;
+      tempLink.click();
 
-      // Log untuk tracking
-      console.log(`WhatsApp opened for ${customerName} (${formattedPhone}) - ${isMobile ? "Mobile" : "Desktop"} mode`);
+      // Fallback ke web setelah 2 detik jika app tidak terbuka
+      setTimeout(() => {
+        window.open(whatsappWebURL, "whatsapp_tab");
+      }, 2000);
 
+      console.log(`WhatsApp opened for ${customerName} (${formattedPhone})`);
       return true;
     } catch (error) {
       console.error("Error opening WhatsApp:", error);
@@ -85,11 +88,112 @@ Sudah bisa diambil. Silakan datang ke ${shopName} untuk mengambil barangnya ya k
   isValidPhoneNumber(phoneNumber) {
     return this.formatPhoneNumber(phoneNumber) !== null;
   },
+
+  markAsContacted(customerId) {
+    try {
+      const contactedList = JSON.parse(localStorage.getItem("whatsapp_contacted") || "{}");
+
+      contactedList[customerId] = {
+        timestamp: Date.now(),
+        date: new Date().toISOString().split("T")[0],
+        contacted: true, // Flag permanen
+      };
+
+      localStorage.setItem("whatsapp_contacted", JSON.stringify(contactedList));
+      this.updateWhatsAppStatus(customerId, true);
+    } catch (error) {
+      console.error("Error marking as contacted:", error);
+    }
+  },
+
+  updateWhatsAppStatus(customerId, isContacted) {
+    const buttons = document.querySelectorAll(".whatsapp-btn");
+    buttons.forEach((btn) => {
+      const btnCustomerId = btn.getAttribute("data-customer-id");
+      if (btnCustomerId === customerId) {
+        const row = btn.closest("tr");
+        if (isContacted) {
+          btn.classList.add("contacted");
+          btn.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Sudah Dihubungi';
+          btn.disabled = false; // Masih bisa diklik untuk hubungi lagi
+          row.classList.add("whatsapp-contacted");
+
+          // Update atau tambah status text dengan info waktu
+          let statusDiv = btn.parentElement.querySelector(".whatsapp-status");
+          if (!statusDiv) {
+            statusDiv = document.createElement("div");
+            statusDiv.className = "whatsapp-status text-success";
+            btn.parentElement.appendChild(statusDiv);
+          }
+
+          const contactInfo = this.getContactedInfo(customerId);
+          const timeInfo = contactInfo.daysAgo === 0 ? "Hari ini" : `${contactInfo.daysAgo} hari lalu`;
+          statusDiv.innerHTML = `<i class="fas fa-check-circle me-1"></i>Dihubungi ${timeInfo}`;
+        } else {
+          // Reset status jika diperlukan
+          btn.classList.remove("contacted");
+          btn.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Hubungi';
+          row.classList.remove("whatsapp-contacted");
+
+          const statusDiv = btn.parentElement.querySelector(".whatsapp-status");
+          if (statusDiv) {
+            statusDiv.remove();
+          }
+        }
+      }
+    });
+  },
+
+  isContacted(customerId) {
+    try {
+      const contactedList = JSON.parse(localStorage.getItem("whatsapp_contacted") || "{}");
+      const contactData = contactedList[customerId];
+
+      // Return true jika pernah dihubungi (tanpa batasan waktu)
+      return contactData && contactData.contacted === true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  // BONUS: Fungsi untuk melihat kapan terakhir dihubungi
+  getContactedInfo(customerId) {
+    try {
+      const contactedList = JSON.parse(localStorage.getItem("whatsapp_contacted") || "{}");
+      const contactData = contactedList[customerId];
+
+      if (contactData) {
+        const contactDate = new Date(contactData.timestamp);
+        return {
+          contacted: true,
+          date: contactData.date,
+          time: contactDate.toLocaleString("id-ID"),
+          daysAgo: Math.floor((Date.now() - contactData.timestamp) / (1000 * 60 * 60 * 24)),
+        };
+      }
+
+      return { contacted: false };
+    } catch (error) {
+      return { contacted: false };
+    }
+  },
 };
 
 // TAMBAHAN: Global function untuk dipanggil dari HTML
-window.contactCustomer = function (phoneNumber, customerName, itemName) {
-  WhatsAppUtils.openWhatsApp(phoneNumber, customerName, itemName);
+window.contactCustomer = function (phoneNumber, customerName, itemName, customerId = null) {
+  // Buat customerId jika tidak ada
+  if (!customerId) {
+    customerId = `${phoneNumber}_${customerName}`;
+  }
+
+  const result = WhatsAppUtils.openWhatsApp(phoneNumber, customerName, itemName);
+
+  // PENTING: Mark as contacted setelah WhatsApp dibuka
+  if (result) {
+    WhatsAppUtils.markAsContacted(customerId);
+  }
+
+  return result;
 };
 
 // Enhanced local cache system with TTL
@@ -723,17 +827,37 @@ function displayData() {
     // BARU: Kolom WhatsApp terpisah
     let whatsappContent = "";
     if (item.statusServis === "Sudah Selesai") {
-      whatsappContent = WhatsAppUtils.isValidPhoneNumber(item.noHp)
-        ? `<button class="btn whatsapp-btn" 
-                 onclick="contactCustomer('${item.noHp}', '${item.namaCustomer.replace(
-            /'/g,
-            "\\'"
-          )}', '${item.namaBarang.replace(/'/g, "\\'")}')"
-                 title="Hubungi customer via WhatsApp">
-           <i class="fab fa-whatsapp me-1"></i>
-           Hubungi
-         </button>`
-        : '<small class="text-muted">No HP tidak valid</small>';
+      const customerId = `${item.noHp}_${item.namaCustomer}`;
+      const isContacted = WhatsAppUtils.isContacted(customerId); // Ganti dari isContactedToday
+      const contactInfo = WhatsAppUtils.getContactedInfo(customerId);
+
+      if (WhatsAppUtils.isValidPhoneNumber(item.noHp)) {
+        const buttonClass = isContacted ? "whatsapp-btn contacted" : "whatsapp-btn";
+        const buttonText = isContacted ? "Sudah Dihubungi" : "Hubungi";
+
+        whatsappContent = `
+      <button class="btn ${buttonClass}" 
+              data-customer-id="${customerId}"
+              onclick="contactCustomer('${item.noHp}', '${item.namaCustomer.replace(
+          /'/g,
+          "\\'"
+        )}', '${item.namaBarang.replace(/'/g, "\\'")}', '${customerId}')"
+              title="Hubungi customer via WhatsApp">
+        <i class="fab fa-whatsapp me-1"></i>
+        ${buttonText}
+      </button>`;
+
+        if (isContacted && contactInfo.contacted) {
+          // Tampilkan info kapan dihubungi
+          const timeInfo = contactInfo.daysAgo === 0 ? "Hari ini" : `${contactInfo.daysAgo} hari lalu`;
+          whatsappContent += `
+        <div class="whatsapp-status text-success">
+          <i class="fas fa-check-circle me-1"></i>Dihubungi ${timeInfo}
+        </div>`;
+        }
+      } else {
+        whatsappContent = '<small class="text-muted">No HP tidak valid</small>';
+      }
     } else {
       whatsappContent = '<small class="text-muted">Belum tersedia</small>';
     }
@@ -786,7 +910,9 @@ function displayData() {
       <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${
         item.namaBarang
       }</td>
-      <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${item.jenisServis}</td>
+      <td style="border-right: 2px solid #dee2e6; min-width: 200px; max-width: 250px; word-wrap: break-word;">${
+        item.jenisServis
+      }</td>
       <td style="border-right: 2px solid #dee2e6;">${statusServisContent}</td>
       <td style="border-right: 2px solid #dee2e6;">${statusPengambilanBadge}</td>
       <td style="border-right: 2px solid #dee2e6;" class="status-cell">${whatsappContent}</td>
